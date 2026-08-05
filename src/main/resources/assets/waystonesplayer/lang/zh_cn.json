@@ -1,0 +1,10 @@
+{
+  "gui.waystonesplayer.no_other_players": "当前没有其他在线玩家",
+  "gui.waystonesplayer.online_players": "在线玩家",
+  "message.waystonesplayer.invalid_context": "当前传送请求已失效。",
+  "message.waystonesplayer.target_offline": "目标玩家已离线。",
+  "message.waystonesplayer.target_self": "你已经在自己的位置附近了。",
+  "message.waystonesplayer.insufficient_hunger": "饱食度不足，无法传送！",
+  "message.waystonesplayer.teleport_failed": "传送失败，请稍后再试。",
+  "message.waystonesplayer.teleport_cooling_down": "传送请求过快，请稍后再试。"
+}

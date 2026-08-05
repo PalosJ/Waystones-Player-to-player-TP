@@ -1,0 +1,10 @@
+{
+  "gui.waystonesplayer.no_other_players": "No other online players",
+  "gui.waystonesplayer.online_players": "Online players",
+  "message.waystonesplayer.invalid_context": "This teleport request is no longer valid.",
+  "message.waystonesplayer.target_offline": "That player is no longer online.",
+  "message.waystonesplayer.target_self": "You are already here.",
+  "message.waystonesplayer.insufficient_hunger": "Not enough hunger to teleport!",
+  "message.waystonesplayer.teleport_failed": "Teleport failed, please try again later.",
+  "message.waystonesplayer.teleport_cooling_down": "Teleport requests are too frequent, please try again later."
+}
