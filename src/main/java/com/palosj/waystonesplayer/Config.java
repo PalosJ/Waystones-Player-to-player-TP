@@ -6,13 +6,14 @@ public final class Config {
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
-    public static final ModConfigSpec.BooleanValue ENABLE_HUNGER_COST = BUILDER
-            .comment("Enable hunger cost for teleportation. Default: true")
-            .define("enableHungerCost", true);
-
-    public static final ModConfigSpec.IntValue FOOD_COST_PER_500_BLOCKS = BUILDER
-            .comment("Food points consumed per 500 blocks of distance. Default: 1")
-            .defineInRange("foodCostPer500Blocks", 1, 1, 20);
+    public static final ModConfigSpec.EnumValue<PlayerTeleportExperienceMode> PLAYER_TELEPORT_EXPERIENCE_MODE = BUILDER
+            .comment(
+                    "Controls experience costs for player teleportation.",
+                    "NEVER: Never consume experience (default).",
+                    "FOLLOW_WAYSTONES: Follow Waystones' global cost setting and configured experience rules.",
+                    "ALWAYS: Apply Waystones' configured experience rules even when its global costs are disabled.")
+            .translation("config.waystonesplayer.player_teleport_experience_mode")
+            .defineEnum("playerTeleportExperienceMode", PlayerTeleportExperienceMode.NEVER);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 

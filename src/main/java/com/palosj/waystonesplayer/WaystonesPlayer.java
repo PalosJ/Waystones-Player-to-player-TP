@@ -17,12 +17,10 @@ import net.neoforged.neoforge.common.NeoForge;
 public final class WaystonesPlayer {
     public static final String MODID = "waystonesplayer";
     public static final Logger LOGGER = LogUtils.getLogger();
-    private static final String WAYSTONES_EVENT_HANDLER = "com.palosj.waystonesplayer.teleport.WaystoneTeleportHandler";
 
     public WaystonesPlayer(IEventBus modEventBus) {
         modEventBus.addListener(ModNetworking::register);
         NeoForge.EVENT_BUS.register(PlayerLifecycleHandler.class);
-        registerWaystonesEventHandler();
 
         ModList.get().getModContainerById(MODID)
                 .ifPresent(c -> c.registerConfig(ModConfig.Type.SERVER, Config.SPEC));
@@ -35,15 +33,6 @@ public final class WaystonesPlayer {
             } catch (Exception e) {
                 LOGGER.error("Failed to setup waystonesplayer client", e);
             }
-        }
-    }
-
-    private static void registerWaystonesEventHandler() {
-        try {
-            Class<?> handlerClass = Class.forName(WAYSTONES_EVENT_HANDLER, true, WaystonesPlayer.class.getClassLoader());
-            NeoForge.EVENT_BUS.register(handlerClass);
-        } catch (ReflectiveOperationException | LinkageError | RuntimeException e) {
-            LOGGER.warn("Waystones API compatibility is unavailable; Waystone hunger integration will be disabled.", e);
         }
     }
 }

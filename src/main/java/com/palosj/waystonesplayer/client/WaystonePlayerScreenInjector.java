@@ -124,10 +124,6 @@ public final class WaystonePlayerScreenInjector {
             int listHeight = Math.max(PlayerDestinationList.ENTRY_HEIGHT, height - HEADER_HEIGHT - FOOTER_HEIGHT);
             playerList = new PlayerDestinationList(x, y + HEADER_HEIGHT, width, listHeight, onlinePlayers, targetPlayerId -> {
                 PacketDistributor.sendToServer(new RequestPlayerTeleportPayload(targetPlayerId));
-                var player = Minecraft.getInstance().player;
-                if (player != null) {
-                    player.clientSideCloseContainer();
-                }
             });
             event.addListener(playerList);
         }

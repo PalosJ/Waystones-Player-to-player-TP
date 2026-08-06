@@ -1,117 +1,139 @@
 # Waystones Player
 
+An unofficial add-on for [Waystones](https://modrinth.com/mod/waystones) that adds online players as destinations in the Warp Stone menu.
+
 [简体中文](#简体中文) | [English](#english)
 
 ## 简体中文
 
-Waystones Player 会在传送石（Warp Stone）的选择界面中加入在线玩家目的地。所有传送请求均由服务端验证并执行，因此客户端和服务端都必须安装本模组。
+Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的非官方附属模组。它会在传送石（Warp Stone）的选择界面中加入在线玩家列表，让玩家无需管理员权限或目标玩家确认，直接传送到另一名在线玩家的位置。
 
-### 环境要求
+### 安装要求
+
+本模组必须同时安装在客户端和服务端。
 
 - Minecraft 1.21.1
 - NeoForge 21.1.229 或更高版本
-- Waystones 21.1.36 或更高版本
-- Balm 21.0.62 或更高版本
+- Waystones 21.1.36 或更高版本（开发版本使用并验证至 21.1.39）
+- [Balm](https://modrinth.com/mod/balm) 21.0.62 或更高版本
 - Java 21
 
-### 功能行为
+将 Waystones Player、Waystones 和 Balm 的 JAR 放入客户端与服务端的 `mods` 目录后启动游戏。
 
-- 玩家目的地仅在使用传送石（Warp Stone）时可用。
-- 服务端处理请求时，所选玩家必须仍然在线。
-- 传送至玩家不需要管理员权限，也无需目标玩家确认。
-- 玩家传送被有意设计为直接传送，不会产生 Waystones 的耐久消耗或冷却。
-- 启用饥饿消耗后，会先扣除饱和度，再扣除食物值；创造模式和旁观模式玩家不受影响。
+### 使用方法
 
-### 上游兼容性
+1. 手持 Waystones 的传送石并完成蓄力。
+2. 在传送目的地界面左侧选择一名在线玩家；窄屏界面可通过玩家按钮展开列表。
+3. 服务端重新验证传送石、目标与费用后执行传送。
 
-- 对于 Minecraft 1.21.1 版本，Waystones 和 Balm 的依赖范围均不设置版本上限。
-- Waystones 事件集成以可选兼容层的形式加载。如果未来版本移除了当前使用的 API，本附属模组会记录警告并禁用与 Waystones 事件相关的饥饿消耗集成，而不会导致本模组无法启动。
-- 对 Waystones 菜单内部实现的访问集中在带防护的兼容边界中。未来不受支持的菜单布局只会禁用玩家目的地，不会阻止游戏加载。
-- 客户端玩家按钮注入已通过反射隔离；如果 Waystones 界面被重命名或移除，本附属模组会跳过相关界面功能，且不会影响专用服务端启动。
+玩家传送不会要求 OP 权限或目标玩家确认，也不会套用 Waystones 的传送冷却、物品费用或其他目的地限制。每次成功传送会对打开界面时使用的传送石造成 1 点原生耐久伤害；创造模式、耐久附魔与物品损坏行为遵循 Minecraft 和 Waystones 的原生规则。失败请求不会扣除经验或耐久。
 
-### 服务端配置
+### 服务端经验配置
 
-服务端配置包含：
+首次启动后，默认配置文件位于服务端或客户端实例的 `config/waystonesplayer-server.toml`。如需按世界覆盖，可使用专用服务器的 `world/serverconfig/waystonesplayer-server.toml`，或单人世界的 `saves/<世界名>/serverconfig/waystonesplayer-server.toml`。建议关闭服务器后修改并重新启动。
 
-- `enableHungerCost`：启用传送石和玩家传送的饥饿值消耗。默认值：`true`。
-- `foodCostPer500Blocks`：每 500 格水平距离扣除的食物值。可配置范围：`1..20`；最终消耗会限制在 `1..18` 范围内。
+`playerTeleportExperienceMode` 提供三个互斥模式：
+
+| 模式 | 行为 |
+|---|---|
+| `NEVER` | 默认值。玩家传送不消耗经验。 |
+| `FOLLOW_WAYSTONES` | Waystones 启用传送费用时，按其当前经验点数/等级、距离、跨维度和上下限规则收费；关闭费用时不收费。 |
+| `ALWAYS` | 无论 Waystones 的费用总开关是否开启，始终计算其当前经验规则。 |
+
+本附属只提取 Waystones 的经验点数和经验等级要求。若服务器自定义规则没有产生经验费用，计算结果仍可能为零。
+
+### 兼容性与隐私
+
+- 对 Waystones 菜单和经验规则内部结构的访问集中在兼容层中；不兼容时会拒绝需要经验计算的玩家传送，而不会静默绕过费用。
+- 本模组不包含遥测、广告、分析服务或外部数据上传。玩家选择时仅将目标 UUID 发送给当前连接的 Minecraft 服务端。
+- 本模组不会打包或重新分发 Waystones、Balm 的代码、JAR、图标或其他资产。
+
+发布后的问题请通过对应 Modrinth/CurseForge 项目页面提供的反馈渠道提交，并附上 Minecraft、NeoForge、Waystones、Balm 与本模组版本以及相关日志。
 
 ### 构建
 
-macOS（显式选择已安装的 JDK 21）：
-
-```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew clean build --no-daemon --console=plain --warning-mode all
-```
-
-Linux（已启用 JDK 21）：
+使用 Java 21：
 
 ```bash
 ./gradlew clean build --no-daemon --console=plain --warning-mode all
 ```
 
-Windows（已启用 JDK 21）：
+macOS 可显式选择 JDK 21：
 
-```powershell
-.\gradlew.bat clean build --no-daemon --console=plain --warning-mode all
+```bash
+JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew clean build --no-daemon --console=plain --warning-mode all
 ```
 
 发行 JAR 位于 `build/libs/waystonesplayer-<version>.jar`。
+
+### 许可与声明
+
+Waystones Player 采用 All Rights Reserved，详见 `LICENSE`。Waystones、Balm 及其名称和资产归各自权利人所有。本项目不是 Twelve Iterations 的官方项目，也不代表其认可或背书。
 
 ---
 
 ## English
 
-Waystones Player adds online-player destinations to the Warp Stone selection screen. Teleport requests are validated and executed by the server, so the mod must be installed on both the client and server.
+Waystones Player is an unofficial add-on for [Waystones](https://modrinth.com/mod/waystones). It adds online players to the Warp Stone destination screen, allowing direct player-to-player teleportation without operator permissions or target confirmation.
 
 ### Requirements
 
+The mod must be installed on both the client and server.
+
 - Minecraft 1.21.1
 - NeoForge 21.1.229 or newer
-- Waystones 21.1.36 or newer
-- Balm 21.0.62 or newer
+- Waystones 21.1.36 or newer (development is built and verified through 21.1.39)
+- [Balm](https://modrinth.com/mod/balm) 21.0.62 or newer
 - Java 21
 
-### Behavior
+Place the Waystones Player, Waystones, and Balm JARs in the `mods` directory on both sides, then start the game.
 
-- Player destinations are available only while using a Warp Stone.
-- The selected player must still be online when the server handles the request.
-- Player teleportation does not require operator permissions or target-player approval.
-- Player teleportation intentionally behaves like a direct teleport and does not consume Waystones durability or cooldowns.
-- When hunger cost is enabled, saturation is consumed before food level. Creative and spectator players are exempt.
+### Usage
 
-### Upstream Compatibility
+1. Hold and finish charging a Waystones Warp Stone.
+2. Select an online player from the panel beside the destination list; on narrow screens, open it with the player button.
+3. The server revalidates the Warp Stone, target, and costs before teleporting.
 
-- Waystones and Balm dependency ranges have no upper version bound for Minecraft 1.21.1 releases.
-- Waystones event integration is loaded as an optional compatibility layer. If a future release removes the currently used API, the addon logs a warning and disables Waystone hunger integration instead of failing base-mod startup.
-- Waystones menu internals are accessed through a guarded compatibility boundary. Unsupported future menu layouts disable player destinations rather than preventing the game from loading.
-- Client player-button injection is already reflectively isolated, so a renamed or removed Waystones screen skips the addon UI without affecting dedicated-server startup.
+Player destinations require neither operator permissions nor target approval. They do not inherit Waystones cooldowns, item costs, or other destination restrictions. Every successful player teleport applies one point of native durability damage to the exact Warp Stone that opened the menu. Creative-mode exemptions, durability enchantments, and item breakage follow native Minecraft and Waystones behavior. Failed requests consume neither experience nor durability.
 
-### Server Configuration
+### Server Experience Configuration
 
-The server config contains:
+After the first launch, the default file is `config/waystonesplayer-server.toml` in the server or client instance. Per-world overrides can be placed at `world/serverconfig/waystonesplayer-server.toml` on a dedicated server or `saves/<world>/serverconfig/waystonesplayer-server.toml` in single-player. Stop and restart the server when changing it.
 
-- `enableHungerCost`: enables hunger costs for Warp Stone and player teleportation. Default: `true`.
-- `foodCostPer500Blocks`: food points charged per 500 horizontal blocks. Range: `1..20`; the final cost is clamped to `1..18`.
+`playerTeleportExperienceMode` has three mutually exclusive values:
+
+| Mode | Behavior |
+|---|---|
+| `NEVER` | Default. Player teleportation never consumes experience. |
+| `FOLLOW_WAYSTONES` | Applies Waystones' current experience-points/levels, distance, dimensional, minimum, and maximum rules only when Waystones costs are enabled. |
+| `ALWAYS` | Evaluates the same configured experience rules even when Waystones' global cost switch is disabled. |
+
+Only Waystones experience-point and experience-level requirements are selected. A server configuration that produces no experience requirement can therefore still resolve to zero cost.
+
+### Compatibility and Privacy
+
+- Access to Waystones menu and experience-rule internals is isolated behind a compatibility boundary. If experience rules cannot be evaluated safely, teleports that require them are rejected instead of becoming silently free.
+- The mod contains no telemetry, advertising, analytics, or external data uploads. Selecting a player sends only the target UUID to the Minecraft server you are already connected to.
+- The mod does not bundle or redistribute Waystones or Balm code, JARs, icons, or other assets.
+
+After publication, report issues through the feedback channel linked on the Modrinth or CurseForge project page. Include the Minecraft, NeoForge, Waystones, Balm, and Waystones Player versions and any relevant logs.
 
 ### Build
 
-macOS (selects the installed JDK 21 explicitly):
-
-```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew clean build --no-daemon --console=plain --warning-mode all
-```
-
-Linux (with JDK 21 active):
+With Java 21 active:
 
 ```bash
 ./gradlew clean build --no-daemon --console=plain --warning-mode all
 ```
 
-Windows (with JDK 21 active):
+On macOS, JDK 21 can be selected explicitly:
 
-```powershell
-.\gradlew.bat clean build --no-daemon --console=plain --warning-mode all
+```bash
+JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew clean build --no-daemon --console=plain --warning-mode all
 ```
 
-The release jar is written to `build/libs/waystonesplayer-<version>.jar`.
+The release JAR is written to `build/libs/waystonesplayer-<version>.jar`.
+
+### License and Disclaimer
+
+Waystones Player is All Rights Reserved; see `LICENSE`. Waystones, Balm, and their names and assets belong to their respective owners. This project is not official, endorsed, or sponsored by Twelve Iterations.

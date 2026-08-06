@@ -1,10 +1,12 @@
 {
   "gui.waystonesplayer.no_other_players": "No other online players",
   "gui.waystonesplayer.online_players": "Online players",
+  "config.waystonesplayer.player_teleport_experience_mode": "Player Teleport Experience Mode",
   "message.waystonesplayer.invalid_context": "This teleport request is no longer valid.",
   "message.waystonesplayer.target_offline": "That player is no longer online.",
   "message.waystonesplayer.target_self": "You are already here.",
-  "message.waystonesplayer.insufficient_hunger": "Not enough hunger to teleport!",
+  "message.waystonesplayer.insufficient_experience": "Not enough experience to teleport!",
+  "message.waystonesplayer.experience_cost_unavailable": "Waystones experience costs could not be evaluated, so the teleport was cancelled.",
   "message.waystonesplayer.teleport_failed": "Teleport failed, please try again later.",
   "message.waystonesplayer.teleport_cooling_down": "Teleport requests are too frequent, please try again later."
 }

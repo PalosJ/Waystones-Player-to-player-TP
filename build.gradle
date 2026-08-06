@@ -145,6 +145,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_authors            : mod_authors,
+            mod_credits            : mod_credits,
             mod_license            : mod_license,
             mod_version            : mod_version,
             mod_description        : mod_description,
@@ -182,6 +183,17 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+}
+
+tasks.named('jar', Jar).configure {
+    from('LICENSE') {
+        into 'META-INF'
+        rename { "LICENSE_${mod_id}" }
+    }
+    from('TEMPLATE_LICENSE.txt') {
+        into 'META-INF'
+        rename { "TEMPLATE_LICENSE_${mod_id}.txt" }
+    }
 }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
