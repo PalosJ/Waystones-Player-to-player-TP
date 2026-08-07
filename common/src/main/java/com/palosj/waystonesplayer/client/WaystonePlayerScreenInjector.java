@@ -3,6 +3,7 @@ package com.palosj.waystonesplayer.client;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.palosj.waystonesplayer.WaystonesPlayer;
 import com.palosj.waystonesplayer.client.widget.PlayerDestinationList;
@@ -10,21 +11,24 @@ import com.palosj.waystonesplayer.client.widget.PlayerListToggleButton;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
 import com.palosj.waystonesplayer.network.payload.RequestPlayerTeleportPayload;
 
+import net.blay09.mods.balm.api.Balm;
+import net.blay09.mods.balm.client.gui.screens.BalmScreenUtils;
 import net.blay09.mods.waystones.client.gui.screen.WaystoneSelectionScreenBase;
+import net.blay09.mods.waystones.client.gui.widget.AbstractWaystoneList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.neoforged.neoforge.client.event.ScreenEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class WaystonePlayerScreenInjector {
-    private static final int PANEL_WIDTH = 140;
+    private static final AtomicBoolean LAYOUT_COMPAT_FAILURE_LOGGED = new AtomicBoolean();
+    private static final int PANEL_WIDTH = 164;
     private static final int PANEL_GAP = 2;
     private static final int WAYSTONES_SIDE_BUTTON_LEFT_OFFSET = 8;
     private static final int HEADER_HEIGHT = 64;
@@ -38,9 +42,9 @@ public final class WaystonePlayerScreenInjector {
     private WaystonePlayerScreenInjector() {
     }
 
-    public static void onScreenInit(ScreenEvent.Init.Post event) {
+    public static void onScreenInit(Screen candidate) {
         try {
-            if (!(event.getScreen() instanceof WaystoneSelectionScreenBase screen)) {
+            if (!(candidate instanceof WaystoneSelectionScreenBase screen)) {
                 return;
             }
 
@@ -54,37 +58,30 @@ public final class WaystonePlayerScreenInjector {
                 return;
             }
 
-            int guiLeft = screen.getGuiLeft();
-            int guiTop = screen.getGuiTop();
-            int guiWidth = screen.getXSize();
-            int guiHeight = screen.getYSize();
+            AbstractWaystoneList<?> waystoneList = findWaystoneList(screen);
+            if (waystoneList == null) {
+                if (LAYOUT_COMPAT_FAILURE_LOGGED.compareAndSet(false, true)) {
+                    WaystonesPlayer.LOGGER.warn(
+                            "Waystones player panel was not added because the destination list was unavailable.");
+                }
+                return;
+            }
+
+            int guiLeft = waystoneList.getX();
+            int guiTop = waystoneList.getY() - HEADER_HEIGHT;
+            int guiWidth = waystoneList.getWidth();
+            int guiHeight = waystoneList.getHeight() + HEADER_HEIGHT + FOOTER_HEIGHT;
             int panelHeight = Math.min(Math.max(guiHeight, TARGET_PANEL_HEIGHT),
                     screen.height - guiTop - SCREEN_MARGIN);
             int panelX = guiLeft - PANEL_WIDTH - WAYSTONES_SIDE_BUTTON_LEFT_OFFSET - PANEL_GAP;
 
             if (panelX >= SCREEN_MARGIN) {
-                new PlayerPanel(onlinePlayers, panelX, guiTop, PANEL_WIDTH, panelHeight).attach(event);
+                new PlayerPanel(onlinePlayers, panelX, guiTop, PANEL_WIDTH, panelHeight).attach(screen);
             } else {
-                new NarrowPlayerOverlay(screen, onlinePlayers, guiLeft, guiTop, guiWidth, panelHeight).attach(event);
+                new NarrowPlayerOverlay(screen, onlinePlayers, guiLeft, guiTop, guiWidth, panelHeight).attach();
             }
         } catch (Exception e) {
             WaystonesPlayer.LOGGER.error("WaystonesPlayer GUI injection failed", e);
-        }
-    }
-
-    public static void onScreenClosing(ScreenEvent.Closing event) {
-        try {
-            if (!(event.getScreen() instanceof WaystoneSelectionScreenBase screen)
-                    || !WaystonesCompat.isWarpStoneMenu(screen.getMenu())) {
-                return;
-            }
-
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player != null) {
-                WaystonesCompat.stopUsingWarpStone(minecraft.player);
-            }
-        } catch (Exception e) {
-            WaystonesPlayer.LOGGER.error("WaystonesPlayer GUI closing cleanup failed", e);
         }
     }
 
@@ -98,6 +95,15 @@ public final class WaystonePlayerScreenInjector {
         onlinePlayers.removeIf(info -> info.getProfile().getId().equals(minecraft.player.getUUID()));
         onlinePlayers.sort(Comparator.comparing(info -> info.getProfile().getName(), String.CASE_INSENSITIVE_ORDER));
         return onlinePlayers;
+    }
+
+    private static AbstractWaystoneList<?> findWaystoneList(WaystoneSelectionScreenBase screen) {
+        for (GuiEventListener listener : screen.children()) {
+            if (listener instanceof AbstractWaystoneList<?> waystoneList) {
+                return waystoneList;
+            }
+        }
+        return null;
     }
 
     private static final class PlayerPanel {
@@ -117,15 +123,15 @@ public final class WaystonePlayerScreenInjector {
             this.height = height;
         }
 
-        private void attach(ScreenEvent.Init.Post event) {
+        private void attach(Screen screen) {
             labels = new PlayerPanelLabels(x, y, width, height, onlinePlayers.isEmpty());
-            event.addListener(labels);
+            BalmScreenUtils.addRenderableWidget(screen, labels);
 
             int listHeight = Math.max(PlayerDestinationList.ENTRY_HEIGHT, height - HEADER_HEIGHT - FOOTER_HEIGHT);
             playerList = new PlayerDestinationList(x, y + HEADER_HEIGHT, width, listHeight, onlinePlayers, targetPlayerId -> {
-                PacketDistributor.sendToServer(new RequestPlayerTeleportPayload(targetPlayerId));
+                Balm.networking().sendToServer(new RequestPlayerTeleportPayload(targetPlayerId));
             });
-            event.addListener(playerList);
+            BalmScreenUtils.addRenderableWidget(screen, playerList);
         }
 
         private void setVisible(boolean visible) {
@@ -186,25 +192,25 @@ public final class WaystonePlayerScreenInjector {
             this.panelHeight = panelHeight;
         }
 
-        private void attach(ScreenEvent.Init.Post event) {
-            for (GuiEventListener listener : event.getListenersList()) {
+        private void attach() {
+            for (GuiEventListener listener : screen.children()) {
                 if (listener instanceof AbstractWidget widget) {
                     originalWidgetStates.add(new WidgetState(widget, widget.visible, widget.active));
                 }
             }
 
             backdrop = new OverlayBackdrop(guiLeft, guiTop, guiWidth, panelHeight);
-            event.addListener(backdrop);
+            BalmScreenUtils.addRenderableWidget(screen, backdrop);
 
-            int overlayWidth = Math.max(PANEL_WIDTH, Math.min(160, guiWidth - 32));
+            int overlayWidth = PANEL_WIDTH;
             int panelX = guiLeft + (guiWidth - overlayWidth) / 2;
             panel = new PlayerPanel(onlinePlayers, panelX, guiTop, overlayWidth, panelHeight);
-            panel.attach(event);
+            panel.attach(screen);
             panel.setVisible(false);
 
             int toggleX = Math.min(guiLeft + guiWidth + 2, screen.width - TOGGLE_SIZE - 2);
             toggleButton = new PlayerListToggleButton(toggleX, guiTop, ignored -> toggle());
-            event.addListener(toggleButton);
+            BalmScreenUtils.addRenderableWidget(screen, toggleButton);
         }
 
         private void toggle() {

@@ -1,0 +1,107 @@
+plugins {
+    id 'net.neoforged.moddev'
+}
+
+base {
+    archivesName = "${mod_id}-neoforge-${minecraft_version}"
+}
+
+neoForge {
+    version = neo_version
+
+    parchment {
+        minecraftVersion = parchment_minecraft_version
+        mappingsVersion = parchment_mappings_version
+    }
+
+    runs {
+        configureEach {
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            logLevel = org.slf4j.event.Level.INFO
+        }
+
+        client {
+            client()
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+configurations {
+    commonJava {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    commonResources {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    commonJava project(path: ':common', configuration: 'commonJava')
+    commonResources project(path: ':common', configuration: 'commonResources')
+
+    compileOnly "net.blay09.mods:balm-neoforge:${balm_version}"
+    localRuntime "net.blay09.mods:balm-neoforge:${balm_version}"
+
+    compileOnly "net.blay09.mods:waystones-neoforge:${waystones_version}"
+    localRuntime "net.blay09.mods:waystones-neoforge:${waystones_version}"
+}
+
+tasks.named('compileJava', JavaCompile).configure {
+    dependsOn configurations.commonJava
+    source configurations.commonJava
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    dependsOn configurations.commonResources
+    from configurations.commonResources
+}
+
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_authors            : mod_authors,
+            mod_credits            : mod_credits,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_description        : mod_description,
+            waystones_version_range: waystones_version_range,
+            balm_version_range     : balm_version_range,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.named('jar', Jar).configure {
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+        rename { "LICENSE_${mod_id}" }
+    }
+    from(rootProject.file('TEMPLATE_LICENSE.txt')) {
+        into 'META-INF'
+        rename { "TEMPLATE_LICENSE_${mod_id}.txt" }
+    }
+}

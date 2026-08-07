@@ -14,7 +14,9 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 
 public final class PlayerDestinationList extends ContainerObjectSelectionList<PlayerDestinationList.PlayerEntry> {
     public static final int ENTRY_HEIGHT = 22;
-    private static final int ROW_HORIZONTAL_INSET = 8;
+    private static final int ROW_HORIZONTAL_INSET = 32;
+    private static final int SCROLLBAR_WIDTH = 6;
+    private static final int SCROLLBAR_BUTTON_GAP = 12;
     private final int rowWidth;
 
     public PlayerDestinationList(int x, int y, int width, int height, List<PlayerInfo> onlinePlayers,
@@ -35,7 +37,7 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
 
     @Override
     protected int getScrollbarPosition() {
-        return getRowLeft() - 6;
+        return getRowLeft() - SCROLLBAR_WIDTH - SCROLLBAR_BUTTON_GAP;
     }
 
     @Override

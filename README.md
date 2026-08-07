@@ -1,139 +1,121 @@
 # Waystones Player
 
-An unofficial add-on for [Waystones](https://modrinth.com/mod/waystones) that adds online players as destinations in the Warp Stone menu.
+把传送石变成一条直达队友的路。
 
-[简体中文](#简体中文) | [English](#english)
+Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的非官方附属模组。完成传送石蓄力后，界面会显示当前在线的其他玩家；点一下头像，就能直接前往对方所在位置，不需要 OP 权限，也不需要对方确认。
+
+[简体中文](#简体中文) · [English](#english)
 
 ## 简体中文
 
-Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的非官方附属模组。它会在传送石（Warp Stone）的选择界面中加入在线玩家列表，让玩家无需管理员权限或目标玩家确认，直接传送到另一名在线玩家的位置。
+### 你会得到什么
 
-### 安装要求
+- 传送石界面中的在线玩家目的地，宽屏直接显示，窄屏通过头像按钮展开。
+- 服务端权威校验：客户端只提交目标 UUID，物品、目标、费用与传送结果都由服务端重新确认。
+- 明确的生存成本：每次成功传送消耗传送石 1 点耐久；失败不会扣经验、耐久，也不会强制关闭界面。
+- 三种经验模式，可选择免费、跟随 Waystones，或始终使用 Waystones 当前的经验公式。
+
+### 安装与兼容
 
 本模组必须同时安装在客户端和服务端。
 
-- Minecraft 1.21.1
-- NeoForge 21.1.229 或更高版本
-- Waystones 21.1.36 或更高版本（开发版本使用并验证至 21.1.39）
-- [Balm](https://modrinth.com/mod/balm) 21.0.62 或更高版本
-- Java 21
+| 组件 | 当前要求 |
+|---|---|
+| Minecraft | 1.21.1 |
+| 加载器 | NeoForge 21.1.229 或更高版本 |
+| Waystones | 21.1.36 或更高版本；开发与 CI 验证至 21.1.40 |
+| Balm | 21.0.62 或更高版本 |
+| Java | 21 |
 
-将 Waystones Player、Waystones 和 Balm 的 JAR 放入客户端与服务端的 `mods` 目录后启动游戏。
+把 Waystones Player、Waystones 和 Balm 的 JAR 一起放入两端的 `mods` 目录即可。当前正式支持 NeoForge 1.21.1；Fabric 版本在长期计划中，但尚未提供。Forge 版本不在计划内。
 
-### 使用方法
+### 玩法与费用
 
 1. 手持 Waystones 的传送石并完成蓄力。
-2. 在传送目的地界面左侧选择一名在线玩家；窄屏界面可通过玩家按钮展开列表。
-3. 服务端重新验证传送石、目标与费用后执行传送。
+2. 在目的地界面选择一名在线玩家。
+3. 服务端验证同一个传送石仍在主手或副手、目标仍在线且费用足够，然后执行传送。
 
-玩家传送不会要求 OP 权限或目标玩家确认，也不会套用 Waystones 的传送冷却、物品费用或其他目的地限制。每次成功传送会对打开界面时使用的传送石造成 1 点原生耐久伤害；创造模式、耐久附魔与物品损坏行为遵循 Minecraft 和 Waystones 的原生规则。失败请求不会扣除经验或耐久。
+玩家目的地不会自动继承 Waystones 的冷却、物品费用或其他目的地限制。成功后只结算一次经验费用和一次原生耐久伤害；创造模式免损耗、耐久附魔和最终损坏行为均沿用 Minecraft/Waystones 规则。
 
-### 服务端经验配置
+### 经验配置
 
-首次启动后，默认配置文件位于服务端或客户端实例的 `config/waystonesplayer-server.toml`。如需按世界覆盖，可使用专用服务器的 `world/serverconfig/waystonesplayer-server.toml`，或单人世界的 `saves/<世界名>/serverconfig/waystonesplayer-server.toml`。建议关闭服务器后修改并重新启动。
-
-`playerTeleportExperienceMode` 提供三个互斥模式：
+配置键为 `playerTeleportExperienceMode`，默认值是 `NEVER`。文件名保持为 `waystonesplayer-server.toml`：全局默认位于实例的 `config` 目录，专用服务器可在 `world/serverconfig`、单人世界可在 `saves/<世界名>/serverconfig` 使用世界级覆盖。建议关闭服务器后修改并重新启动。
 
 | 模式 | 行为 |
 |---|---|
-| `NEVER` | 默认值。玩家传送不消耗经验。 |
-| `FOLLOW_WAYSTONES` | Waystones 启用传送费用时，按其当前经验点数/等级、距离、跨维度和上下限规则收费；关闭费用时不收费。 |
-| `ALWAYS` | 无论 Waystones 的费用总开关是否开启，始终计算其当前经验规则。 |
+| `NEVER` | 默认。玩家间传送不消耗经验。 |
+| `FOLLOW_WAYSTONES` | 仅当 Waystones 开启费用时，使用其经验点数/等级、距离、跨维度和上下限规则。 |
+| `ALWAYS` | 忽略 Waystones 的费用总开关，但仍使用其当前经验规则。 |
 
-本附属只提取 Waystones 的经验点数和经验等级要求。若服务器自定义规则没有产生经验费用，计算结果仍可能为零。
+本附属只提取经验点数和经验等级要求，不套用物品、冷却或其他费用。服务器规则没有产生经验要求时，结果仍可能为零；需要计算经验但兼容层无法安全解析时，传送会被拒绝，不会悄悄变成免费。
 
-### 兼容性与隐私
+### 隐私与声明
 
-- 对 Waystones 菜单和经验规则内部结构的访问集中在兼容层中；不兼容时会拒绝需要经验计算的玩家传送，而不会静默绕过费用。
-- 本模组不包含遥测、广告、分析服务或外部数据上传。玩家选择时仅将目标 UUID 发送给当前连接的 Minecraft 服务端。
-- 本模组不会打包或重新分发 Waystones、Balm 的代码、JAR、图标或其他资产。
+Waystones Player 没有遥测、广告、分析服务或外部数据上传。选择玩家时，只会向当前连接的 Minecraft 服务端发送目标 UUID。
 
-发布后的问题请通过对应 Modrinth/CurseForge 项目页面提供的反馈渠道提交，并附上 Minecraft、NeoForge、Waystones、Balm 与本模组版本以及相关日志。
+本项目不打包或重新分发 Waystones/Balm 的代码、JAR、图标或其他资产。Waystones、Balm 及其名称与资产归各自权利人所有；本项目并非 Twelve Iterations 官方项目，也不代表其认可或背书。
 
-### 构建
+### 开发
 
-使用 Java 21：
+仓库采用 `common + neoforge` 结构。`common` 是共享源码与测试，不是可安装模组；发布 JAR 由 `neoforge` 生成：
 
 ```bash
-./gradlew clean build --no-daemon --console=plain --warning-mode all
+JAVA_HOME=/path/to/jdk-21 ./gradlew clean test build --no-build-cache
 ```
 
-macOS 可显式选择 JDK 21：
+产物位于 `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-<版本>.jar`。架构与升级边界分别见 [ARCHITECTURE.md](docs/ARCHITECTURE.md) 和 [COMPATIBILITY.md](docs/COMPATIBILITY.md)。
 
-```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew clean build --no-daemon --console=plain --warning-mode all
-```
-
-发行 JAR 位于 `build/libs/waystonesplayer-<version>.jar`。
-
-### 许可与声明
-
-Waystones Player 采用 All Rights Reserved，详见 `LICENSE`。Waystones、Balm 及其名称和资产归各自权利人所有。本项目不是 Twelve Iterations 的官方项目，也不代表其认可或背书。
+许可方式为 All Rights Reserved，详见 [LICENSE](LICENSE)。发布后的问题请通过对应 Modrinth/CurseForge 项目页面提供的反馈渠道提交，并附上相关版本与日志。
 
 ---
 
 ## English
 
-Waystones Player is an unofficial add-on for [Waystones](https://modrinth.com/mod/waystones). It adds online players to the Warp Stone destination screen, allowing direct player-to-player teleportation without operator permissions or target confirmation.
+Turn a Warp Stone into a direct route to your teammates.
 
-### Requirements
+Waystones Player is an unofficial add-on for [Waystones](https://modrinth.com/mod/waystones). Once a Warp Stone finishes charging, its destination screen gains a list of other online players. Select a player to teleport directly to them—no operator permission and no target confirmation required.
 
-The mod must be installed on both the client and server.
+### Highlights
 
-- Minecraft 1.21.1
-- NeoForge 21.1.229 or newer
-- Waystones 21.1.36 or newer (development is built and verified through 21.1.39)
-- [Balm](https://modrinth.com/mod/balm) 21.0.62 or newer
-- Java 21
+- Online-player destinations integrated into the Warp Stone screen, with a compact overlay on narrow displays.
+- Server-authoritative validation: the client sends only a target UUID; the server rechecks the item, target, cost, and teleport result.
+- A clear survival cost: each successful teleport damages the Warp Stone by one durability point. Failures consume nothing and keep the menu open.
+- Three experience modes: free, follow Waystones, or always evaluate Waystones' current experience formula.
 
-Place the Waystones Player, Waystones, and Balm JARs in the `mods` directory on both sides, then start the game.
+### Installation and Compatibility
 
-### Usage
+Install the mod on both the client and server.
 
-1. Hold and finish charging a Waystones Warp Stone.
-2. Select an online player from the panel beside the destination list; on narrow screens, open it with the player button.
-3. The server revalidates the Warp Stone, target, and costs before teleporting.
+| Component | Current requirement |
+|---|---|
+| Minecraft | 1.21.1 |
+| Loader | NeoForge 21.1.229 or newer |
+| Waystones | 21.1.36 or newer; development and CI verified through 21.1.40 |
+| Balm | 21.0.62 or newer |
+| Java | 21 |
 
-Player destinations require neither operator permissions nor target approval. They do not inherit Waystones cooldowns, item costs, or other destination restrictions. Every successful player teleport applies one point of native durability damage to the exact Warp Stone that opened the menu. Creative-mode exemptions, durability enchantments, and item breakage follow native Minecraft and Waystones behavior. Failed requests consume neither experience nor durability.
+Place Waystones Player, Waystones, and Balm in both `mods` directories. NeoForge 1.21.1 is the current supported platform. Fabric support is planned but not available yet; Forge is not planned.
 
-### Server Experience Configuration
+### Costs and Configuration
 
-After the first launch, the default file is `config/waystonesplayer-server.toml` in the server or client instance. Per-world overrides can be placed at `world/serverconfig/waystonesplayer-server.toml` on a dedicated server or `saves/<world>/serverconfig/waystonesplayer-server.toml` in single-player. Stop and restart the server when changing it.
+Every successful player teleport charges experience once and applies one point of native durability damage to the exact Warp Stone that opened the menu. Creative-mode exemptions, durability enchantments, and breakage use native Minecraft/Waystones behavior. Waystones cooldowns, item costs, and unrelated destination requirements are not inherited.
 
-`playerTeleportExperienceMode` has three mutually exclusive values:
+The SERVER config remains `waystonesplayer-server.toml`, with the key `playerTeleportExperienceMode`:
 
 | Mode | Behavior |
 |---|---|
 | `NEVER` | Default. Player teleportation never consumes experience. |
-| `FOLLOW_WAYSTONES` | Applies Waystones' current experience-points/levels, distance, dimensional, minimum, and maximum rules only when Waystones costs are enabled. |
-| `ALWAYS` | Evaluates the same configured experience rules even when Waystones' global cost switch is disabled. |
+| `FOLLOW_WAYSTONES` | Uses Waystones' experience rules only while its global costs are enabled. |
+| `ALWAYS` | Evaluates the same experience rules regardless of the global cost switch. |
 
-Only Waystones experience-point and experience-level requirements are selected. A server configuration that produces no experience requirement can therefore still resolve to zero cost.
+Only experience-point and experience-level requirements are selected. A rule set with no experience requirement can still resolve to zero cost. If a required compatibility calculation cannot be completed safely, the teleport is rejected instead of silently becoming free.
 
-### Compatibility and Privacy
+### Privacy, Development, and License
 
-- Access to Waystones menu and experience-rule internals is isolated behind a compatibility boundary. If experience rules cannot be evaluated safely, teleports that require them are rejected instead of becoming silently free.
-- The mod contains no telemetry, advertising, analytics, or external data uploads. Selecting a player sends only the target UUID to the Minecraft server you are already connected to.
-- The mod does not bundle or redistribute Waystones or Balm code, JARs, icons, or other assets.
+The mod contains no telemetry, advertising, analytics, or external uploads. Selecting a player sends only the target UUID to the Minecraft server you are already connected to. It does not bundle or redistribute Waystones or Balm code, JARs, icons, or assets.
 
-After publication, report issues through the feedback channel linked on the Modrinth or CurseForge project page. Include the Minecraft, NeoForge, Waystones, Balm, and Waystones Player versions and any relevant logs.
+The repository uses `common + neoforge`; `common` is shared source and tests, not an installable mod. Build with JDK 21 using `./gradlew clean test build --no-build-cache`. The release artifact is `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-<version>.jar`.
 
-### Build
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for module and transaction design and [COMPATIBILITY.md](docs/COMPATIBILITY.md) for the support matrix and upgrade checklist.
 
-With Java 21 active:
-
-```bash
-./gradlew clean build --no-daemon --console=plain --warning-mode all
-```
-
-On macOS, JDK 21 can be selected explicitly:
-
-```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 21) ./gradlew clean build --no-daemon --console=plain --warning-mode all
-```
-
-The release JAR is written to `build/libs/waystonesplayer-<version>.jar`.
-
-### License and Disclaimer
-
-Waystones Player is All Rights Reserved; see `LICENSE`. Waystones, Balm, and their names and assets belong to their respective owners. This project is not official, endorsed, or sponsored by Twelve Iterations.
+Waystones Player is All Rights Reserved; see [LICENSE](LICENSE). Waystones, Balm, and their names and assets belong to their respective owners. This project is not official, endorsed, or sponsored by Twelve Iterations.

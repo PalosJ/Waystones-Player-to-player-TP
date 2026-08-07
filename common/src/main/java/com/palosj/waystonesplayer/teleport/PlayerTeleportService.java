@@ -4,7 +4,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import com.palosj.waystonesplayer.Config;
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.WaystonesPlayer;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
@@ -25,7 +24,10 @@ public final class PlayerTeleportService {
     private PlayerTeleportService() {
     }
 
-    public static void handleRequest(ServerPlayer sender, UUID targetPlayerId) {
+    public static void handleRequest(
+            ServerPlayer sender,
+            UUID targetPlayerId,
+            PlayerTeleportExperienceMode experienceMode) {
         int currentTick = sender.server.getTickCount();
         RequestRateLimiter.Result rateLimitResult = REQUEST_LIMITER.acquire(sender.getUUID(), currentTick);
         if (rateLimitResult == RequestRateLimiter.Result.REJECTED_NOTIFY) {
@@ -55,7 +57,6 @@ public final class PlayerTeleportService {
             return;
         }
 
-        PlayerTeleportExperienceMode experienceMode = Config.PLAYER_TELEPORT_EXPERIENCE_MODE.get();
         TeleportCost experienceCost = TeleportCost.NONE;
         if (experienceMode != PlayerTeleportExperienceMode.NEVER) {
             Optional<TeleportCost> resolvedCost = WaystonesExperienceCompat.resolveExperienceCost(
