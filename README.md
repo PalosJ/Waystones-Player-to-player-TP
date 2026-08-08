@@ -53,7 +53,9 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 
 Waystones Player 没有遥测、广告、分析服务或外部数据上传。选择玩家时，只会向当前连接的 Minecraft 服务端发送目标 UUID。
 
-本项目不打包或重新分发 Waystones/Balm 的代码、JAR、图标或其他资产。Waystones、Balm 及其名称与资产归各自权利人所有；本项目并非 Twelve Iterations 官方项目，也不代表其认可或背书。
+本项目不打包或重新分发 Waystones/Balm 的代码或 JAR。项目图标使用了 Joe Williamson（JoeCreates）以 CC BY-SA 3.0 发布的 Warp Stone 美术素材，以及 Minecraft 默认玩家皮肤中的头像元素；来源、修改说明和适用条款见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。Waystones、Balm 及其名称与资产归各自权利人所有；本项目并非 Twelve Iterations 官方项目，也不代表其认可或背书。
+
+本项目并非 Minecraft 官方产品，未经 Mojang 或 Microsoft 批准，也不与其存在关联。
 
 ### 开发
 
@@ -65,7 +67,7 @@ JAVA_HOME=/path/to/jdk-21 ./gradlew clean test build --no-build-cache
 
 产物位于 `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-<版本>.jar`。架构与升级边界分别见 [ARCHITECTURE.md](docs/ARCHITECTURE.md) 和 [COMPATIBILITY.md](docs/COMPATIBILITY.md)。
 
-许可方式为 All Rights Reserved，详见 [LICENSE](LICENSE)。发布后的问题请通过对应 Modrinth/CurseForge 项目页面提供的反馈渠道提交，并附上相关版本与日志。
+原创源码与内容采用 All Rights Reserved；项目图标中另行标注的素材按各自条款使用，详见 [LICENSE](LICENSE) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。发布后的问题请通过对应 Modrinth/CurseForge 项目页面提供的反馈渠道提交，并附上相关版本与日志。
 
 ---
 
@@ -112,10 +114,12 @@ Only experience-point and experience-level requirements are selected. A rule set
 
 ### Privacy, Development, and License
 
-The mod contains no telemetry, advertising, analytics, or external uploads. Selecting a player sends only the target UUID to the Minecraft server you are already connected to. It does not bundle or redistribute Waystones or Balm code, JARs, icons, or assets.
+The mod contains no telemetry, advertising, analytics, or external uploads. Selecting a player sends only the target UUID to the Minecraft server you are already connected to. It does not bundle or redistribute Waystones or Balm code or JARs. The project icon incorporates Warp Stone artwork released by Joe Williamson (JoeCreates) under CC BY-SA 3.0 and player-face elements from Minecraft's default skins. Sources, modifications, and applicable terms are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 The repository uses `common + neoforge`; `common` is shared source and tests, not an installable mod. Build with JDK 21 using `./gradlew clean test build --no-build-cache`. The release artifact is `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-<version>.jar`.
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for module and transaction design and [COMPATIBILITY.md](docs/COMPATIBILITY.md) for the support matrix and upgrade checklist.
 
-Waystones Player is All Rights Reserved; see [LICENSE](LICENSE). Waystones, Balm, and their names and assets belong to their respective owners. This project is not official, endorsed, or sponsored by Twelve Iterations.
+Waystones Player is All Rights Reserved except for material identified in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md); see [LICENSE](LICENSE). Waystones, Balm, and their names and assets belong to their respective owners. This project is not official, endorsed, or sponsored by Twelve Iterations.
+
+NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.

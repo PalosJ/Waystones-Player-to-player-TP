@@ -104,4 +104,8 @@ tasks.named('jar', Jar).configure {
         into 'META-INF'
         rename { "TEMPLATE_LICENSE_${mod_id}.txt" }
     }
+    from(rootProject.file('THIRD_PARTY_NOTICES.md')) {
+        into 'META-INF'
+        rename { "THIRD_PARTY_NOTICES_${mod_id}.md" }
+    }
 }
