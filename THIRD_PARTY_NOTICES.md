@@ -1,7 +1,7 @@
 # Third-Party Notices
 
 These notices apply to the project icon at
-`neoforge/src/main/resources/waystonesplayer.png`. They do not change the
+`common/src/main/resources/waystonesplayer.png`. They do not change the
 All Rights Reserved license of Waystones Player's original source code.
 
 ## Warp Stone artwork

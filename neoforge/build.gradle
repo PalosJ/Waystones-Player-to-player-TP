@@ -75,6 +75,7 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
             loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
@@ -108,4 +109,49 @@ tasks.named('jar', Jar).configure {
         into 'META-INF'
         rename { "THIRD_PARTY_NOTICES_${mod_id}.md" }
     }
+}
+
+def releaseJar = tasks.named('jar', Jar)
+def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
+    group = 'verification'
+    description = 'Checks that the installable NeoForge JAR contains required metadata, notices, and icon resources.'
+    dependsOn releaseJar
+    inputs.file(releaseJar.flatMap { it.archiveFile })
+
+    doLast {
+        File archive = releaseJar.get().archiveFile.get().asFile
+        def requiredEntries = [
+                'META-INF/neoforge.mods.toml',
+                'META-INF/LICENSE_waystonesplayer',
+                'META-INF/TEMPLATE_LICENSE_waystonesplayer.txt',
+                'META-INF/THIRD_PARTY_NOTICES_waystonesplayer.md',
+                'waystonesplayer.png',
+                'com/palosj/waystonesplayer/neoforge/NeoForgeWaystonesPlayer.class',
+        ]
+
+        new java.util.zip.ZipFile(archive).withCloseable { zip ->
+            def entries = java.util.Collections.list(zip.entries())
+            def entryNames = entries.collect { it.name } as Set
+            def missingEntries = requiredEntries.findAll { !entryNames.contains(it) }
+            if (!missingEntries.isEmpty()) {
+                throw new GradleException("Release JAR is missing required entries: ${missingEntries.join(', ')}")
+            }
+
+            if (zip.getEntry('waystonesplayer.png').size <= 0) {
+                throw new GradleException('Release JAR icon is empty.')
+            }
+            if (entries.any { it.name.startsWith('net/blay09/') }) {
+                throw new GradleException('Release JAR must not bundle Waystones or Balm classes.')
+            }
+
+            String metadata = zip.getInputStream(zip.getEntry('META-INF/neoforge.mods.toml')).getText('UTF-8')
+            if (metadata.contains('${')) {
+                throw new GradleException('Release JAR metadata contains unexpanded template placeholders.')
+            }
+        }
+    }
+}
+
+tasks.named('check').configure {
+    dependsOn verifyReleaseJarContents
 }

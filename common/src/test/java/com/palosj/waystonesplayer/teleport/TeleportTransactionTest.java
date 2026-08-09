@@ -96,8 +96,35 @@ class TeleportTransactionTest {
                 TeleportTransaction.execute(TeleportCost.NONE, () -> true));
     }
 
+    @Test
+    void exemptedCostNeverChecksConsumesOrRollsBackTheDelegate() {
+        TrackingCost delegate = new TrackingCost(false);
+        TeleportCost cost = TeleportCost.exemptWhen(true, delegate);
+
+        TeleportTransaction.Result result = TeleportTransaction.execute(cost, () -> false);
+
+        assertEquals(TeleportTransaction.Result.FAILED, result);
+        assertEquals(0, delegate.affordabilityChecks);
+        assertEquals(0, delegate.consumed);
+        assertEquals(0, delegate.rolledBack);
+    }
+
+    @Test
+    void nonExemptCostDelegatesNormally() {
+        TrackingCost delegate = new TrackingCost(true);
+        TeleportCost cost = TeleportCost.exemptWhen(false, delegate);
+
+        TeleportTransaction.Result result = TeleportTransaction.execute(cost, () -> true);
+
+        assertEquals(TeleportTransaction.Result.SUCCESS, result);
+        assertEquals(1, delegate.affordabilityChecks);
+        assertEquals(1, delegate.consumed);
+        assertEquals(0, delegate.rolledBack);
+    }
+
     private static final class TrackingCost implements TeleportCost {
         private final boolean affordable;
+        private int affordabilityChecks;
         private int consumed;
         private int rolledBack;
 
@@ -107,6 +134,7 @@ class TeleportTransactionTest {
 
         @Override
         public boolean canAfford() {
+            affordabilityChecks++;
             return affordable;
         }
 

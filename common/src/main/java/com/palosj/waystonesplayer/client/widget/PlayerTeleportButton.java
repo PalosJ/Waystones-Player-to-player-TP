@@ -47,12 +47,21 @@ public class PlayerTeleportButton extends Button {
             }
         }
 
-        int textX = hasFace
-                ? this.getX() + FACE_PADDING + FACE_SIZE + 4
-                : this.getX() + (this.width - font.width(this.getMessage())) / 2;
-        int textY = this.getY() + (this.height - 8) / 2;
-        int maxWidth = Math.max(8, this.width - (textX - this.getX()) - 4);
+        int textX;
+        int maxWidth;
+        if (hasFace) {
+            textX = this.getX() + FACE_PADDING + FACE_SIZE + 4;
+            maxWidth = Math.max(8, this.width - (textX - this.getX()) - 4);
+        } else {
+            maxWidth = Math.max(8, this.width - 8);
+            textX = 0;
+        }
+
         FormattedText name = font.substrByWidth(this.getMessage(), maxWidth);
+        if (!hasFace) {
+            textX = PlayerButtonTextLayout.centeredTextX(this.getX(), this.width, font.width(name));
+        }
+        int textY = this.getY() + (this.height - font.lineHeight) / 2 + 1;
         guiGraphics.drawString(font, name.getString(), textX, textY, color, false);
     }
 }

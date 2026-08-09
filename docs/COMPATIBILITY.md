@@ -1,28 +1,37 @@
 # 兼容性与升级指南
 
-本文记录当前支持范围、对 Waystones 内部结构的依赖以及升级检查步骤。它不是未来版本承诺；平台页面和 README 中声明的版本仍以实际验证结果为准。
+本文记录各分支的支持范围、Waystones/Balm 依赖边界和升级步骤。它不是对所有未来补丁的自动承诺；README、发布页和实际验证记录优先。
 
-## 当前支持矩阵
+## Canonical 主线
 
-| 项目 | 最低支持 | 当前开发/CI | 状态 |
+`main` 固定代表 Minecraft 1.21.1 / NeoForge，不因试验分支改变默认发布方向：
+
+| 项目 | 声明最低 | 当前开发/CI | 声明范围 |
 |---|---:|---:|---|
-| Minecraft | 1.21.1 | 1.21.1 | 支持 |
-| Java | 21 | 21 | 支持 |
-| NeoForge | 21.1.229 | 21.1.229 | 支持 |
-| Waystones | 21.1.36 | 21.1.40 | 双版本构建验证 |
-| Balm | 21.0.62 | 21.0.62 | 支持 |
-| Fabric | — | — | 计划中，尚无产物 |
-| Forge | — | — | 不在计划内 |
+| Minecraft | 1.21.1 | 1.21.1 | `[1.21.1]` |
+| Java | 21 | 21 | 21 |
+| NeoForge | 21.1.229 | 21.1.248 | `[21.1.229,21.2)` |
+| Waystones | 21.1.36 | 21.1.40 | `[21.1.36,21.2)` |
+| Balm | 21.0.62 | 21.0.64 | `[21.0.62,21.1)` |
 
-NeoForge 元数据继续声明 Waystones `[21.1.36,)` 与 Balm `[21.0.62,)`。开放上界代表允许用户尝试新补丁版本，不代表未经验证的新内部结构一定兼容；遇到解析失败时遵循下述关闭策略。
+CI 使用“最低整套”和“当前整套”矩阵，而不是只替换 Waystones：最低为 NeoForge 21.1.229 + Waystones 21.1.36 + Balm 21.0.62，当前为 NeoForge 21.1.248 + Waystones 21.1.40 + Balm 21.0.64。范围上界阻止加载器把跨 Minecraft 系列的内部结构当成已声明兼容。
 
-## 上游依赖点
+## 移植验证分支
+
+| 分支 | Minecraft / Java | 加载器 | Waystones / Balm | 用途 |
+|---|---|---|---|---|
+| `fabric/1.21.1` | 1.21.1 / 21 | Fabric Loader 0.17.3+、Fabric API 0.116.x | Waystones 21.1.36–21.1.x / Balm 21.0.62–21.0.x | 同版本多加载器实证；同时回归 NeoForge 模块 |
+| `neoforge/1.21.11` | 1.21.11 / 21 | NeoForge 21.11.x | Waystones 21.11.x / Balm 21.11.x | Minecraft 与上游新 API 移植实证 |
+
+这两个分支是从 canonical 行为移植出的扩展，不会反向改变 `main` 的 Minecraft/加载器含义。各分支的 README、Gradle 属性和 CI 必须记录其实际最低/当前验证组合；不能把“能解析依赖”写成运行支持。
+
+## 1.21.1 上游依赖点
 
 ### 公开或相对稳定接口
 
-- Balm 模块初始化、事件、网络注册与屏幕工具。
+- Balm 模块初始化、事件、网络注册和屏幕工具。
 - Waystones `WaystonesAPI`、`WaystoneTeleportContext`、类型与 requirement API。
-- Minecraft 菜单注册表、玩家/物品/传送与原生耐久 API。
+- Minecraft 菜单注册表、玩家/物品/传送和原生耐久 API。
 
 ### 内部或需重点复核的结构
 
@@ -30,42 +39,72 @@ NeoForge 元数据继续声明 Waystones `[21.1.36,)` 与 Balm `[21.0.62,)`。�
 |---|---|---|
 | 菜单 ID `waystones:warp_stone_selection` | 限定合法请求上下文 | 请求失效，不扣费 |
 | 菜单方法 `getWarpItem()` | 找到打开界面的原始传送石对象 | 玩家目的地禁用，只告警一次 |
-| `WaystoneImpl` 瞬态实例构造 | 表示目标玩家的位置与维度 | 需要经验时拒绝传送 |
+| `WaystoneImpl` 瞬态实例构造 | 表示目标玩家位置与维度 | 需要经验时拒绝传送 |
 | `WaystonesConfig.getActive().teleports` | 读取总开关与 `warpRequirements` | 需要经验时拒绝传送 |
-| `RequirementModifierParser` 与 `WarpRequirementsContextImpl` | 应用当前经验公式 | 需要经验时拒绝传送，只告警一次 |
-| `AbstractWaystoneList` | 推导 Waystones GUI 的位置和尺寸 | 不注入玩家面板 |
+| `RequirementModifierParser` / `WarpRequirementsContextImpl` | 应用当前经验公式 | 需要经验时拒绝传送，只告警一次 |
+| `AbstractWaystoneList` | 推导 1.21.1 GUI 的位置和尺寸 | 不注入玩家面板 |
 | 选择界面类名包含 `WaystoneSelectionScreen` | 延迟加载客户端注入器 | 不注入玩家面板 |
 
-非经验 requirement（物品、冷却、自定义非经验费用等）会被主动忽略。`ALWAYS` 只能强制启用 Waystones 命名空间中的经验函数，不能擅自启用未知第三方函数。
+非经验 requirement（物品、冷却、自定义非经验费用等）会被主动忽略。`ALWAYS` 只能强制启用 Waystones 命名空间中的经验函数，不能擅自启用未知第三方函数。创造模式的 affordability、consume、rollback 三条路径由统一费用包装器豁免。
 
-## Waystones 更新检查清单
+## NeoForge 1.21.1 升级步骤
 
-升级 `waystones_version` 前后依次确认：
+升级任何一个依赖时按成套依赖复核：
 
-1. 查看 Waystones 与 Balm 的更新日志、源码模块和依赖版本变化。
-2. 核对上述菜单 ID、`getWarpItem()`、瞬态 `WaystoneImpl` 构造与 requirement 解析类型。
-3. 核对 Waystones 选择界面仍包含 `AbstractWaystoneList`，并重新测量面板定位与 12 像素间距。
-4. 运行默认版本的 `clean test build`，再用 `-Pwaystones_version=21.1.36+1.21.1` 验证最低版本。
-5. 在专用服务器测试主手/副手、同维度/跨维度、经验不足、目标离线、菜单失效、物品移走、重复包和传送异常。
-6. 在客户端测试宽屏、窄屏、空列表和滚动列表；确认失败时界面保持打开。
-7. 检查最终 JAR 不包含 Waystones/Balm 资产或依赖 JAR，并更新 README 的“验证至”版本。
+1. 查看 NeoForge、Waystones 与 Balm 的更新日志、源码分支和依赖约束。
+2. 区分当前开发版本与声明最低版本；除非完成最低版本回归，不修改元数据下限。
+3. 核对菜单 ID、`getWarpItem()`、`WaystoneImpl` 构造、requirement 解析类型和选择界面列表控件。
+4. 运行当前整套：
+   ```bash
+   ./gradlew clean test build \
+     -Pneo_version=21.1.248 \
+     -Pwaystones_version=21.1.40+1.21.1 \
+     -Pbalm_version=21.0.64+1.21.1 \
+     --no-build-cache
+   ```
+5. 运行最低整套：
+   ```bash
+   ./gradlew clean test build \
+     -Pneo_version=21.1.229 \
+     -Pwaystones_version=21.1.36+1.21.1 \
+     -Pbalm_version=21.0.62+1.21.1 \
+     --no-build-cache
+   ```
+6. 在专用服务器测试主手/副手、同维度/跨维度、创造/生存、经验不足、目标离线、菜单失效、物品移走、重复包和传送异常。
+7. 在客户端测试宽屏、窄屏、空列表、长名称、滚动列表、键盘焦点和失败后界面保持打开。
+8. 核对 `waystonesplayer-server.toml` 的全局默认、世界覆盖和重载，并检查最终 JAR 内容。
+9. 更新 README 的“验证至”版本、CI 矩阵和产物名称；版本范围仍只覆盖经过证明的 Minecraft 系列。
 
-如果新 Waystones 版本改变经验规则结构，不得通过捕获异常后返回零费用来“兼容”。安全选择是保持 `NEVER` 可用，并拒绝 `FOLLOW_WAYSTONES`/`ALWAYS` 中无法确认费用的请求。
+如果新 Waystones 改变经验规则结构，不得捕获异常后返回零费用。安全选择是保持 `NEVER` 可用，并拒绝 `FOLLOW_WAYSTONES` / `ALWAYS` 中无法确认费用的请求。
 
-## 未来 Fabric 接入
+## Fabric 1.21.1 维护步骤
 
-只有实际开始 Fabric 适配时才创建 `fabric` 模块。建议顺序：
+Fabric 分支必须满足以下对等条件：
 
-1. 先确认 common 源码仍无 NeoForge/Fabric 导入，并保持网络载荷类型与协议版本 `1` 不变。
-2. 新建 Fabric 入口与客户端入口，分别通过 Balm Fabric load context 启动现有通用模块。
-3. 使用 Fabric 的服务端配置实现同一个 `Supplier<PlayerTeleportExperienceMode>` 契约；配置键与默认语义不变。
-4. 合并 common Java/资源到 Fabric 最终 JAR，但不复制传送、兼容或 GUI 代码。
-5. 添加 Fabric 依赖、元数据、运行任务和与 NeoForge 对等的 CI/冒烟场景。
-6. 只有客户端、专用服务器与核心事务通过后，才在 README 和平台页面声明 Fabric 支持。
+1. `common` 继续没有 Fabric/NeoForge 导入，协议版本和服务端验证顺序不变。
+2. Fabric 通用/客户端入口分别通过 Balm Fabric load context 启动共享模块；客户端类不从服务端入口加载。
+3. `fabric.mod.json` 声明 Minecraft、Fabric Loader、Fabric API、Waystones 和 Balm 的同系列范围，并引用根路径 `waystonesplayer.png`。
+4. Fabric 配置保留 `playerTeleportExperienceMode`、`NEVER` 默认值和运行时 Supplier；配置位于全局 `config`，不声称支持 NeoForge 的世界级 `serverconfig`。
+5. 同一分支的 `build` 同时产出 Fabric 与 NeoForge JAR，两个 JAR 都通过图标、元数据、许可证和未捆绑上游依赖检查。
+6. 最低/当前 Fabric Loader、Fabric API、Waystones 与 Balm 成套验证，并分别启动客户端和专用服务器。
+7. 只有上述实证完成后，分支 README 或平台页面才能声明对应 Fabric 版本可用。
 
-## Minecraft 版本分支策略
+## NeoForge 1.21.11 迁移检查
 
-- `main` 代表当前主支持的 Minecraft 版本，并在同一分支内维护 common、Fabric（提供后）和 NeoForge。
-- 当前不创建 `mc/1.21.1`。只有准备让 `main` 升级到新的 Minecraft 主支持版本前，才从稳定主线建立 `mc/1.21.1` 维护分支。
-- 不在一个分支内堆叠多个 Minecraft 源码集；每个 Minecraft 版本分支独立维护其加载器矩阵。
-- 主模组补丁适配不自动提升本模组版本。只有用户明确指定、修复明显 Bug、加入重要功能或产生破坏性变化时按 SemVer 更新。
+1.21.11 不是只改版本号。已知必须显式处理的上游变化包括：
+
+- Minecraft 标识符由 1.21.1 映射中的 `ResourceLocation` 迁移为 `Identifier`，GameProfile 访问器也需按新映射复核。
+- Balm API 包结构和加载上下文发生变化；入口、事件、网络、配置与客户端初始化要逐项对照 1.21.11 官方源码。
+- Waystones `WaystoneImpl` 构造改为不直接接收名称；创建后需设置名称和 transient 状态。
+- 选择界面不再提供 1.21.1 的 `AbstractWaystoneList`，而采用全宽、分页式 `WaystoneSelectionScreenBase`。客户端注入必须从新版屏幕几何/控件重新定位，找不到结构时安全禁用。
+- requirement 解析和传送上下文虽然概念仍在，具体包名、泛型和运行行为必须由编译与最小/当前上游源码双重确认。
+
+移植后必须重跑服务端信任边界、创造模式费用、失败回滚、窄屏布局和客户端/专用服务器冒烟，不能把仅通过 `compileJava` 当成兼容完成。
+
+## 分支与回合策略
+
+- `main` 始终为 NeoForge 1.21.1；修复共享行为后再按适用性移植到两个分支。
+- `fabric/1.21.1` 验证同一 common 对两个加载器的复用；不复制业务类。
+- `neoforge/1.21.11` 吸收 Minecraft/Waystones/Balm API 变化；不在 `main` 混入条件编译或第二套源码树。
+- 任何分支升级前先获取相应远端并确认未落后/分叉；普通推送，禁止强推和改写历史。
+- 不因依赖补丁更新自动提升本模组版本。明显 Bug、重要功能或破坏性变化才按 SemVer 同步 Gradle、元数据、README、CI 和产物名。

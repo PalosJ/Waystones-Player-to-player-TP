@@ -61,7 +61,9 @@ final class WaystonesExperienceEvaluator {
         }
 
         WarpRequirement requirement = requirementsContext.resolve();
-        return new WaystonesRequirementCost(sender, requirement);
+        return TeleportCost.exemptWhen(
+                sender.getAbilities().instabuild,
+                new WaystonesRequirementCost(sender, requirement));
     }
 
     private static boolean shouldApply(RequirementFunction<?, ?> function, PlayerTeleportExperienceMode mode) {
@@ -81,7 +83,7 @@ final class WaystonesExperienceEvaluator {
     private record WaystonesRequirementCost(ServerPlayer player, WarpRequirement requirement) implements TeleportCost {
         @Override
         public boolean canAfford() {
-            return player.getAbilities().instabuild || requirement.canAfford(player);
+            return requirement.canAfford(player);
         }
 
         @Override

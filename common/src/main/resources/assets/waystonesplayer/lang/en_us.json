@@ -1,6 +1,9 @@
 {
   "gui.waystonesplayer.no_other_players": "No other online players",
   "gui.waystonesplayer.online_players": "Online players",
+  "gui.waystonesplayer.show_online_players": "Show online players",
+  "gui.waystonesplayer.hide_online_players": "Hide online players",
+  "narration.waystonesplayer.online_players.empty": "Online players. No other online players.",
   "config.waystonesplayer.player_teleport_experience_mode": "Player Teleport Experience Mode",
   "message.waystonesplayer.invalid_context": "This teleport request is no longer valid.",
   "message.waystonesplayer.target_offline": "That player is no longer online.",

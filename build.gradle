@@ -5,6 +5,33 @@ plugins {
 version = mod_version
 group = mod_group_id
 
+def commonSources = fileTree('common/src') {
+    include '**/*.java'
+}
+
+def verifyCommonLoaderBoundary = tasks.register('verifyCommonLoaderBoundary') {
+    group = 'verification'
+    description = 'Rejects Fabric or NeoForge API imports from the shared common module.'
+    inputs.files(commonSources)
+
+    doLast {
+        def forbiddenPrefixes = ['net.fabricmc.', 'net.neoforged.']
+        def violations = []
+        commonSources.files.sort().each { source ->
+            source.eachLine('UTF-8') { line, lineNumber ->
+                forbiddenPrefixes.each { prefix ->
+                    if (line.contains(prefix)) {
+                        violations << "${relativePath(source)}:${lineNumber}: ${prefix}"
+                    }
+                }
+            }
+        }
+        if (!violations.isEmpty()) {
+            throw new GradleException("Loader APIs found in common:\n${violations.join('\n')}")
+        }
+    }
+}
+
 subprojects {
     apply plugin: 'java-library'
 
@@ -51,6 +78,10 @@ subprojects {
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+    }
+
+    tasks.named('check').configure {
+        dependsOn verifyCommonLoaderBoundary
     }
 }
 

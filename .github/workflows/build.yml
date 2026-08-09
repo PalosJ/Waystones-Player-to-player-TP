@@ -2,16 +2,26 @@ name: Build
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    name: Waystones ${{ matrix.waystones-version }}
+    name: NeoForge 1.21.1 (${{ matrix.stack }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        waystones-version:
-          - 21.1.36+1.21.1
-          - 21.1.40+1.21.1
+        include:
+          - stack: minimum
+            neo-version: 21.1.229
+            waystones-version: 21.1.36+1.21.1
+            balm-version: 21.0.62+1.21.1
+          - stack: current
+            neo-version: 21.1.248
+            waystones-version: 21.1.40+1.21.1
+            balm-version: 21.0.64+1.21.1
 
     steps:
       - name: Checkout repository
@@ -29,8 +39,18 @@ jobs:
       - name: Build and test
         run: >-
           ./gradlew clean test build
+          -Pneo_version=${{ matrix.neo-version }}
           -Pwaystones_version=${{ matrix.waystones-version }}
+          -Pbalm_version=${{ matrix.balm-version }}
           --no-build-cache
           --no-daemon
           --console=plain
           --warning-mode=all
+
+      - name: Upload current release artifact
+        if: matrix.stack == 'current'
+        uses: actions/upload-artifact@v7
+        with:
+          name: waystonesplayer-neoforge-1.21.1
+          path: neoforge/build/libs/waystonesplayer-neoforge-1.21.1-*.jar
+          if-no-files-found: error

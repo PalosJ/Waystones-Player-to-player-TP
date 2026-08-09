@@ -1,5 +1,7 @@
 package com.palosj.waystonesplayer.teleport;
 
+import java.util.Objects;
+
 public interface TeleportCost {
     TeleportCost NONE = new TeleportCost() {
         @Override
@@ -15,6 +17,11 @@ public interface TeleportCost {
         public void rollback() {
         }
     };
+
+    static TeleportCost exemptWhen(boolean exempt, TeleportCost delegate) {
+        Objects.requireNonNull(delegate, "delegate");
+        return exempt ? NONE : delegate;
+    }
 
     boolean canAfford();
 

@@ -22,12 +22,12 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 | 组件 | 当前要求 |
 |---|---|
 | Minecraft | 1.21.1 |
-| 加载器 | NeoForge 21.1.229 或更高版本 |
-| Waystones | 21.1.36 或更高版本；开发与 CI 验证至 21.1.40 |
-| Balm | 21.0.62 或更高版本 |
+| 加载器 | NeoForge 21.1.229–21.1.x；开发与 CI 使用 21.1.248 |
+| Waystones | 21.1.36–21.1.x；开发与 CI 验证至 21.1.40 |
+| Balm | 21.0.62–21.0.x；开发与 CI 验证至 21.0.64 |
 | Java | 21 |
 
-把 Waystones Player、Waystones 和 Balm 的 JAR 一起放入两端的 `mods` 目录即可。当前正式支持 NeoForge 1.21.1；Fabric 版本在长期计划中，但尚未提供。Forge 版本不在计划内。
+把 Waystones Player、Waystones 和 Balm 的 JAR 一起放入两端的 `mods` 目录即可。`main` 与默认发布继续正式支持 NeoForge 1.21.1。仓库另有 `fabric/1.21.1` 和 `neoforge/1.21.11` 移植验证分支；它们用于实证多加载器、多 Minecraft 版本架构，不会取代原设计主线。Forge 版本不在计划内。
 
 ### 玩法与费用
 
@@ -35,7 +35,7 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 2. 在目的地界面选择一名在线玩家。
 3. 服务端验证同一个传送石仍在主手或副手、目标仍在线且费用足够，然后执行传送。
 
-玩家目的地不会自动继承 Waystones 的冷却、物品费用或其他目的地限制。成功后只结算一次经验费用和一次原生耐久伤害；创造模式免损耗、耐久附魔和最终损坏行为均沿用 Minecraft/Waystones 规则。
+玩家目的地不会自动继承 Waystones 的冷却、物品费用或其他目的地限制。成功后只结算一次经验费用和一次原生耐久伤害；创造模式不检查或扣除经验且免耐久损耗，耐久附魔和最终损坏行为沿用 Minecraft/Waystones 规则。
 
 ### 经验配置
 
@@ -59,13 +59,21 @@ Waystones Player 没有遥测、广告、分析服务或外部数据上传。选
 
 ### 开发
 
-仓库采用 `common + neoforge` 结构。`common` 是共享源码与测试，不是可安装模组；发布 JAR 由 `neoforge` 生成：
+`main` 采用 `common + neoforge` 结构。`common` 是共享源码与测试，不是可安装模组；发布 JAR 由加载器模块生成：
 
 ```bash
 JAVA_HOME=/path/to/jdk-21 ./gradlew clean test build --no-build-cache
 ```
 
-产物位于 `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-<版本>.jar`。架构与升级边界分别见 [ARCHITECTURE.md](docs/ARCHITECTURE.md) 和 [COMPATIBILITY.md](docs/COMPATIBILITY.md)。
+`build` 会自动检查 common 没有 Fabric/NeoForge API、最终 JAR 含模组图标/元数据/许可证，并确认没有打包 Waystones/Balm 类。主线产物位于 `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-<版本>.jar`。
+
+| 分支 | 定位 | 加载器模块 |
+|---|---|---|
+| `main` | 原设计与默认发布基线 | NeoForge 1.21.1 |
+| `fabric/1.21.1` | 同版本多加载器移植验证 | Fabric 1.21.1，并保留 NeoForge 1.21.1 对照构建 |
+| `neoforge/1.21.11` | 新 Minecraft 版本移植验证 | NeoForge 1.21.11 |
+
+架构、分支职责与升级边界分别见 [ARCHITECTURE.md](docs/ARCHITECTURE.md) 和 [COMPATIBILITY.md](docs/COMPATIBILITY.md)。
 
 原创源码与内容采用 All Rights Reserved；项目图标中另行标注的素材按各自条款使用，详见 [LICENSE](LICENSE) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。发布后的问题请通过对应 Modrinth/CurseForge 项目页面提供的反馈渠道提交，并附上相关版本与日志。
 
@@ -91,16 +99,16 @@ Install the mod on both the client and server.
 | Component | Current requirement |
 |---|---|
 | Minecraft | 1.21.1 |
-| Loader | NeoForge 21.1.229 or newer |
-| Waystones | 21.1.36 or newer; development and CI verified through 21.1.40 |
-| Balm | 21.0.62 or newer |
+| Loader | NeoForge 21.1.229 through 21.1.x; development and CI use 21.1.248 |
+| Waystones | 21.1.36 through 21.1.x; development and CI verified through 21.1.40 |
+| Balm | 21.0.62 through 21.0.x; development and CI verified through 21.0.64 |
 | Java | 21 |
 
-Place Waystones Player, Waystones, and Balm in both `mods` directories. NeoForge 1.21.1 is the current supported platform. Fabric support is planned but not available yet; Forge is not planned.
+Place Waystones Player, Waystones, and Balm in both `mods` directories. `main` and the default release continue to support NeoForge 1.21.1. The repository also contains `fabric/1.21.1` and `neoforge/1.21.11` port-validation branches; they exercise the multi-loader and multi-Minecraft architecture without replacing the original mainline. Forge is not planned.
 
 ### Costs and Configuration
 
-Every successful player teleport charges experience once and applies one point of native durability damage to the exact Warp Stone that opened the menu. Creative-mode exemptions, durability enchantments, and breakage use native Minecraft/Waystones behavior. Waystones cooldowns, item costs, and unrelated destination requirements are not inherited.
+Every successful player teleport charges experience once and applies one point of native durability damage to the exact Warp Stone that opened the menu. Creative players neither check nor consume experience and are exempt from durability loss. Durability enchantments and breakage use native Minecraft/Waystones behavior. Waystones cooldowns, item costs, and unrelated destination requirements are not inherited.
 
 The SERVER config remains `waystonesplayer-server.toml`, with the key `playerTeleportExperienceMode`:
 
@@ -116,7 +124,7 @@ Only experience-point and experience-level requirements are selected. A rule set
 
 The mod contains no telemetry, advertising, analytics, or external uploads. Selecting a player sends only the target UUID to the Minecraft server you are already connected to. It does not bundle or redistribute Waystones or Balm code or JARs. The project icon incorporates Warp Stone artwork released by Joe Williamson (JoeCreates) under CC BY-SA 3.0 and player-face elements from Minecraft's default skins. Sources, modifications, and applicable terms are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-The repository uses `common + neoforge`; `common` is shared source and tests, not an installable mod. Build with JDK 21 using `./gradlew clean test build --no-build-cache`. The release artifact is `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-<version>.jar`.
+The canonical `main` branch uses `common + neoforge`; `common` is shared source and tests, not an installable mod. Build with JDK 21 using `./gradlew clean test build --no-build-cache`. The build verifies the common loader boundary and required distribution contents. The canonical artifact is `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-<version>.jar`; the `fabric/1.21.1` and `neoforge/1.21.11` branches contain the corresponding port builds.
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for module and transaction design and [COMPATIBILITY.md](docs/COMPATIBILITY.md) for the support matrix and upgrade checklist.
 

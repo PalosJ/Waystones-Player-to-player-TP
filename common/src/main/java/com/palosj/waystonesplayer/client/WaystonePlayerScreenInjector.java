@@ -19,6 +19,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -142,15 +144,18 @@ public final class WaystonePlayerScreenInjector {
 
     private static final class PlayerPanelLabels extends AbstractWidget {
         private final boolean empty;
+        private final int panelHeight;
         private final Component title = Component.translatable("gui.waystonesplayer.online_players");
         private final Component emptyMessage = Component.translatable("gui.waystonesplayer.no_other_players")
                 .copy()
                 .withStyle(ChatFormatting.RED);
 
         private PlayerPanelLabels(int x, int y, int width, int height, boolean empty) {
-            super(x, y, width, height, Component.empty());
+            super(x, y, width, HEADER_HEIGHT, Component.translatable(empty
+                    ? "narration.waystonesplayer.online_players.empty"
+                    : "gui.waystonesplayer.online_players"));
             this.empty = empty;
-            active = false;
+            this.panelHeight = height;
         }
 
         @Override
@@ -159,12 +164,28 @@ public final class WaystonePlayerScreenInjector {
             guiGraphics.drawCenteredString(font, title, getX() + width / 2, getY() + TITLE_Y, 0xFFFFFFFF);
             if (empty) {
                 guiGraphics.drawCenteredString(font, emptyMessage, getX() + width / 2,
-                        getY() + height / 2 + EMPTY_STATE_Y_OFFSET, 0xFFFFFFFF);
+                        getY() + panelHeight / 2 + EMPTY_STATE_Y_OFFSET, 0xFFFFFFFF);
+            }
+            if (isFocused()) {
+                guiGraphics.renderOutline(getX() + 1, getY() + 1, width - 2, height - 2, 0xFFFFFFFF);
             }
         }
 
         @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            return false;
+        }
+
+        @Override
+        public NarratableEntry.NarrationPriority narrationPriority() {
+            return isFocused()
+                    ? NarratableEntry.NarrationPriority.FOCUSED
+                    : NarratableEntry.NarrationPriority.NONE;
+        }
+
+        @Override
         protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+            narrationElementOutput.add(NarratedElementType.TITLE, getMessage());
         }
     }
 

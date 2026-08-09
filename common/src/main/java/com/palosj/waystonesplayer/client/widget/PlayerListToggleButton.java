@@ -18,7 +18,7 @@ public final class PlayerListToggleButton extends Button {
     private boolean open;
 
     public PlayerListToggleButton(int x, int y, OnPress onPress) {
-        super(x, y, 20, 20, Component.translatable("gui.waystonesplayer.online_players"), onPress, DEFAULT_NARRATION);
+        super(x, y, 20, 20, actionMessage(false), onPress, DEFAULT_NARRATION);
         setTooltip(Tooltip.create(getMessage()));
 
         Minecraft minecraft = Minecraft.getInstance();
@@ -36,6 +36,8 @@ public final class PlayerListToggleButton extends Button {
 
     public void setOpen(boolean open) {
         this.open = open;
+        setMessage(actionMessage(open));
+        setTooltip(Tooltip.create(getMessage()));
     }
 
     @Override
@@ -58,5 +60,11 @@ public final class PlayerListToggleButton extends Button {
         }
 
         guiGraphics.drawCenteredString(font, "P", getX() + width / 2, getY() + 6, color);
+    }
+
+    private static Component actionMessage(boolean open) {
+        return Component.translatable(open
+                ? "gui.waystonesplayer.hide_online_players"
+                : "gui.waystonesplayer.show_online_players");
     }
 }
