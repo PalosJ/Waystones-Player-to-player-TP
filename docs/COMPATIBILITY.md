@@ -43,6 +43,7 @@ CI 使用“最低整套”和“当前整套”矩阵，而不是只替换 Ways
 | `WaystonesConfig.getActive().teleports` | 读取总开关与 `warpRequirements` | 需要经验时拒绝传送 |
 | `RequirementModifierParser` / `WarpRequirementsContextImpl` | 应用当前经验公式 | 需要经验时拒绝传送，只告警一次 |
 | `AbstractWaystoneList` | 推导 1.21.1 GUI 的位置和尺寸 | 不注入玩家面板 |
+| `AbstractContainerScreen.leftPos` 客户端访问器 | 同步移动 1.21.1 的文本、命中区域和控件 | 按最低/当前依赖编译并实际启动客户端；字段不匹配不得发布 |
 | 选择界面类名包含 `WaystoneSelectionScreen` | 延迟加载客户端注入器 | 不注入玩家面板 |
 
 非经验 requirement（物品、冷却、自定义非经验费用等）会被主动忽略。`ALWAYS` 只能强制启用 Waystones 命名空间中的经验函数，不能擅自启用未知第三方函数。创造模式的 affordability、consume、rollback 三条路径由统一费用包装器豁免。
@@ -71,7 +72,7 @@ CI 使用“最低整套”和“当前整套”矩阵，而不是只替换 Ways
      --no-build-cache
    ```
 6. 在专用服务器测试主手/副手、同维度/跨维度、创造/生存、经验不足、目标离线、菜单失效、物品移走、重复包和传送异常。
-7. 在客户端测试宽屏、窄屏、空列表、长名称、滚动列表、键盘焦点和失败后界面保持打开。
+7. 在客户端测试宽屏零偏移、自动缩放下的完整/收窄名单、320 像素头像栏、反复调整窗口、空列表、长名称、滚动列表、键盘焦点和失败后界面保持打开。
 8. 核对 `waystonesplayer-server.toml` 的全局默认、世界覆盖和重载，并检查最终 JAR 内容。
 9. 更新 README 的“验证至”版本、CI 矩阵和产物名称；版本范围仍只覆盖经过证明的 Minecraft 系列。
 
@@ -96,7 +97,7 @@ Fabric 分支必须满足以下对等条件：
 - Minecraft 标识符由 1.21.1 映射中的 `ResourceLocation` 迁移为 `Identifier`，GameProfile 访问器也需按新映射复核。
 - Balm API 包结构和加载上下文发生变化；入口、事件、网络、配置与客户端初始化要逐项对照 1.21.11 官方源码。
 - Waystones `WaystoneImpl` 构造改为不直接接收名称；创建后需设置名称和 transient 状态。
-- 选择界面不再提供 1.21.1 的 `AbstractWaystoneList`，而采用全宽、分页式 `WaystoneSelectionScreenBase`。客户端注入必须从新版屏幕几何/控件重新定位，找不到结构时安全禁用。
+- 选择界面不再提供 1.21.1 的 `AbstractWaystoneList`，而采用全宽、分页式 `WaystoneSelectionScreenBase`。客户端注入必须从新版屏幕几何/控件重新定位，通过 `imageWidth` 移动标签中心，并在渲染前把搜索、翻页、排序、删除等动态重建控件恢复到“原始坐标 + 当前偏移”；找不到结构时安全禁用。
 - requirement 解析和传送上下文虽然概念仍在，具体包名、泛型和运行行为必须由编译与最小/当前上游源码双重确认。
 
 移植后必须重跑服务端信任边界、创造模式费用、失败回滚、窄屏布局和客户端/专用服务器冒烟，不能把仅通过 `compileJava` 当成兼容完成。

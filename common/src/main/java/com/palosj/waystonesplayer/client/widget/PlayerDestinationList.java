@@ -14,15 +14,14 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 
 public final class PlayerDestinationList extends ContainerObjectSelectionList<PlayerDestinationList.PlayerEntry> {
     public static final int ENTRY_HEIGHT = 22;
-    private static final int ROW_HORIZONTAL_INSET = 32;
-    private static final int SCROLLBAR_WIDTH = 6;
-    private static final int SCROLLBAR_BUTTON_GAP = 12;
+    private final boolean avatarOnly;
     private final int rowWidth;
 
     public PlayerDestinationList(int x, int y, int width, int height, List<PlayerInfo> onlinePlayers,
-                                 Consumer<UUID> onPlayerSelected) {
+                                 boolean avatarOnly, Consumer<UUID> onPlayerSelected) {
         super(Minecraft.getInstance(), width, height, y, ENTRY_HEIGHT);
-        rowWidth = Math.max(24, width - ROW_HORIZONTAL_INSET);
+        this.avatarOnly = avatarOnly;
+        rowWidth = PlayerDestinationListLayout.rowWidth(width, avatarOnly);
         setX(x);
 
         for (PlayerInfo playerInfo : onlinePlayers) {
@@ -36,8 +35,13 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
     }
 
     @Override
+    public int getRowLeft() {
+        return avatarOnly ? getX() + PlayerDestinationListLayout.AVATAR_ROW_LEFT_OFFSET : super.getRowLeft();
+    }
+
+    @Override
     protected int getScrollbarPosition() {
-        return getRowLeft() - SCROLLBAR_WIDTH - SCROLLBAR_BUTTON_GAP;
+        return PlayerDestinationListLayout.scrollbarPosition(getRowLeft(), avatarOnly);
     }
 
     @Override
@@ -46,11 +50,6 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
 
     @Override
     protected void renderListSeparators(GuiGraphics guiGraphics) {
-    }
-
-    public void setPanelVisible(boolean visible) {
-        this.visible = visible;
-        this.active = visible;
     }
 
     public final class PlayerEntry extends ContainerObjectSelectionList.Entry<PlayerEntry> {
@@ -63,6 +62,7 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
                     0,
                     Math.max(20, getRowWidth() - 4),
                     20,
+                    avatarOnly,
                     ignored -> onPlayerSelected.accept(playerInfo.getProfile().getId()));
             playerButton.bind(playerInfo);
             widgets = List.of(playerButton);

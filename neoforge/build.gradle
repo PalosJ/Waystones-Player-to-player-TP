@@ -126,6 +126,8 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 'META-INF/TEMPLATE_LICENSE_waystonesplayer.txt',
                 'META-INF/THIRD_PARTY_NOTICES_waystonesplayer.md',
                 'waystonesplayer.png',
+                'waystonesplayer.mixins.json',
+                'com/palosj/waystonesplayer/mixin/client/AbstractContainerScreenAccessor.class',
                 'com/palosj/waystonesplayer/neoforge/NeoForgeWaystonesPlayer.class',
         ]
 
@@ -143,10 +145,26 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
             if (entries.any { it.name.startsWith('net/blay09/') }) {
                 throw new GradleException('Release JAR must not bundle Waystones or Balm classes.')
             }
+            if (entries.any { it.name.startsWith('org/spongepowered/') }) {
+                throw new GradleException('Release JAR must not bundle the loader-provided Mixin runtime.')
+            }
 
             String metadata = zip.getInputStream(zip.getEntry('META-INF/neoforge.mods.toml')).getText('UTF-8')
             if (metadata.contains('${')) {
                 throw new GradleException('Release JAR metadata contains unexpanded template placeholders.')
+            }
+            if (!metadata.contains('config="waystonesplayer.mixins.json"')) {
+                throw new GradleException('Release JAR metadata does not register the client mixin configuration.')
+            }
+            if (!metadata.contains("version=\"${mod_version}\"")) {
+                throw new GradleException("Release JAR metadata does not contain version ${mod_version}.")
+            }
+
+            String mixinConfig = zip.getInputStream(zip.getEntry('waystonesplayer.mixins.json')).getText('UTF-8')
+            def parsedMixinConfig = new groovy.json.JsonSlurper().parseText(mixinConfig)
+            if (!parsedMixinConfig.client?.contains('client.AbstractContainerScreenAccessor')
+                    || parsedMixinConfig.mixins) {
+                throw new GradleException('Release JAR mixin configuration must contain only the client layout accessor.')
             }
         }
     }

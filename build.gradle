@@ -59,6 +59,13 @@ subprojects {
             url = uri('https://maven.neoforged.net/releases')
         }
         maven {
+            name = 'SpongePowered'
+            url = uri('https://repo.spongepowered.org/repository/maven-public/')
+            content {
+                includeGroup 'org.spongepowered'
+            }
+        }
+        maven {
             name = 'TencentCloudFallback'
             url = uri('https://mirrors.cloud.tencent.com/nexus/repository/maven-public/')
         }

@@ -14,10 +14,12 @@ public class PlayerTeleportButton extends Button {
     private static final int FACE_SIZE = 16;
     private static final int FACE_PADDING = 2;
 
+    private final boolean avatarOnly;
     private ResourceLocation skinTexture;
 
-    public PlayerTeleportButton(int x, int y, int width, int height, OnPress onPress) {
+    public PlayerTeleportButton(int x, int y, int width, int height, boolean avatarOnly, OnPress onPress) {
         super(x, y, width, height, Component.empty(), onPress, DEFAULT_NARRATION);
+        this.avatarOnly = avatarOnly;
         this.visible = false;
         this.active = false;
     }
@@ -45,6 +47,17 @@ public class PlayerTeleportButton extends Button {
             } catch (RuntimeException e) {
                 skinTexture = null;
             }
+        }
+
+        if (avatarOnly) {
+            if (!hasFace) {
+                guiGraphics.drawCenteredString(font,
+                        PlayerButtonTextLayout.firstCharacter(getMessage().getString()),
+                        getX() + width / 2,
+                        getY() + (height - font.lineHeight) / 2 + 1,
+                        color);
+            }
+            return;
         }
 
         int textX;

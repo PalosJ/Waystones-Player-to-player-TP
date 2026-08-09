@@ -1,8 +1,6 @@
 {
   "gui.waystonesplayer.no_other_players": "当前没有其他在线玩家",
   "gui.waystonesplayer.online_players": "在线玩家",
-  "gui.waystonesplayer.show_online_players": "显示在线玩家",
-  "gui.waystonesplayer.hide_online_players": "隐藏在线玩家",
   "narration.waystonesplayer.online_players.empty": "在线玩家。当前没有其他在线玩家。",
   "config.waystonesplayer.player_teleport_experience_mode": "玩家间传送经验模式",
   "message.waystonesplayer.invalid_context": "当前传送请求已失效。",

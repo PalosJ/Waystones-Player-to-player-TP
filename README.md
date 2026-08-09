@@ -10,7 +10,7 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 
 ### 你会得到什么
 
-- 传送石界面中的在线玩家目的地，宽屏直接显示，窄屏通过头像按钮展开。
+- 传送石界面中的在线玩家目的地：空间充足时显示完整名单，空间收窄时自动缩小面板或改为可点击头像栏，并仅在需要时把传送石列表整体右移。
 - 服务端权威校验：客户端只提交目标 UUID，物品、目标、费用与传送结果都由服务端重新确认。
 - 明确的生存成本：每次成功传送消耗传送石 1 点耐久；失败不会扣经验、耐久，也不会强制关闭界面。
 - 三种经验模式，可选择免费、跟随 Waystones，或始终使用 Waystones 当前的经验公式。
@@ -87,7 +87,7 @@ Waystones Player is an unofficial add-on for [Waystones](https://modrinth.com/mo
 
 ### Highlights
 
-- Online-player destinations integrated into the Warp Stone screen, with a compact overlay on narrow displays.
+- Online-player destinations integrated into the Warp Stone screen. The panel narrows responsively or becomes a clickable avatar rail, shifting the Waystones content only when needed.
 - Server-authoritative validation: the client sends only a target UUID; the server rechecks the item, target, cost, and teleport result.
 - A clear survival cost: each successful teleport damages the Warp Stone by one durability point. Failures consume nothing and keep the menu open.
 - Three experience modes: free, follow Waystones, or always evaluate Waystones' current experience formula.
