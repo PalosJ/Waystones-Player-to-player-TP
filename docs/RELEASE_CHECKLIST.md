@@ -37,6 +37,7 @@
 把最低构建的同一 SHA-256 JAR分别放入目标最低、关键补丁和当前套件：
 
 ```bash
+# 在对应统一分支执行；没有 key 套件的目标会自动跳过 key。
 python3 scripts/runtime-matrix.py --target <target-id> \
   --profiles minimum key current --sides server client --fail-fast
 ```

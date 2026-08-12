@@ -100,6 +100,8 @@ Fabric Balm 的模组 ID 是真实断点：
 - 1.21.2/1.21.3 共用线：`balm-fabric`，且该旧 JAR不提供 `balm`。
 - 1.21.4–1.21.11：依赖 `balm`；上游同时提供 `balm-fabric` 别名不改变本附属的规范声明。
 
+1.21.4、1.21.10 与 1.21.11 还固定了一组关键补丁运行套件，用于覆盖菜单载体 getter、requirement `consume` 签名和 Identifier/platform 大断点；NeoForge 与 Fabric 都用各自加载器套件执行。精确版本由 `gradle/targets.json` 的 `key` 字段锁定，其他目标不得虚构与最低或当前重复的“关键套件”。
+
 ## 为什么 1.21.2 与 1.21.3 共用
 
 Waystones 和 Balm 的官方 1.21.3 源码线明确写有：
@@ -158,17 +160,17 @@ Fabric：
 
 1.21.2/1.21.3 共用目标还必须对两个 Minecraft 版本分别执行二进制运行。每个运行目录隔离，禁止复用其他分支的世界、配置、模组或缓存来生成验收日志。
 
-统一分支可用以下自动化运行单个目标；脚本会核对最低构建清单、实际 Mod List 精确版本、专服 `Done` 与客户端资源/GUI 图集信号，并终止完整 Gradle/游戏进程组：
+在对应统一分支可用以下自动化运行单个目标；脚本会核对最低构建清单、实际 Mod List 精确版本、专服 `Done` 与客户端资源/GUI 图集信号，并终止完整 Gradle/游戏进程组：
 
 ```bash
 python3 scripts/runtime-matrix.py \
-  --target neoforge-1.21.11 \
+  --target <target-id> \
   --profiles minimum key current \
   --sides server client \
   --fail-fast
 ```
 
-Linux CI 对客户端追加 `--xvfb`。这是启动、二进制链接、Mixin 和资源冒烟，不替代双客户端内的交互/费用/事件人工验收。
+没有 `key` 套件的目标会自动跳过该 profile。Linux CI 对客户端追加 `--xvfb`。这是启动、二进制链接、Mixin 和资源冒烟，不替代双客户端内的交互、费用与事件人工验收。
 
 ## 逐目标升级流程
 
