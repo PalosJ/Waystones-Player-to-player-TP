@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "contact": {
+    "sources": "https://github.com/PalosJ/waystonesplayer",
+    "issues": "https://github.com/PalosJ/waystonesplayer/issues"
+  },
+  "license": "${mod_license}",
+  "icon": "waystonesplayer.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.palosj.waystonesplayer.fabric.FabricWaystonesPlayer"
+    ],
+    "client": [
+      "com.palosj.waystonesplayer.fabric.client.FabricWaystonesPlayerClient"
+    ]
+  },
+  "mixins": [
+    "waystonesplayer.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "${fabric_loader_version_range}",
+    "fabric-api": "${fabric_api_version_range}",
+    "minecraft": "${minecraft_version_range}",
+    "java": ">=21",
+    "waystones": "${waystones_version_range}",
+    "${balm_mod_id}": "${balm_version_range}"
+  }
+}

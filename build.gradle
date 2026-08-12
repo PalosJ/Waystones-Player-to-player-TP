@@ -1,5 +1,5 @@
 plugins {
-    id 'net.neoforged.moddev' version '2.0.143' apply false
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.19' apply false
 }
 
 version = mod_version
@@ -82,7 +82,7 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
         require(matrix.modVersion == mod_version, "modVersion must remain ${mod_version}.")
         require(matrix.buildTools.java == 21
                 && matrix.buildTools.gradle == '9.2.1'
-                && matrix.buildTools.fabricGradle == '9.4.1'
+                && matrix.buildTools.fabricGradle == '9.5.1'
                 && matrix.buildTools.modDevGradle == '2.0.143'
                 && matrix.buildTools.loom == '1.17.19',
                 'build-tool versions must match the audited release toolchain.')
@@ -148,6 +148,7 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
                         fabricLoader: '0.18.1',
                         fabricApi: '0.139.4+1.21.11',
                         waystones: '21.11.4',
+                        waystonesCapability: 'waystones-fabric-1.21.11',
                         balm: '21.11.3',
                 ],
         ]
@@ -211,10 +212,13 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
                 def expectedBalmId = target.id == 'fabric-1.21.2-1.21.3' ? 'balm-fabric' : 'balm'
                 require(target.balmModId == expectedBalmId,
                         "${target.id} must use Fabric dependency ID ${expectedBalmId}.")
-                require(!target.minimum.containsKey('waystonesCapability')
-                        && !target.current.containsKey('waystonesCapability')
-                        && (!target.key || !target.key.containsKey('waystonesCapability')),
-                        "${target.id} must not use a NeoForge capability override.")
+                def expectedWaystonesCapability = target.id == 'fabric-1.21.11'
+                        ? 'waystones-fabric-1.21.11'
+                        : null
+                require(target.minimum.waystonesCapability == expectedWaystonesCapability,
+                        "${target.id} has an invalid minimum Waystones capability override.")
+                require(!target.current.containsKey('waystonesCapability'),
+                        "${target.id} current stack must resolve the default Waystones capability.")
             } else {
                 require(false, "${target.id} has unknown loader ${target.loader}.")
             }
@@ -248,15 +252,12 @@ subprojects {
             }
         }
         maven {
-            name = 'ParchmentMC'
-            url = uri('https://maven.parchmentmc.org/')
+            name = 'Fabric'
+            url = uri('https://maven.fabricmc.net/')
             content {
-                includeGroup 'org.parchmentmc.data'
+                includeGroupByRegex 'net\\.fabricmc(\\..*)?'
+                includeGroup 'fabric-loom'
             }
-        }
-        maven {
-            name = 'NeoForge'
-            url = uri('https://maven.neoforged.net/releases')
         }
         maven {
             name = 'SpongePowered'

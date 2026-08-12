@@ -1,0 +1,446 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap'
+}
+
+def matrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
+def target = matrix.targets.find { it.id == project.name }
+if (target == null || target.loader != 'fabric' || target.branch != 'fabric/1.21.x') {
+    throw new GradleException("Missing Fabric target matrix entry for ${project.path}.")
+}
+
+def stackName = providers.gradleProperty('dependencyStack').getOrElse('minimum')
+if (!(stackName in ['minimum', 'current'])) {
+    throw new GradleException("dependencyStack must be minimum or current, got ${stackName}.")
+}
+def stack = target[stackName]
+
+def targetProperties = new Properties()
+def targetPropertiesFile = project.file('target.properties')
+targetPropertiesFile.withInputStream { targetProperties.load(it) }
+if (targetProperties.getProperty('targetId') != target.id) {
+    throw new GradleException("${targetPropertiesFile} must declare targetId=${target.id}.")
+}
+
+def commonExcludes = (targetProperties.getProperty('commonExcludes', '')
+        .split(',') as List<String>)
+        .collect { it.trim() }
+        .findAll { !it.isEmpty() }
+def fabricExcludes = (targetProperties.getProperty('fabricExcludes', '')
+        .split(',') as List<String>)
+        .collect { it.trim() }
+        .findAll { !it.isEmpty() }
+def adapterRoots = (targetProperties.getProperty('adapterRoots', '')
+        .split(',') as List<String>)
+        .collect { it.trim() }
+        .findAll { !it.isEmpty() }
+
+def verifyTargetSourceSelection = tasks.register('verifyTargetSourceSelection') {
+    group = 'verification'
+    description = "Checks the declared canonical exclusions and adapter roots for ${target.id}."
+    inputs.file(targetPropertiesFile)
+    inputs.files(rootProject.fileTree('common/src/main/java') { include '**/*.java' })
+    inputs.files(rootProject.fileTree('fabric/src/main/java') { include '**/*.java' })
+    adapterRoots.each { adapterRoot ->
+        inputs.files(rootProject.fileTree("adapters/${adapterRoot}") { include '**/*.java' })
+    }
+
+    doLast {
+        def allowedKeys = ['targetId', 'commonExcludes', 'fabricExcludes', 'adapterRoots'] as Set
+        def unknownKeys = targetProperties.stringPropertyNames().findAll { !allowedKeys.contains(it) }
+        if (!unknownKeys.isEmpty()) {
+            throw new GradleException(
+                    "${targetPropertiesFile} contains unknown keys: ${unknownKeys.sort().join(', ')}")
+        }
+
+        [
+                commonExcludes: commonExcludes,
+                fabricExcludes: fabricExcludes,
+                adapterRoots  : adapterRoots,
+        ].each { label, values ->
+            def duplicates = values.countBy { it }.findAll { value, count -> count > 1 }.keySet()
+            if (!duplicates.isEmpty()) {
+                throw new GradleException(
+                        "${targetPropertiesFile} repeats ${label}: ${duplicates.sort().join(', ')}")
+            }
+        }
+
+        def validateCanonicalExcludes = { String sourceDirectory, List<String> excludes ->
+            excludes.each { excludedPath ->
+                if (excludedPath.find(/[?*\[\]]/)) {
+                    throw new GradleException(
+                            "${targetPropertiesFile} must use exact auditable exclusion paths, got ${excludedPath}.")
+                }
+                if (!rootProject.file("${sourceDirectory}/${excludedPath}").isFile()) {
+                    throw new GradleException(
+                            "${targetPropertiesFile} excludes missing canonical source ${sourceDirectory}/${excludedPath}.")
+                }
+            }
+        }
+        validateCanonicalExcludes('common/src/main/java', commonExcludes)
+        validateCanonicalExcludes('fabric/src/main/java', fabricExcludes)
+
+        def selectedSources = [:].withDefault { [] }
+        def addSources = { File sourceRoot, Collection<File> files, String origin ->
+            files.each { source ->
+                def relativePath = sourceRoot.toPath()
+                        .relativize(source.toPath())
+                        .toString()
+                        .replace(File.separator, '/')
+                selectedSources[relativePath] << origin
+            }
+        }
+
+        def commonRoot = rootProject.file('common/src/main/java')
+        def selectedCommon = rootProject.fileTree(commonRoot) {
+            include '**/*.java'
+            commonExcludes.each { exclude it }
+        }.files
+        addSources(commonRoot, selectedCommon, 'common')
+
+        def fabricRoot = rootProject.file('fabric/src/main/java')
+        def selectedFabric = rootProject.fileTree(fabricRoot) {
+            include '**/*.java'
+            fabricExcludes.each { exclude it }
+        }.files
+        addSources(fabricRoot, selectedFabric, 'fabric')
+
+        adapterRoots.each { adapterRoot ->
+            def adapterDirectory = rootProject.file("adapters/${adapterRoot}")
+            def adapterJavaRoot = new File(adapterDirectory, 'java')
+            if (!adapterJavaRoot.isDirectory()) {
+                throw new GradleException(
+                        "Adapter root adapters/${adapterRoot} must contain a java source directory.")
+            }
+            def adapterFiles = rootProject.fileTree(adapterJavaRoot) { include '**/*.java' }.files
+            if (adapterFiles.isEmpty()) {
+                throw new GradleException("Adapter root adapters/${adapterRoot} contains no Java sources.")
+            }
+            addSources(adapterJavaRoot, adapterFiles, "adapter:${adapterRoot}")
+        }
+
+        def collisions = selectedSources.findAll { relativePath, origins -> origins.size() > 1 }
+        if (!collisions.isEmpty()) {
+            def details = collisions.collect { relativePath, origins ->
+                "${relativePath} (${origins.join(', ')})"
+            }.sort()
+            throw new GradleException(
+                    "${target.id} selects duplicate Java classes:\n${details.join('\n')}")
+        }
+    }
+}
+
+version = matrix.modVersion
+group = mod_group_id
+
+base {
+    archivesName = "${mod_id}-${target.id}"
+}
+
+sourceSets {
+    main {
+        java.setSrcDirs([
+                rootProject.file('common/src/main/java'),
+                rootProject.file('fabric/src/main/java'),
+        ])
+        commonExcludes.each { java.exclude it }
+        fabricExcludes.each { java.exclude it }
+        adapterRoots.each { adapterRoot ->
+            // Keep the adapter root above "java" so canonical exclusion paths do not
+            // accidentally remove a replacement class with the same package path.
+            java.srcDir(rootProject.file("adapters/${adapterRoot}"))
+        }
+        resources.setSrcDirs([
+                rootProject.file('common/src/main/resources'),
+        ])
+    }
+    test {
+        java.setSrcDirs([
+                rootProject.file('fabric/src/test/java'),
+        ])
+    }
+}
+
+loom {
+    runs {
+        client {
+            client()
+            name = "${target.id} Client"
+            runDir = layout.buildDirectory.dir('runs/client').get().asFile.absolutePath
+        }
+        server {
+            server()
+            name = "${target.id} Server"
+            runDir = layout.buildDirectory.dir('runs/server').get().asFile.absolutePath
+            programArgs '--nogui'
+        }
+    }
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    implementation project(':core')
+
+    minecraft "com.mojang:minecraft:${target.compile.minecraft}"
+    mappings loom.officialMojangMappings()
+
+    modImplementation("net.fabricmc:fabric-loader:${stack.fabricLoader}") {
+        version { strictly(stack.fabricLoader as String) }
+    }
+    modImplementation("net.fabricmc.fabric-api:fabric-api:${stack.fabricApi}") {
+        version { strictly(stack.fabricApi as String) }
+    }
+    modImplementation("net.blay09.mods:balm-fabric:${stack.balm}") {
+        version { strictly(stack.balm as String) }
+        exclude group: 'curse.maven'
+        exclude group: 'mysticdrew'
+        exclude group: 'mezz.jei'
+    }
+    modImplementation("net.blay09.mods:waystones-fabric:${stack.waystones}") {
+        version { strictly(stack.waystones as String) }
+        exclude group: 'net.blay09.mods', module: 'balm-fabric'
+        exclude group: 'curse.maven'
+        exclude group: 'mysticdrew'
+        exclude group: 'mezz.jei'
+        if (stack.waystonesCapability) {
+            capabilities {
+                requireCapability "net.blay09.mods:${stack.waystonesCapability}:${stack.waystones}"
+            }
+        }
+    }
+
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def minecraftRange = target.minecraft.size() == 2
+        ? ">=${target.minecraft.first()} <1.21.4"
+        : "=${target.minecraft.first()}"
+def fabricLoaderRange = ">=${target.minimum.fabricLoader}"
+def fabricApiRange = ">=${target.minimum.fabricApi}"
+def boundedDependencyRange = { String version ->
+    def baseVersion = version.tokenize('+').first()
+    def parts = baseVersion.tokenize('.')*.toInteger()
+    if (parts.size() < 2) {
+        throw new GradleException("Cannot derive a bounded dependency range from ${version}.")
+    }
+    return ">=${baseVersion} <${parts[0]}.${parts[1] + 1}"
+}
+def waystonesRange = boundedDependencyRange(target.minimum.waystones as String)
+def balmRange = boundedDependencyRange(target.minimum.balm as String)
+
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def replaceProperties = [
+            minecraft_version_range  : minecraftRange,
+            fabric_loader_version_range: fabricLoaderRange,
+            fabric_api_version_range : fabricApiRange,
+            mod_id                   : mod_id,
+            mod_name                 : mod_name,
+            mod_authors              : mod_authors,
+            mod_license              : mod_license,
+            mod_version              : matrix.modVersion,
+            mod_description          : mod_description,
+            waystones_version_range  : waystonesRange,
+            balm_mod_id              : target.balmModId,
+            balm_version_range       : balmRange,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from rootProject.file('fabric/src/main/templates')
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+
+sourceSets.main.resources.srcDir generateModMetadata
+
+tasks.named('jar', Jar).configure {
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    manifest {
+        attributes(
+                'Implementation-Title': mod_name,
+                'Implementation-Version': matrix.modVersion,
+                'WaystonesPlayer-Target': target.id,
+                'WaystonesPlayer-Build-Stack': stackName,
+        )
+    }
+    from project(':core').sourceSets.main.output
+    from(rootProject.file('LICENSE')) {
+        into 'META-INF'
+        rename { "LICENSE_${mod_id}" }
+    }
+    from(rootProject.file('TEMPLATE_LICENSE.txt')) {
+        into 'META-INF'
+        rename { "TEMPLATE_LICENSE_${mod_id}.txt" }
+    }
+    from(rootProject.file('THIRD_PARTY_NOTICES.md')) {
+        into 'META-INF'
+        rename { "THIRD_PARTY_NOTICES_${mod_id}.md" }
+    }
+}
+
+def releaseJar = tasks.named('remapJar')
+releaseJar.configure {
+    archiveFileName = target.artifactFile
+}
+
+def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
+    group = 'verification'
+    description = "Checks the installable ${target.id} JAR, metadata, notices, protocol, mixins, and icon."
+    dependsOn releaseJar
+    inputs.file(releaseJar.flatMap { it.archiveFile })
+    inputs.file(rootProject.file('gradle/targets.json'))
+
+    doLast {
+        File archive = releaseJar.get().archiveFile.get().asFile
+        if (archive.name != target.artifactFile) {
+            throw new GradleException(
+                    "Release JAR name ${archive.name} does not match ${target.artifactFile}.")
+        }
+
+        def requiredEntries = [
+                'META-INF/MANIFEST.MF',
+                'fabric.mod.json',
+                'META-INF/LICENSE_waystonesplayer',
+                'META-INF/TEMPLATE_LICENSE_waystonesplayer.txt',
+                'META-INF/THIRD_PARTY_NOTICES_waystonesplayer.md',
+                'waystonesplayer.png',
+                'waystonesplayer.mixins.json',
+                'waystonesplayer.network.json',
+                'com/palosj/waystonesplayer/PlayerTeleportExperienceMode.class',
+                'com/palosj/waystonesplayer/client/PlayerPanelLayout.class',
+                'com/palosj/waystonesplayer/teleport/TeleportArrivalVerifier.class',
+                'com/palosj/waystonesplayer/mixin/WarpStoneItemMixin.class',
+                'com/palosj/waystonesplayer/mixin/WaystoneSelectionMenuMixin.class',
+                'com/palosj/waystonesplayer/mixin/client/AbstractContainerScreenAccessor.class',
+                'com/palosj/waystonesplayer/fabric/FabricWaystonesPlayer.class',
+                'com/palosj/waystonesplayer/fabric/FabricWaystonesPlayerConfig.class',
+                'com/palosj/waystonesplayer/fabric/client/FabricWaystonesPlayerClient.class',
+        ]
+
+        new java.util.zip.ZipFile(archive).withCloseable { zip ->
+            def entries = java.util.Collections.list(zip.entries())
+            def entryNames = entries.collect { it.name }
+            def duplicateEntries = entryNames.countBy { it }.findAll { name, count -> count > 1 }.keySet()
+            if (!duplicateEntries.isEmpty()) {
+                throw new GradleException(
+                        "Release JAR contains duplicate entries: ${duplicateEntries.take(10).join(', ')}")
+            }
+
+            def entryNameSet = entryNames as Set
+            def missingEntries = requiredEntries.findAll { !entryNameSet.contains(it) }
+            if (!missingEntries.isEmpty()) {
+                throw new GradleException(
+                        "Release JAR is missing required entries: ${missingEntries.join(', ')}")
+            }
+
+            def manifest = new java.util.jar.Manifest(zip.getInputStream(zip.getEntry('META-INF/MANIFEST.MF')))
+            def attributes = manifest.mainAttributes
+            if (attributes.getValue('Implementation-Version') != matrix.modVersion
+                    || attributes.getValue('WaystonesPlayer-Target') != target.id
+                    || attributes.getValue('WaystonesPlayer-Build-Stack') != stackName) {
+                throw new GradleException('Release JAR manifest does not identify its target and dependency build stack.')
+            }
+
+            def iconEntry = zip.getEntry('waystonesplayer.png')
+            def icon = javax.imageio.ImageIO.read(zip.getInputStream(iconEntry))
+            if (icon == null || icon.width != 1024 || icon.height != 1024 || !icon.colorModel.hasAlpha()) {
+                throw new GradleException(
+                        'Release JAR icon must be the readable 1024x1024 PNG with an alpha channel.')
+            }
+            byte[] iconBytes = zip.getInputStream(iconEntry).bytes
+            String iconSha256 = java.security.MessageDigest.getInstance('SHA-256')
+                    .digest(iconBytes)
+                    .encodeHex()
+                    .toString()
+            if (iconSha256 != matrix.iconSha256) {
+                throw new GradleException(
+                        'Release JAR does not contain the approved existing project icon.')
+            }
+
+            def forbiddenPackagePrefixes = [
+                    'com/mojang/',
+                    'net/blay09/',
+                    'net/fabricmc/',
+                    'net/minecraft/',
+                    'net/neoforged/',
+                    'org/spongepowered/',
+            ]
+            def bundledDependencies = entries.findAll { entry ->
+                forbiddenPackagePrefixes.any { prefix -> entry.name.startsWith(prefix) }
+            }
+            if (!bundledDependencies.isEmpty()) {
+                throw new GradleException(
+                        "Release JAR bundles loader, game, or dependency classes: "
+                                + bundledDependencies*.name.take(10).join(', '))
+            }
+
+            String metadata = zip.getInputStream(zip.getEntry('fabric.mod.json')).getText('UTF-8')
+            if (metadata.contains('${')) {
+                throw new GradleException('Release JAR metadata contains unexpanded template placeholders.')
+            }
+            def parsedMetadata = new groovy.json.JsonSlurper().parseText(metadata)
+            if (parsedMetadata.id != mod_id
+                    || parsedMetadata.version != matrix.modVersion
+                    || parsedMetadata.icon != 'waystonesplayer.png'
+                    || parsedMetadata.environment != '*') {
+                throw new GradleException('Release JAR Fabric metadata has invalid identity or environment fields.')
+            }
+            def expectedEntrypoints = [
+                    main  : 'com.palosj.waystonesplayer.fabric.FabricWaystonesPlayer',
+                    client: 'com.palosj.waystonesplayer.fabric.client.FabricWaystonesPlayerClient',
+            ]
+            expectedEntrypoints.each { type, className ->
+                if (parsedMetadata.entrypoints[type] != [className]) {
+                    throw new GradleException(
+                            "Release JAR metadata has an invalid ${type} entrypoint.")
+                }
+            }
+            if (parsedMetadata.mixins != ['waystonesplayer.mixins.json']) {
+                throw new GradleException('Release JAR metadata does not register the exact Mixin configuration.')
+            }
+            def expectedDependencies = [
+                    fabricloader: fabricLoaderRange,
+                    'fabric-api': fabricApiRange,
+                    minecraft  : minecraftRange,
+                    java       : '>=21',
+                    waystones  : waystonesRange,
+                    (target.balmModId): balmRange,
+            ]
+            if (parsedMetadata.depends != expectedDependencies) {
+                throw new GradleException(
+                        "Release JAR dependencies ${parsedMetadata.depends} do not match ${expectedDependencies}.")
+            }
+
+            String mixinConfig = zip.getInputStream(zip.getEntry('waystonesplayer.mixins.json'))
+                    .getText('UTF-8')
+            def parsedMixinConfig = new groovy.json.JsonSlurper().parseText(mixinConfig)
+            def requiredCommonMixins = ['WarpStoneItemMixin', 'WaystoneSelectionMenuMixin'] as Set
+            if ((parsedMixinConfig.mixins as Set) != requiredCommonMixins
+                    || parsedMixinConfig.client != ['client.AbstractContainerScreenAccessor']) {
+                throw new GradleException(
+                        'Release JAR mixin configuration does not contain the required server-safe and client-only mixins.')
+            }
+
+            String networkContract = zip.getInputStream(zip.getEntry('waystonesplayer.network.json'))
+                    .getText('UTF-8')
+            def parsedNetworkContract = new groovy.json.JsonSlurper().parseText(networkContract)
+            if (parsedNetworkContract.networkVersion != '1'
+                    || parsedNetworkContract.payloads*.id != ['waystonesplayer:request_player_teleport']
+                    || parsedNetworkContract.payloads*.direction != ['client_to_server']) {
+                throw new GradleException(
+                        'Release JAR network contract does not match protocol version 1.')
+            }
+        }
+    }
+}
+
+tasks.named('check').configure {
+    dependsOn verifyReleaseJarContents
+}
+
+tasks.named('compileJava').configure {
+    dependsOn verifyTargetSourceSelection
+}

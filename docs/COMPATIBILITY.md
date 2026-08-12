@@ -75,7 +75,7 @@ Waystones/Balm 表中的版本需加对应 `+1.21.x` 构件后缀；共享行使
 
 部分 Waystones 正式版的 Gradle 元数据仍引用同系列 Balm `SNAPSHOT`。矩阵中的“最低 Balm”因此不是数值最小的任意正式版，而是首个不低于该构建要求的稳定发布。目标与二进制运行工程排除 Waystones 的传递 Balm，并严格加载矩阵指定的稳定版本，防止缓存中的可变 SNAPSHOT 偷换验收组合。Waystones NeoForge 元数据中无法解析或非必需的 JourneyMap 桥接依赖也从本项目的编译/冒烟配置排除；这不改变 Waystones 自身对已安装地图模组的运行时集成。
 
-1.21.11 还有构件发布边界：Waystones 21.11.2 与 21.11.4 只暴露 `waystones-neoforge-1.21.11` 自定义 Gradle capability，21.11.9 又恢复默认 capability。矩阵逐栈声明该差异，不能把最低构件的解析规则机械套到当前构件。
+1.21.11 还有构件发布边界：Waystones 21.11.2 与 21.11.4 分别只暴露 `waystones-neoforge-1.21.11`、`waystones-fabric-1.21.11` 自定义 Gradle capability，21.11.9 又恢复各自默认 capability。矩阵逐加载器、逐栈声明该差异，不能把最低构件的解析规则机械套到当前构件。
 
 ## Fabric 1.21.x 锁定端点
 

@@ -1,54 +1,63 @@
-name: Build
+name: Fabric 1.21.x Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - fabric/1.21.x
+  pull_request:
+    branches:
+      - fabric/1.21.x
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: fabric-1.21.x-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   branch-parity:
-    name: Unified branch parity
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Canonical main parity
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout canonical main
+      - name: Checkout repository
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Fetch unified branches
-        run: >-
-          git fetch --no-tags origin
-          refs/heads/neoforge/1.21.x:refs/remotes/origin/neoforge/1.21.x
-          refs/heads/fabric/1.21.x:refs/remotes/origin/fabric/1.21.x
-
       - name: Verify shared semantic parity
-        run: >-
-          ./scripts/verify-branch-parity.sh main
-          origin/neoforge/1.21.x
-          origin/fabric/1.21.x
+        run: ./scripts/verify-branch-parity.sh branch
 
   build:
-    name: NeoForge 1.21.1 (${{ matrix.stack }})
+    name: ${{ matrix.target }} (${{ matrix.stack }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
-        include:
-          - stack: minimum
-            neo-version: 21.1.229
-            waystones-version: 21.1.36+1.21.1
-            balm-version: 21.0.62+1.21.1
-          - stack: current
-            neo-version: 21.1.248
-            waystones-version: 21.1.40+1.21.1
-            balm-version: 21.0.64+1.21.1
+        target:
+          - fabric-1.21.1
+          - fabric-1.21.2-1.21.3
+          - fabric-1.21.4
+          - fabric-1.21.5
+          - fabric-1.21.6
+          - fabric-1.21.7
+          - fabric-1.21.8
+          - fabric-1.21.9
+          - fabric-1.21.10
+          - fabric-1.21.11
+        stack:
+          - minimum
+          - current
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup JDK 21
         uses: actions/setup-java@v5
@@ -61,12 +70,16 @@ jobs:
         with:
           validate-wrappers: true
 
-      - name: Build and test
+      - name: Verify canonical branch parity
+        run: ./scripts/verify-branch-parity.sh branch
+
+      - name: Test core and build target
         run: >-
-          ./gradlew clean test build
-          -Pneo_version=${{ matrix.neo-version }}
-          -Pwaystones_version=${{ matrix.waystones-version }}
-          -Pbalm_version=${{ matrix.balm-version }}
+          ./gradlew
+          :core:test
+          :targets:${{ matrix.target }}:clean
+          :targets:${{ matrix.target }}:build
+          -PdependencyStack=${{ matrix.stack }}
           --no-build-cache
           --no-daemon
           --console=plain
@@ -76,6 +89,7 @@ jobs:
         if: matrix.stack == 'minimum'
         uses: actions/upload-artifact@v7
         with:
-          name: waystonesplayer-neoforge-1.21.1
-          path: neoforge/build/libs/waystonesplayer-neoforge-1.21.1-*.jar
+          name: waystonesplayer-${{ matrix.target }}
+          path: targets/${{ matrix.target }}/build/libs/waystonesplayer-${{ matrix.target }}-1.0.0.jar
           if-no-files-found: error
+          retention-days: 14

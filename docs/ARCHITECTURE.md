@@ -170,7 +170,7 @@ NeoForge 修改配置时必须同步默认值、注释、语言、README、SERVE
 ## 发行门禁
 
 - 所有归档禁用文件时间戳并固定条目顺序。
-- `main` 与 NeoForge 统一分支保留 ModDevGradle 审计过的 Gradle 9.2.1；Fabric 统一分支因 Loom 1.17.19 的最低要求使用 Gradle 9.4.1。两个 wrapper 都固定官方 distribution SHA-256，CI 开启 wrapper validation。
+- `main` 与 NeoForge 统一分支保留 ModDevGradle 审计过的 Gradle 9.2.1；Fabric 统一分支因 Loom 1.17.19 的插件 API 要求使用 Gradle 9.5.1。两个 wrapper 都固定官方 distribution SHA-256，CI 开启 wrapper validation。
 - 发行 JAR必须含 loader 元数据、协议、Mixin、语言、`LICENSE`、`THIRD_PARTY_NOTICES` 和既有图标。
 - 禁止打包 Waystones/Balm/Fabric API/NeoForge 类、缓存、依赖 JAR、日志、崩溃报告、IDE 文件、凭据、私人绝对路径和无关大文件。
 - 每个 JAR文件名、Minecraft/Loader、依赖范围和 SHA-256 必须与目标矩阵及平台文件元数据一致。
