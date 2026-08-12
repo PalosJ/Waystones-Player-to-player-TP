@@ -195,6 +195,10 @@ dependencies {
     }
     modImplementation("net.blay09.mods:balm-fabric:${stack.balm}") {
         version { strictly(stack.balm as String) }
+        // Balm already embeds the matching KumaAPI JAR. Some older published
+        // POMs use a broad [21.2,22) range that otherwise resolves a newer
+        // Minecraft line as a second, incompatible root mod.
+        exclude group: 'net.blay09.mods', module: 'kuma-api-fabric'
         exclude group: 'curse.maven'
         exclude group: 'mysticdrew'
         exclude group: 'mezz.jei'
@@ -202,6 +206,7 @@ dependencies {
     modImplementation("net.blay09.mods:waystones-fabric:${stack.waystones}") {
         version { strictly(stack.waystones as String) }
         exclude group: 'net.blay09.mods', module: 'balm-fabric'
+        exclude group: 'net.blay09.mods', module: 'kuma-api-fabric'
         exclude group: 'curse.maven'
         exclude group: 'mysticdrew'
         exclude group: 'mezz.jei'

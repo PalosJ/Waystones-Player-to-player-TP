@@ -70,6 +70,9 @@ dependencies {
     }
     modRuntimeOnly("net.blay09.mods:balm-fabric:${stack.balm}") {
         version { strictly(stack.balm as String) }
+        // The Balm JAR contains the KumaAPI build for its own Minecraft line;
+        // reject the overly broad external Maven range from older Balm POMs.
+        exclude group: 'net.blay09.mods', module: 'kuma-api-fabric'
         exclude group: 'curse.maven'
         exclude group: 'mysticdrew'
         exclude group: 'mezz.jei'
@@ -77,6 +80,7 @@ dependencies {
     modRuntimeOnly("net.blay09.mods:waystones-fabric:${stack.waystones}") {
         version { strictly(stack.waystones as String) }
         exclude group: 'net.blay09.mods', module: 'balm-fabric'
+        exclude group: 'net.blay09.mods', module: 'kuma-api-fabric'
         exclude group: 'curse.maven'
         exclude group: 'mysticdrew'
         exclude group: 'mezz.jei'
