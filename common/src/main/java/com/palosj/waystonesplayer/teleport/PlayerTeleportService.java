@@ -11,7 +11,6 @@ import com.palosj.waystonesplayer.compat.WaystonesTeleportCompat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
 public final class PlayerTeleportService {
@@ -25,7 +24,7 @@ public final class PlayerTeleportService {
             ServerPlayer sender,
             UUID targetPlayerId,
             PlayerTeleportExperienceMode experienceMode) {
-        int currentTick = sender.server.getTickCount();
+        int currentTick = sender.level().getServer().getTickCount();
         RequestRateLimiter.Result rateLimitResult = REQUEST_LIMITER.acquire(sender.getUUID(), currentTick);
         if (rateLimitResult == RequestRateLimiter.Result.REJECTED_NOTIFY) {
             sender.displayClientMessage(translatable("message.waystonesplayer.teleport_cooling_down"), false);
@@ -38,12 +37,12 @@ public final class PlayerTeleportService {
         AbstractContainerMenu menu = sender.containerMenu;
         Optional<WaystonesCompat.WarpStoneUse> warpStoneUse = WaystonesCompat.resolveWarpStoneUse(sender, menu);
         if (warpStoneUse.isEmpty()) {
-            WaystonesPlayer.LOGGER.debug("{} sent an invalid warp stone player teleport request.", sender.getGameProfile().getName());
+            WaystonesPlayer.LOGGER.debug("{} sent an invalid warp stone player teleport request.", sender.getUUID());
             sender.displayClientMessage(translatable("message.waystonesplayer.invalid_context"), false);
             return;
         }
 
-        ServerPlayer target = sender.server.getPlayerList().getPlayer(targetPlayerId);
+        ServerPlayer target = sender.level().getServer().getPlayerList().getPlayer(targetPlayerId);
         if (target == null || !target.allowsListing()) {
             sender.displayClientMessage(translatable("message.waystonesplayer.target_unavailable"), false);
             return;
@@ -75,7 +74,7 @@ public final class PlayerTeleportService {
 
         sender.resetFallDistance();
         WaystonesCompat.WarpStoneUse successfulUse = warpStoneUse.orElseThrow();
-        successfulUse.stack().hurtAndBreak(1, sender, LivingEntity.getSlotForHand(successfulUse.hand()));
+        DurabilityCompat.hurtAndBreak(successfulUse.stack(), sender, successfulUse.hand());
         sender.closeContainer();
     }
 

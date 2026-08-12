@@ -23,8 +23,7 @@ public abstract class WarpStoneItemMixin {
             Level level,
             LivingEntity entity,
             CallbackInfoReturnable<ItemStack> callback) {
-        if (level.isClientSide
-                || !(entity instanceof ServerPlayer player)
+        if (!(entity instanceof ServerPlayer player)
                 || !WaystonesCompat.isWarpStoneMenu(player.containerMenu)
                 || !(player.containerMenu instanceof WarpStoneUseCarrier carrier)) {
             return;

@@ -114,6 +114,24 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
         }
 
         def sharedIds = ['neoforge-1.21.2-1.21.3', 'fabric-1.21.2-1.21.3'] as Set
+        def expectedKeyStacks = [
+                'neoforge-1.21.4' : [
+                        neoforge: '21.4.121',
+                        waystones: '21.4.5+1.21.4',
+                        balm: '21.4.9+1.21.4',
+                ],
+                'neoforge-1.21.10': [
+                        neoforge: '21.10.63',
+                        waystones: '21.10.2+1.21.10',
+                        balm: '21.10.5+1.21.10',
+                ],
+                'neoforge-1.21.11': [
+                        neoforge: '21.11.42',
+                        waystones: '21.11.4',
+                        waystonesCapability: 'waystones-neoforge-1.21.11',
+                        balm: '21.11.3',
+                ],
+        ]
         targets.each { target ->
             require(target.releaseVersion == matrix.modVersion,
                     "${target.id} must use release version ${matrix.modVersion}.")
@@ -132,14 +150,41 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
             require(target.minimum.waystones && target.minimum.balm
                     && target.current.waystones && target.current.balm,
                     "${target.id} must declare minimum and current Waystones/Balm versions.")
+            def dependencyVersions = [
+                    target.minimum.waystones,
+                    target.minimum.balm,
+                    target.current.waystones,
+                    target.current.balm,
+            ]
+            if (target.key) {
+                dependencyVersions.addAll([target.key.waystones, target.key.balm])
+            }
+            require(dependencyVersions.every { !it.contains('SNAPSHOT') },
+                    "${target.id} runtime stacks must use immutable release dependencies.")
             require(target.families.balm && target.families.screen && target.families.teleport,
                     "${target.id} must name each source adapter family.")
+            if (expectedKeyStacks.containsKey(target.id)) {
+                require(target.key == expectedKeyStacks[target.id],
+                        "${target.id} must keep its audited key runtime stack.")
+                require(target.keyReason instanceof String && !target.keyReason.trim().isEmpty(),
+                        "${target.id} must explain its key runtime boundary.")
+            } else {
+                require(!target.containsKey('key') && !target.containsKey('keyReason'),
+                        "${target.id} must not declare a redundant key runtime stack.")
+            }
 
             if (target.loader == 'neoforge') {
                 require(target.minimum.neoforge && target.current.neoforge,
                         "${target.id} must declare minimum and current NeoForge versions.")
                 require(!target.containsKey('balmModId'),
                         "${target.id} must not declare a Fabric Balm mod ID.")
+                def expectedWaystonesCapability = target.id == 'neoforge-1.21.11'
+                        ? 'waystones-neoforge-1.21.11'
+                        : null
+                require(target.minimum.waystonesCapability == expectedWaystonesCapability,
+                        "${target.id} has an invalid minimum Waystones capability override.")
+                require(!target.current.containsKey('waystonesCapability'),
+                        "${target.id} current stack must resolve the default Waystones capability.")
             } else if (target.loader == 'fabric') {
                 require(target.minimum.fabricLoader && target.minimum.fabricApi
                         && target.current.fabricLoader && target.current.fabricApi,
