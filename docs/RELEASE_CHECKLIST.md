@@ -29,6 +29,7 @@
 - [ ] 最低整套依赖执行 `clean test build --no-build-cache`。
 - [ ] 当前整套依赖执行 `clean test build --no-build-cache`。
 - [ ] 两次构建使用该 target 的独立 Gradle project 与运行目录。
+- [ ] 当前分支 wrapper 与矩阵一致：NeoForge 为 Gradle 9.2.1，Fabric 为 Gradle 9.4.1；distribution SHA-256 已锁定。
 - [ ] warning 已审查，未忽略 Mixin target/refmap、弃用 API 或元数据问题。
 - [ ] 上传候选保留最低套件生成的 JAR；当前套件 JAR不覆盖它。
 
