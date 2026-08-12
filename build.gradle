@@ -82,6 +82,7 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
         require(matrix.modVersion == mod_version, "modVersion must remain ${mod_version}.")
         require(matrix.buildTools.java == 21
                 && matrix.buildTools.gradle == '9.2.1'
+                && matrix.buildTools.fabricGradle == '9.4.1'
                 && matrix.buildTools.modDevGradle == '2.0.143'
                 && matrix.buildTools.loom == '1.17.19',
                 'build-tool versions must match the audited release toolchain.')
