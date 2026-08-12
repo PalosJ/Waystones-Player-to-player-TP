@@ -1,10 +1,35 @@
-# Modrinth 页面文案
+# Modrinth 发布材料
+
+本文件提供项目页面文案与上传元数据模板。每个文件的精确游戏版本和文件名从 [gradle/targets.json](../gradle/targets.json) 读取，不手工扩大兼容范围。
+
+## 项目设置
+
+| 字段 | 值 |
+|---|---|
+| Title | Waystones Player |
+| Slug | `waystonesplayer` |
+| Client side | Required |
+| Server side | Required |
+| Project license | Custom；链接仓库根 `LICENSE` |
+| Required dependencies | Waystones、Balm |
+| Unsupported loader | Forge |
+| Version number | 所有文件均为 `1.0.0` |
+
+每个上传文件：
+
+- Release type：Release。
+- Game versions：仅选择矩阵中该 JAR的 `minecraft` 列表。
+- Loaders：只选择该 JAR的 NeoForge 或 Fabric。
+- Dependencies：Waystones 与 Balm 均标记 Required。
+- 1.21.2/1.21.3 共用 JAR同时选择两个游戏版本；其他文件只选择一个。
+- NeoForge 1.21.2、1.21.6、1.21.7、1.21.9 的 changelog 增加“requires an official beta NeoForge build”提示。
+- 上传前核对 SHA-256 与最终交付清单；不要上传 `-sources`、`-dev`、缓存或当前套件重编译产物。
 
 ## English
 
 ### Summary
 
-Adds online players to the Waystones Warp Stone menu, so reaching the people you adventure with feels as natural as choosing a destination.
+Adds a live online-player directory to the Waystones Warp Stone menu, with server-authoritative costs, durability, events, and responsive layout.
 
 ### Description
 
@@ -12,13 +37,55 @@ Adds online players to the Waystones Warp Stone menu, so reaching the people you
 
 Sometimes the person you are looking for matters more than the place.
 
-Waystones Player brings online players into the [Waystones](https://modrinth.com/mod/waystones) Warp Stone menu. Choose a friend and travel straight to them—no commands, operator permissions, or extra confirmation steps. It feels like a small feature that always belonged there: simple for a group of friends, and just as useful on a busy server.
+Waystones Player is an unofficial add-on that brings other listed players into the [Waystones](https://modrinth.com/mod/waystones) Warp Stone menu. Choose a player and travel through Waystones' normal event, sound, effect, and adjacent-destination pipeline—without commands, operator permissions, or a second confirmation screen.
 
-Player travel can remain free or follow Waystones' experience rules, so each server can keep the pace that feels right for its world.
+## Features
 
-This is an unofficial Waystones add-on for Minecraft 1.21.1 on NeoForge. [Waystones](https://modrinth.com/mod/waystones) and [Balm](https://modrinth.com/mod/balm) are required, and Waystones Player must be installed on both the client and server.
+- A live player directory based on Minecraft's existing listed-player data.
+- A responsive 164px full list, 128–163px compact list, or 36px clickable avatar rail.
+- Server-side validation of the exact Warp Stone and hand, listed target, experience requirement, and confirmed movement.
+- Waystones-compatible cancellable events, sound, effects, and adjacent non-suffocating placement.
+- Exactly one point of native Warp Stone durability after confirmed success.
+- Free, follow-Waystones, or always-evaluate-Waystones experience modes.
+- No telemetry, advertising, analytics, or external uploads.
 
-**Project icon credits:** Warp Stone artwork by [Joe Williamson (JoeCreates)](https://opengameart.org/content/roguelikerpg-items), adapted under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Minecraft player imagery belongs to Mojang and Microsoft. Waystones Player is not an official Minecraft product and is not approved by or associated with Mojang or Microsoft. It is also an unofficial Waystones add-on and is not endorsed by Twelve Iterations.
+The client sends only the selected target UUID. The server independently resolves the target and rejects players hidden from Minecraft's listed-player stream. Player destinations are transient and are not stored as Waystones.
+
+Adjacent non-suffocating placement is not an absolute safety guarantee. It does not require solid ground and does not exclude dangerous fluids or cliffs.
+
+## Compatibility
+
+Waystones Player must be installed on both client and server together with matching [Waystones](https://modrinth.com/mod/waystones) and [Balm](https://modrinth.com/mod/balm) files.
+
+- NeoForge: Minecraft 1.21.1–1.21.11.
+- Fabric: Minecraft 1.21.1–1.21.11.
+- Minecraft 1.21.2 and 1.21.3 share one separately tested file per loader.
+- Java 21.
+- Forge is not supported.
+
+Use the file whose loader and Minecraft version exactly match the instance. Some supported NeoForge lines use official beta NeoForge builds; those files disclose this in their changelog.
+
+## Configuration
+
+`playerTeleportExperienceMode` defaults to `NEVER`:
+
+- `NEVER`: player destinations do not consume experience.
+- `FOLLOW_WAYSTONES`: use Waystones experience rules only while its global cost switch is enabled.
+- `ALWAYS`: evaluate the same Waystones experience rules regardless of that switch.
+
+Only experience-point and experience-level requirements are selected. Item costs, cooldowns, and unrelated requirements are not inherited.
+
+NeoForge keeps SERVER configuration and per-world override semantics. Fabric uses the same `config/waystonesplayer-server.toml` name, key, and default as a global instance configuration, without per-world overrides.
+
+## License and attribution
+
+Original code is All Rights Reserved. The custom [LICENSE](https://github.com/PalosJ/waystonesplayer/blob/main/LICENSE) grants limited end-user permission to download, install, and run an official unmodified JAR. Modification, redistribution, mirroring, modpack bundling, and commercial use require written permission.
+
+The existing project icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by [Joe Williamson (JoeCreates)](https://opengameart.org/content/roguelikerpg-items) under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Additional player imagery and complete terms are documented in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/waystonesplayer/blob/main/THIRD_PARTY_NOTICES.md).
+
+Waystones Player is not endorsed by Twelve Iterations.
+
+NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
 ---
 
@@ -26,7 +93,7 @@ This is an unofficial Waystones add-on for Minecraft 1.21.1 on NeoForge. [Waysto
 
 ### 摘要
 
-把在线玩家带进 Waystones 的传送石菜单，让前往并肩冒险的伙伴像选择一处目的地一样自然。
+在 Waystones 的传送石菜单中加入实时在线玩家目录，并提供服务端权威费用、耐久、事件兼容和响应式布局。
 
 ### 描述
 
@@ -34,10 +101,20 @@ This is an unofficial Waystones add-on for Minecraft 1.21.1 on NeoForge. [Waysto
 
 有时候，你想找的不是某一座石碑，而是正在世界另一头冒险的朋友。
 
-Waystones Player 会把在线玩家加入 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的传送石菜单。选中伙伴，就能直接前往对方身边——不需要命令、OP 权限，也没有多余的确认步骤。它更像是一个本就应该存在的小功能：几个人一起开荒时很顺手，放在热闹的服务器里也同样实用。
+Waystones Player 会把当前连接中可列出的其他玩家加入 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的 Warp Stone 菜单。选择玩家后，传送会进入 Waystones 的事件、声音、效果与相邻落点流程，不需要命令、OP 权限或第二次确认。
 
-玩家传送可以保持免费，也可以跟随 Waystones 的经验规则，让每个服务器选择适合自己世界的冒险节奏。
+玩家目录会实时更新，并按界面空间显示完整名单、收窄名单或可点击头像栏。客户端只发送目标 UUID；服务端重新检查确切物品、使用手、目标可见性、经验和实际移动。确认成功后才损耗 1 点原生耐久；失败恢复经验、保留耐久并保持界面打开。
 
-本模组是 Waystones 的非官方附属，目前支持 Minecraft 1.21.1 / NeoForge。需要同时安装 [Waystones](https://modrinth.com/mod/waystones) 与 [Balm](https://modrinth.com/mod/balm)，并将 Waystones Player 安装在客户端和服务端。
+相邻非窒息落点不是绝对安全保证：它不要求脚下有实体方块，也不会排除危险流体或悬崖。
 
-**项目图标署名：** Warp Stone 美术素材由 [Joe Williamson（JoeCreates）](https://opengameart.org/content/roguelikerpg-items)创作，并依照 [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) 修改使用；Minecraft 玩家头像素材归 Mojang 与 Microsoft 所有。本项目不是 Minecraft 官方产品，未经 Mojang 或 Microsoft 批准，也不与其存在关联；同时也是未经 Twelve Iterations 背书的非官方 Waystones 附属。
+本模组需要在客户端和服务端同时安装，并配套安装对应版本的 Waystones 与 Balm：
+
+- NeoForge：Minecraft 1.21.1–1.21.11。
+- Fabric：Minecraft 1.21.1–1.21.11。
+- 1.21.2 与 1.21.3 在每个加载器共用一份分别测试的文件。
+- Java 21。
+- 不支持 Forge。
+
+原创代码为 All Rights Reserved；自定义许可证只允许最终用户下载、安装并运行官方未修改 JAR。修改、镜像、再分发、整合包收录或商业使用需要书面许可。现有图标保持不变，完整素材署名和条款见项目的 `THIRD_PARTY_NOTICES.md`。
+
+本项目是未经 Twelve Iterations 背书的非官方 Waystones 附属，也不是 Minecraft 官方产品。

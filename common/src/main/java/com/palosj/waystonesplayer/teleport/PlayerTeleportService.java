@@ -1,21 +1,18 @@
 package com.palosj.waystonesplayer.teleport;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.WaystonesPlayer;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
-import com.palosj.waystonesplayer.compat.WaystonesExperienceCompat;
+import com.palosj.waystonesplayer.compat.WaystonesTeleportCompat;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.phys.Vec3;
 
 public final class PlayerTeleportService {
     private static final int REQUEST_COOLDOWN_TICKS = 10;
@@ -47,8 +44,8 @@ public final class PlayerTeleportService {
         }
 
         ServerPlayer target = sender.server.getPlayerList().getPlayer(targetPlayerId);
-        if (target == null) {
-            sender.displayClientMessage(translatable("message.waystonesplayer.target_offline"), false);
+        if (target == null || !target.allowsListing()) {
+            sender.displayClientMessage(translatable("message.waystonesplayer.target_unavailable"), false);
             return;
         }
 
@@ -57,46 +54,21 @@ public final class PlayerTeleportService {
             return;
         }
 
-        TeleportCost experienceCost = TeleportCost.NONE;
-        if (experienceMode != PlayerTeleportExperienceMode.NEVER) {
-            Optional<TeleportCost> resolvedCost = WaystonesExperienceCompat.resolveExperienceCost(
-                    sender,
-                    target,
-                    warpStoneUse.orElseThrow(),
-                    experienceMode);
-            if (resolvedCost.isEmpty()) {
-                sender.displayClientMessage(translatable("message.waystonesplayer.experience_cost_unavailable"), false);
-                return;
-            }
-            experienceCost = resolvedCost.orElseThrow();
-        }
-
-        Vec3 targetPos = target.position();
-        ServerLevel targetLevel = target.serverLevel();
-        float targetYRot = target.getYRot();
-        float targetXRot = target.getXRot();
-
-        TeleportTransaction.Result result;
-        try {
-            result = TeleportTransaction.execute(experienceCost, () -> sender.teleportTo(
-                    targetLevel,
-                    targetPos.x,
-                    targetPos.y,
-                    targetPos.z,
-                    Set.of(),
-                    targetYRot,
-                    targetXRot));
-        } catch (RuntimeException e) {
-            WaystonesPlayer.LOGGER.error("Failed to teleport {} to {}.", sender.getGameProfile().getName(), target.getGameProfile().getName(), e);
-            sender.displayClientMessage(translatable("message.waystonesplayer.teleport_failed"), false);
+        Optional<TeleportOutcome> result = WaystonesTeleportCompat.tryTeleport(
+                sender,
+                target,
+                warpStoneUse.orElseThrow(),
+                experienceMode);
+        if (result.isEmpty()) {
+            sender.displayClientMessage(translatable("message.waystonesplayer.compatibility_unavailable"), false);
             return;
         }
 
-        if (result == TeleportTransaction.Result.UNAFFORDABLE) {
+        if (result.orElseThrow() == TeleportOutcome.UNAFFORDABLE) {
             sender.displayClientMessage(translatable("message.waystonesplayer.insufficient_experience"), false);
             return;
         }
-        if (result == TeleportTransaction.Result.FAILED) {
+        if (result.orElseThrow() == TeleportOutcome.FAILED) {
             sender.displayClientMessage(translatable("message.waystonesplayer.teleport_failed"), false);
             return;
         }

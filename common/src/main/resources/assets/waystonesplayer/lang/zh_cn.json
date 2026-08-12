@@ -4,10 +4,10 @@
   "narration.waystonesplayer.online_players.empty": "在线玩家。当前没有其他在线玩家。",
   "config.waystonesplayer.player_teleport_experience_mode": "玩家间传送经验模式",
   "message.waystonesplayer.invalid_context": "当前传送请求已失效。",
-  "message.waystonesplayer.target_offline": "目标玩家已离线。",
+  "message.waystonesplayer.target_unavailable": "目标玩家当前不可用。",
   "message.waystonesplayer.target_self": "你已经在自己的位置附近了。",
   "message.waystonesplayer.insufficient_experience": "经验不足，无法传送！",
-  "message.waystonesplayer.experience_cost_unavailable": "无法计算传送石碑经验消耗，已取消本次传送。",
+  "message.waystonesplayer.compatibility_unavailable": "无法安全确认传送石碑兼容状态，已取消本次传送。",
   "message.waystonesplayer.teleport_failed": "传送失败，请稍后再试。",
   "message.waystonesplayer.teleport_cooling_down": "传送请求过快，请稍后再试。"
 }

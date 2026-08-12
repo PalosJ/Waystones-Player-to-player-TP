@@ -1,12 +1,33 @@
 # 兼容性与升级指南
 
-本文记录各分支的支持范围、Waystones/Balm 依赖边界和升级步骤。它不是对所有未来补丁的自动承诺；README、发布页和实际验证记录优先。
+本文描述每个正式目标的依赖边界、API 断点和升级验证。精确、机器可检查的版本字符串和文件名以 [gradle/targets.json](../gradle/targets.json) 为唯一数据源；本文表格用于人工审查，不能单独替代构建与运行证据。
 
-## Canonical 主线
+## 支持定义
 
-`main` 固定代表 Minecraft 1.21.1 / NeoForge，不因试验分支改变默认发布方向：
+“正式支持”要求同一目标同时满足：
 
-| 项目 | 声明最低 | 当前开发/CI | 声明范围 |
+1. 目标工程用该 Minecraft/映射和最低依赖套件编译。
+2. 最低与当前整套依赖分别通过 `clean test build`，不单独替换某一个上游 JAR。
+3. 最低套件生成的同一发行 JAR在最低、关键断点和当前运行时加载。
+4. 客户端与专用服务器均通过物理端类加载检查。
+5. 玩家目录、主副手、listed 权限、费用、回滚、耐久、事件取消、跨维度和失败界面行为通过对应运行验收。
+6. 最终 JAR、平台元数据、SHA-256 和本文件声明一致。
+
+这些证据只能降低已知风险，不能证明任何软件“绝对无缺陷”。未运行的场景必须明确披露，不能以编译成功替代。
+
+## 分支与产物
+
+| 分支 | 加载器 | Minecraft | 产物数 | 说明 |
+|---|---|---|---:|---|
+| `main` | NeoForge | 1.21.1 | 1 | 永久 canonical 主线 |
+| `neoforge/1.21.x` | NeoForge | 1.21.2–1.21.11 | 9 | .2/.3 共用一份 JAR |
+| `fabric/1.21.x` | Fabric | 1.21.1–1.21.11 | 10 | .2/.3 共用一份 JAR |
+
+总计 20 个可上传 JAR，全部版本号 `1.0.0`。除明确共享的 1.21.2/1.21.3 外，每份元数据只接受一个 Minecraft 小版本。
+
+## Canonical NeoForge 1.21.1
+
+| 组件 | 最低 | 当前 | 声明范围 |
 |---|---:|---:|---|
 | Minecraft | 1.21.1 | 1.21.1 | `[1.21.1]` |
 | Java | 21 | 21 | 21 |
@@ -14,98 +35,138 @@
 | Waystones | 21.1.36 | 21.1.40 | `[21.1.36,21.2)` |
 | Balm | 21.0.62 | 21.0.64 | `[21.0.62,21.1)` |
 
-CI 使用“最低整套”和“当前整套”矩阵，而不是只替换 Waystones：最低为 NeoForge 21.1.229 + Waystones 21.1.36 + Balm 21.0.62，当前为 NeoForge 21.1.248 + Waystones 21.1.40 + Balm 21.0.64。范围上界阻止加载器把跨 Minecraft 系列的内部结构当成已声明兼容。
+当前套件：
 
-## 移植验证分支
+```bash
+./gradlew clean test build \
+  -Pneo_version=21.1.248 \
+  -Pwaystones_version=21.1.40+1.21.1 \
+  -Pbalm_version=21.0.64+1.21.1 \
+  --no-build-cache
+```
 
-| 分支 | Minecraft / Java | 加载器 | Waystones / Balm | 用途 |
+最低套件：
+
+```bash
+./gradlew clean test build \
+  -Pneo_version=21.1.229 \
+  -Pwaystones_version=21.1.36+1.21.1 \
+  -Pbalm_version=21.0.62+1.21.1 \
+  --no-build-cache
+```
+
+## NeoForge 1.21.x 锁定端点
+
+Waystones/Balm 表中的版本需加对应 `+1.21.x` 构件后缀；共享行使用 `+1.21.3`。完整字符串见 JSON。
+
+| 目标 | NeoForge 最低 / 当前 | Waystones 最低 / 当前 | Balm 最低 / 当前 | 备注 |
 |---|---|---|---|---|
-| `fabric/1.21.1` | 1.21.1 / 21 | Fabric Loader 0.17.3+、Fabric API 0.116.x | Waystones 21.1.36–21.1.x / Balm 21.0.62–21.0.x | 同版本多加载器实证；同时回归 NeoForge 模块 |
-| `neoforge/1.21.11` | 1.21.11 / 21 | NeoForge 21.11.x | Waystones 21.11.x / Balm 21.11.x | Minecraft 与上游新 API 移植实证 |
+| 1.21.2 + 1.21.3 | .2 运行：21.2.0-beta / 21.2.1-beta；.3 编译/运行：21.3.56 / 21.3.97 | 21.3.1 / 21.3.3 | 21.3.1 / 21.3.5 | 同一 1.21.3 基线 JAR，两版分别运行 |
+| 1.21.4 | 21.4.121 / 21.4.157 | 21.4.1 / 21.4.19 | 21.4.1 / 21.4.42 | 稳定 Loader |
+| 1.21.5 | 21.5.74 / 21.5.98 | 21.5.1 / 21.5.11 | 21.5.3 / 21.5.26 | 稳定 Loader |
+| 1.21.6 | 21.6.0-beta / 21.6.20-beta | 21.6.1 / 21.6.1 | 21.6.1 / 21.6.3 | 官方 beta Loader |
+| 1.21.7 | 21.7.1-beta / 21.7.25-beta | 21.7.1 / 21.7.2 | 21.7.2 / 21.7.3 | 官方 beta Loader |
+| 1.21.8 | 21.8.9 / 21.8.54 | 21.8.1 / 21.8.5 | 21.8.1 / 21.8.10 | 精确限制 1.21.8 |
+| 1.21.9 | 21.9.1-beta / 21.9.16-beta | 21.9.1 / 21.9.2 | 21.9.1 / 21.9.4 | 官方 beta Loader |
+| 1.21.10 | 21.10.63 / 21.10.64 | 21.10.1 / 21.10.5 | 21.10.1 / 21.10.11 | context/hand 断点 |
+| 1.21.11 | 21.11.42 / 21.11.45 | 21.11.2 / 21.11.9 | 21.11.2 / 21.11.9.1 | Identifier/Balm 大断点 |
 
-这两个分支是从 canonical 行为移植出的扩展，不会反向改变 `main` 的 Minecraft/加载器含义。各分支的 README、Gradle 属性和 CI 必须记录其实际最低/当前验证组合；不能把“能解析依赖”写成运行支持。
+1.21.2、1.21.6、1.21.7、1.21.9 文件必须在平台元数据和 changelog 中明确写出 NeoForge beta，不能标成稳定加载器。
 
-## 1.21.1 上游依赖点
+## Fabric 1.21.x 锁定端点
 
-### 公开或相对稳定接口
+Waystones、Balm 与 Fabric API 使用对应 Minecraft 后缀；共享目标的发行编译基线为 1.21.3，1.21.2 运行时换用对应 Fabric API 1.21.2 构件。
 
-- Balm 模块初始化、事件、网络注册和屏幕工具。
-- Waystones `WaystonesAPI`、`WaystoneTeleportContext`、类型与 requirement API。
-- Minecraft 菜单注册表、玩家/物品/传送和原生耐久 API。
+| 目标 | Loader 最低 / 当前 | Fabric API 最低 / 当前 | Waystones 最低 / 当前 | Balm 最低 / 当前 |
+|---|---|---|---|---|
+| 1.21.1 | 0.17.3 / 0.19.3 | 0.116.7 / 0.116.15 | 21.1.36 / 21.1.40 | 21.0.62 / 21.0.64 |
+| 1.21.2 + 1.21.3 | 0.16.7 / 0.19.3 | .2：0.106.1 / 0.106.1；.3：0.106.1 / 0.114.1 | 21.3.1 / 21.3.3 | 21.3.1 / 21.3.5 |
+| 1.21.4 | 0.16.9 / 0.19.3 | 0.110.5 / 0.119.4 | 21.4.1 / 21.4.19 | 21.4.1 / 21.4.41 |
+| 1.21.5 | 0.16.10 / 0.19.3 | 0.119.5 / 0.128.2 | 21.5.1 / 21.5.11 | 21.5.3 / 21.5.25 |
+| 1.21.6 | 0.16.14 / 0.19.3 | 0.127.0 / 0.128.2 | 21.6.1 / 21.6.1 | 21.6.1 / 21.6.1 |
+| 1.21.7 | 0.16.14 / 0.19.3 | 0.128.1 / 0.129.0 | 21.7.1 / 21.7.2 | 21.7.2 / 21.7.3 |
+| 1.21.8 | 0.16.14 / 0.19.3 | 0.129.0 / 0.136.1 | 21.8.1 / 21.8.5 | 21.8.1 / 21.8.10 |
+| 1.21.9 | 0.17.2 / 0.19.3 | 0.133.14 / 0.134.1 | 21.9.1 / 21.9.2 | 21.9.1 / 21.9.4 |
+| 1.21.10 | 0.17.2 / 0.19.3 | 0.134.1 / 0.138.4 | 21.10.1 / 21.10.5 | 21.10.1 / 21.10.11 |
+| 1.21.11 | 0.18.1 / 0.19.3 | 0.139.4 / 0.141.6 | 21.11.2 / 21.11.9 | 21.11.2 / 21.11.9.1 |
 
-### 内部或需重点复核的结构
+Fabric Balm 的模组 ID 是真实断点：
 
-| 依赖点 | 用途 | 失败策略 |
+- 1.21.1：`balm`。
+- 1.21.2/1.21.3 共用线：`balm-fabric`，且该旧 JAR不提供 `balm`。
+- 1.21.4–1.21.11：依赖 `balm`；上游同时提供 `balm-fabric` 别名不改变本附属的规范声明。
+
+## 为什么 1.21.2 与 1.21.3 共用
+
+Waystones 和 Balm 的官方 1.21.3 源码线明确写有：
+
+- 编译 Minecraft：1.21.3；
+- 最低 Minecraft：1.21.2；
+- 支持 Minecraft：1.21.2、1.21.3。
+
+其真实 NeoForge/Fabric JAR元数据也把最低版本设为 1.21.2。因此共用是上游的有意兼容策略，不是文件名巧合。
+
+这只证明上游依赖设计为共用，不自动证明本附属共用。本附属仍需把同一最低构建 JAR分别放入 1.21.2 与 1.21.3 的最低/当前套件，验证 Mixin、网络、屏幕和传送行为后才能发布。
+
+## 已确认 API 断点
+
+| 范围 | 关键断点 | 维护要求 |
 |---|---|---|
-| 菜单 ID `waystones:warp_stone_selection` | 限定合法请求上下文 | 请求失效，不扣费 |
-| 菜单方法 `getWarpItem()` | 找到打开界面的原始传送石对象 | 玩家目的地禁用，只告警一次 |
-| `WaystoneImpl` 瞬态实例构造 | 表示目标玩家位置与维度 | 需要经验时拒绝传送 |
-| `WaystonesConfig.getActive().teleports` | 读取总开关与 `warpRequirements` | 需要经验时拒绝传送 |
-| `RequirementModifierParser` / `WarpRequirementsContextImpl` | 应用当前经验公式 | 需要经验时拒绝传送，只告警一次 |
-| `AbstractWaystoneList` | 推导 1.21.1 GUI 的位置和尺寸 | 不注入玩家面板 |
-| `AbstractContainerScreen.leftPos` 客户端访问器 | 同步移动 1.21.1 的文本、命中区域和控件 | 按最低/当前依赖编译并实际启动客户端；字段不匹配不得发布 |
-| 选择界面类名包含 `WaystoneSelectionScreen` | 延迟加载客户端注入器 | 不注入玩家面板 |
+| 1.21.1 | `ResourceLocation`、旧屏幕列表、同步 transient 传送 | 保持 canonical 行为；不能切到会验证真实方块的异步入口 |
+| 1.21.2/1.21.3 | Balm 只有 Runnable 初始化；菜单没有稳定 Warp Stone getter | 使用 Runnable family 与菜单载体 Mixin |
+| 1.21.4–1.21.8 | 旧 Balm module；legacy input；菜单 getter 在 21.4 线中途才出现 | 不依赖 getter；继续使用载体 |
+| 1.21.9 | GUI 输入事件签名变化 | 单独 event-input screen family |
+| 1.21.10 | Waystones 增加 hand/context-aware requirement | 单独 context-hand family，保持本附属固定耐久 |
+| 1.21.11 | Minecraft `Identifier`、皮肤 API、Balm `platform.*`、分页屏幕几何 | 新 platform/identifier family；动态控件从原始坐标重新偏移 |
 
-非经验 requirement（物品、冷却、自定义非经验费用等）会被主动忽略。`ALWAYS` 只能强制启用 Waystones 命名空间中的经验函数，不能擅自启用未知第三方函数。创造模式的 affordability、consume、rollback 三条路径由统一费用包装器豁免。
+Waystones/Balm 内部类或 Mixin 目标只能存在于兼容边界。若签名改变，安全失败是禁用玩家目的地并告警，而不是放宽菜单校验、跳过费用或直接调用裸 `teleportTo`。
 
-## NeoForge 1.21.1 升级步骤
+## 配置兼容
 
-升级任何一个依赖时按成套依赖复核：
+三个模式与默认值在所有目标相同：
 
-1. 查看 NeoForge、Waystones 与 Balm 的更新日志、源码分支和依赖约束。
-2. 区分当前开发版本与声明最低版本；除非完成最低版本回归，不修改元数据下限。
-3. 核对菜单 ID、`getWarpItem()`、`WaystoneImpl` 构造、requirement 解析类型和选择界面列表控件。
-4. 运行当前整套：
-   ```bash
-   ./gradlew clean test build \
-     -Pneo_version=21.1.248 \
-     -Pwaystones_version=21.1.40+1.21.1 \
-     -Pbalm_version=21.0.64+1.21.1 \
-     --no-build-cache
-   ```
-5. 运行最低整套：
-   ```bash
-   ./gradlew clean test build \
-     -Pneo_version=21.1.229 \
-     -Pwaystones_version=21.1.36+1.21.1 \
-     -Pbalm_version=21.0.62+1.21.1 \
-     --no-build-cache
-   ```
-6. 在专用服务器测试主手/副手、同维度/跨维度、创造/生存、经验不足、目标离线、菜单失效、物品移走、重复包和传送异常。
-7. 在客户端测试宽屏零偏移、自动缩放下的完整/收窄名单、320 像素头像栏、反复调整窗口、空列表、长名称、滚动列表、键盘焦点和失败后界面保持打开。
-8. 核对 `waystonesplayer-server.toml` 的全局默认、世界覆盖和重载，并检查最终 JAR 内容。
-9. 更新 README 的“验证至”版本、CI 矩阵和产物名称；版本范围仍只覆盖经过证明的 Minecraft 系列。
+| 键 | 类型 | 默认 |
+|---|---|---|
+| `playerTeleportExperienceMode` | `NEVER / FOLLOW_WAYSTONES / ALWAYS` | `NEVER` |
 
-如果新 Waystones 改变经验规则结构，不得捕获异常后返回零费用。安全选择是保持 `NEVER` 可用，并拒绝 `FOLLOW_WAYSTONES` / `ALWAYS` 中无法确认费用的请求。
+NeoForge：
 
-## Fabric 1.21.1 维护步骤
+- 使用 `ModConfig.Type.SERVER`。
+- 保留 `config` 全局默认、世界 `serverconfig` 覆盖和加载器重载。
+- 运行时读取 active config，不缓存为启动常量。
 
-Fabric 分支必须满足以下对等条件：
+Fabric：
 
-1. `common` 继续没有 Fabric/NeoForge 导入，协议版本和服务端验证顺序不变。
-2. Fabric 通用/客户端入口分别通过 Balm Fabric load context 启动共享模块；客户端类不从服务端入口加载。
-3. `fabric.mod.json` 声明 Minecraft、Fabric Loader、Fabric API、Waystones 和 Balm 的同系列范围，并引用根路径 `waystonesplayer.png`。
-4. Fabric 配置保留 `playerTeleportExperienceMode`、`NEVER` 默认值和运行时 Supplier；配置位于全局 `config`，不声称支持 NeoForge 的世界级 `serverconfig`。
-5. 同一分支的 `build` 同时产出 Fabric 与 NeoForge JAR，两个 JAR 都通过图标、元数据、许可证和未捆绑上游依赖检查。
-6. 最低/当前 Fabric Loader、Fabric API、Waystones 与 Balm 成套验证，并分别启动客户端和专用服务器。
-7. 只有上述实证完成后，分支 README 或平台页面才能声明对应 Fabric 版本可用。
+- 使用无额外依赖的小型 TOML存储生成/读取 `config/waystonesplayer-server.toml`。
+- 保持同键、注释、默认值和重启读取。
+- 它是实例全局配置；不得在 README 或平台页面声称按世界覆盖或热重载。
 
-## NeoForge 1.21.11 迁移检查
+## 最低构建与同一二进制运行
 
-1.21.11 不是只改版本号。已知必须显式处理的上游变化包括：
+每个正式目标的上传 JAR始终由最低依赖套件生成。验证分两层：
 
-- Minecraft 标识符由 1.21.1 映射中的 `ResourceLocation` 迁移为 `Identifier`，GameProfile 访问器也需按新映射复核。
-- Balm API 包结构和加载上下文发生变化；入口、事件、网络、配置与客户端初始化要逐项对照 1.21.11 官方源码。
-- Waystones `WaystoneImpl` 构造改为不直接接收名称；创建后需设置名称和 transient 状态。
-- 选择界面不再提供 1.21.1 的 `AbstractWaystoneList`，而采用全宽、分页式 `WaystoneSelectionScreenBase`。客户端注入必须从新版屏幕几何/控件重新定位，通过 `imageWidth` 移动标签中心，并在渲染前把搜索、翻页、排序、删除等动态重建控件恢复到“原始坐标 + 当前偏移”；找不到结构时安全禁用。
-- requirement 解析和传送上下文虽然概念仍在，具体包名、泛型和运行行为必须由编译与最小/当前上游源码双重确认。
+- 源码兼容：最低和当前依赖各自重新执行 `clean test build`，发现编译/API 漂移。
+- 二进制兼容：只保留最低套件的发行 JAR，把同一文件放入最低、关键断点、当前运行目录；不得用当前依赖重编译出的另一个 JAR替代。
 
-移植后必须重跑服务端信任边界、创造模式费用、失败回滚、窄屏布局和客户端/专用服务器冒烟，不能把仅通过 `compileJava` 当成兼容完成。
+1.21.2/1.21.3 共用目标还必须对两个 Minecraft 版本分别执行二进制运行。每个运行目录隔离，禁止复用其他分支的世界、配置、模组或缓存来生成验收日志。
 
-## 分支与回合策略
+## 逐目标升级流程
 
-- `main` 始终为 NeoForge 1.21.1；修复共享行为后再按适用性移植到两个分支。
-- `fabric/1.21.1` 验证同一 common 对两个加载器的复用；不复制业务类。
-- `neoforge/1.21.11` 吸收 Minecraft/Waystones/Balm API 变化；不在 `main` 混入条件编译或第二套源码树。
-- 任何分支升级前先获取相应远端并确认未落后/分叉；普通推送，禁止强推和改写历史。
-- 所有分支与构建产物默认固定为 `1.0.0`。只有用户明确确认更新版本后，才按其指定同步 Gradle、元数据、README、CI 和产物名；Bug 修复、重要功能、破坏性变化、移植或依赖更新都不得自行触发版本递增。
+1. 从官方 Minecraft、Loader、Waystones、Balm 与 Fabric API 源码/元数据确认目标仍存在且依赖成套兼容。
+2. 更新 `gradle/targets.json` 的 snapshotDate、最低/当前套件和 adapter family；运行 `verifyTargetMatrix`。
+3. 比较当前 target 的已解析上游源码：菜单、`finishUsingItem`、传送 context/结果、requirement、屏幕、初始化与网络线程。
+4. 能复用既有 family 时不复制；出现真实编译断点时新增最小适配，并保持 core/协议不变。
+5. 执行最低和当前源码构建；检查 warning、Mixin refmap/目标和最终 JAR内容。
+6. 使用最低构建 JAR执行最低/关键/当前客户端与专服启动。
+7. 至少双客户端验证：listed 隐私、加入/退出/改名、主副手、经验三模式、事件取消、实际移动、回滚、耐久、跨维度和 GUI 三种宽度。
+8. 检查 NeoForge 世界配置与 Fabric 全局配置的真实差异。
+9. 更新 README、平台文案、changelog、文件清单和 SHA-256。
+10. 获取远端、核对分支未落后/分叉，普通推送；禁止强推。
+
+更新依赖、修复 Bug、重要功能或移植都不能自行提升模组版本。版本号只有用户明确确认后才同步修改 Gradle、元数据、文档、CI 和产物名。
+
+## 分支同步
+
+共享行为先落 `main`，然后移植到两条统一分支。统一分支记录 canonical main 基线并由 CI 比对 core、网络契约和共享资源；main push 也检查两条远端分支是否落后。
+
+旧 `fabric/1.21.1` 与 `neoforge/1.21.11` 只有在新统一分支已经普通推送、远端提交可验证且 GitHub Actions 全绿后才能删除本地与远端引用。删除旧分支不删除对应正式目标。

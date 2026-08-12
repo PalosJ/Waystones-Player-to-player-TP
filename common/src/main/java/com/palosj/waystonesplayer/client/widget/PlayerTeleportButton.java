@@ -1,5 +1,8 @@
 package com.palosj.waystonesplayer.client.widget;
 
+import java.util.UUID;
+
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -15,6 +18,7 @@ public class PlayerTeleportButton extends Button {
     private static final int FACE_PADDING = 2;
 
     private final boolean avatarOnly;
+    private UUID playerId;
     private ResourceLocation skinTexture;
 
     public PlayerTeleportButton(int x, int y, int width, int height, boolean avatarOnly, OnPress onPress) {
@@ -25,11 +29,8 @@ public class PlayerTeleportButton extends Button {
     }
 
     public void bind(PlayerInfo playerInfo) {
-        try {
-            this.skinTexture = playerInfo.getSkin().texture();
-        } catch (RuntimeException e) {
-            this.skinTexture = null;
-        }
+        this.playerId = playerInfo.getProfile().getId();
+        refreshSkin(playerInfo);
         Component name = Component.literal(playerInfo.getProfile().getName());
         this.setMessage(name);
         this.setTooltip(Tooltip.create(name));
@@ -39,6 +40,7 @@ public class PlayerTeleportButton extends Button {
 
     @Override
     public void renderString(GuiGraphics guiGraphics, Font font, int color) {
+        refreshSkinFromConnection();
         boolean hasFace = false;
         if (skinTexture != null) {
             try {
@@ -76,5 +78,24 @@ public class PlayerTeleportButton extends Button {
         }
         int textY = this.getY() + (this.height - font.lineHeight) / 2 + 1;
         guiGraphics.drawString(font, name.getString(), textX, textY, color, false);
+    }
+
+    private void refreshSkinFromConnection() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (playerId == null || minecraft.getConnection() == null) {
+            return;
+        }
+        PlayerInfo current = minecraft.getConnection().getPlayerInfo(playerId);
+        if (current != null) {
+            refreshSkin(current);
+        }
+    }
+
+    private void refreshSkin(PlayerInfo playerInfo) {
+        try {
+            skinTexture = playerInfo.getSkin().texture();
+        } catch (RuntimeException error) {
+            skinTexture = null;
+        }
     }
 }

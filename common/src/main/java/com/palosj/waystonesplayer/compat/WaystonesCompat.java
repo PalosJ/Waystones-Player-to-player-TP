@@ -1,6 +1,5 @@
 package com.palosj.waystonesplayer.compat;
 
-import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -15,7 +14,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 
 public final class WaystonesCompat {
-    private static final String GET_WARP_ITEM_METHOD = "getWarpItem";
     private static final AtomicBoolean MENU_COMPAT_FAILURE_LOGGED = new AtomicBoolean();
     public static final ResourceLocation WARP_STONE_ID = ResourceLocation.fromNamespaceAndPath("waystones", "warp_stone");
     private static final ResourceLocation WARP_STONE_MENU_ID = ResourceLocation.fromNamespaceAndPath(
@@ -39,44 +37,25 @@ public final class WaystonesCompat {
     }
 
     public static boolean isWarpStoneMenu(AbstractContainerMenu menu) {
-        return getWarpItem(menu).filter(WaystonesCompat::isWarpStone).isPresent();
+        if (menu == null) {
+            return false;
+        }
+        return WARP_STONE_MENU_ID.equals(BuiltInRegistries.MENU.getKey(menu.getType()));
     }
 
     public static Optional<WarpStoneUse> resolveWarpStoneUse(ServerPlayer player, AbstractContainerMenu menu) {
-        Optional<ItemStack> warpItem = getWarpItem(menu).filter(WaystonesCompat::isWarpStone);
-        if (warpItem.isEmpty()) {
-            return Optional.empty();
-        }
-
-        ItemStack stack = warpItem.orElseThrow();
-        if (player.getItemInHand(InteractionHand.MAIN_HAND) == stack) {
-            return Optional.of(new WarpStoneUse(stack, InteractionHand.MAIN_HAND));
-        }
-        if (player.getItemInHand(InteractionHand.OFF_HAND) == stack) {
-            return Optional.of(new WarpStoneUse(stack, InteractionHand.OFF_HAND));
-        }
-        return Optional.empty();
-    }
-
-    private static Optional<ItemStack> getWarpItem(AbstractContainerMenu menu) {
-        if (menu == null) {
-            return Optional.empty();
-        }
-
-        try {
-            ResourceLocation menuId = BuiltInRegistries.MENU.getKey(menu.getType());
-            if (!WARP_STONE_MENU_ID.equals(menuId)) {
-                return Optional.empty();
-            }
-
-            Method getWarpItem = menu.getClass().getMethod(GET_WARP_ITEM_METHOD);
-            Object warpItem = getWarpItem.invoke(menu);
-            if (warpItem instanceof ItemStack stack) {
-                return Optional.of(stack);
-            }
+        if (!isWarpStoneMenu(menu) || !(menu instanceof WarpStoneUseCarrier carrier)) {
             logMenuCompatibilityFailure(menu, null);
-        } catch (ReflectiveOperationException | LinkageError | RuntimeException e) {
-            logMenuCompatibilityFailure(menu, e);
+            return Optional.empty();
+        }
+
+        ItemStack stack = carrier.waystonesplayer$getWarpStone();
+        InteractionHand hand = carrier.waystonesplayer$getWarpStoneHand();
+        if (stack != null
+                && hand != null
+                && isWarpStone(stack)
+                && player.getItemInHand(hand) == stack) {
+            return Optional.of(new WarpStoneUse(stack, hand));
         }
         return Optional.empty();
     }
@@ -86,11 +65,12 @@ public final class WaystonesCompat {
             return;
         }
 
-        String message = "Waystones menu compatibility is unavailable for {}; player destinations will be disabled.";
+        String message = "Waystones menu item binding is unavailable for {}; player destinations will be disabled.";
+        String menuClass = menu == null ? "null" : menu.getClass().getName();
         if (error == null) {
-            WaystonesPlayer.LOGGER.warn(message, menu.getClass().getName());
+            WaystonesPlayer.LOGGER.warn(message, menuClass);
         } else {
-            WaystonesPlayer.LOGGER.warn(message, menu.getClass().getName(), error);
+            WaystonesPlayer.LOGGER.warn(message, menuClass, error);
         }
     }
 

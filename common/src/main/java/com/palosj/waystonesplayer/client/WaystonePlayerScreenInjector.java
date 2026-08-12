@@ -3,6 +3,8 @@ package com.palosj.waystonesplayer.client;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.palosj.waystonesplayer.WaystonesPlayer;
@@ -32,6 +34,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 
 public final class WaystonePlayerScreenInjector {
     private static final AtomicBoolean LAYOUT_COMPAT_FAILURE_LOGGED = new AtomicBoolean();
+    private static final AtomicBoolean DIRECTORY_REFRESH_FAILURE_LOGGED = new AtomicBoolean();
+    private static final Map<Screen, PlayerPanel> PANELS = new WeakHashMap<>();
     private static final int HEADER_HEIGHT = 64;
     private static final int FOOTER_HEIGHT = 25;
     private static final int TITLE_Y = 20;
@@ -43,6 +47,7 @@ public final class WaystonePlayerScreenInjector {
     }
 
     public static void onScreenInit(Screen candidate) {
+        PANELS.remove(candidate);
         try {
             if (!(candidate instanceof WaystoneSelectionScreenBase screen)) {
                 return;
@@ -71,16 +76,48 @@ public final class WaystonePlayerScreenInjector {
             int guiTop = waystoneList.getY() - HEADER_HEIGHT;
             int guiWidth = waystoneList.getWidth();
             int guiHeight = waystoneList.getHeight() + HEADER_HEIGHT + FOOTER_HEIGHT;
-            int panelHeight = Math.min(Math.max(guiHeight, TARGET_PANEL_HEIGHT),
-                    screen.height - guiTop - SCREEN_MARGIN);
+            int panelHeight = PlayerPanelLayout.resolvePanelHeight(
+                    Math.max(guiHeight, TARGET_PANEL_HEIGHT),
+                    screen.height,
+                    guiTop,
+                    SCREEN_MARGIN);
+            if (panelHeight < HEADER_HEIGHT + FOOTER_HEIGHT + PlayerDestinationList.ENTRY_HEIGHT) {
+                if (LAYOUT_COMPAT_FAILURE_LOGGED.compareAndSet(false, true)) {
+                    WaystonesPlayer.LOGGER.warn(
+                            "Waystones player panel was not added because the screen is too short for an interactive row.");
+                }
+                return;
+            }
             PlayerPanelLayout layout = PlayerPanelLayout.resolve(screen.width, guiLeft, guiWidth);
             moveWaystonesLayout(screen, guiLeft, guiTop, guiWidth, guiHeight,
                     layout.waystonesX() - guiLeft);
 
-            new PlayerPanel(onlinePlayers, layout.panelX(), guiTop, layout.panelWidth(), panelHeight,
-                    layout.avatarOnly()).attach(screen);
+            PlayerPanel panel = new PlayerPanel(onlinePlayers, layout.panelX(), guiTop, layout.panelWidth(), panelHeight,
+                    layout.avatarOnly());
+            panel.attach(screen);
+            PANELS.put(screen, panel);
         } catch (Exception e) {
             WaystonesPlayer.LOGGER.error("WaystonesPlayer GUI injection failed", e);
+        }
+    }
+
+    public static void onClientTick(Screen candidate) {
+        PlayerPanel panel = PANELS.get(candidate);
+        if (panel == null) {
+            return;
+        }
+
+        try {
+            List<PlayerInfo> onlinePlayers = getOnlinePlayers();
+            if (onlinePlayers != null) {
+                panel.refresh(onlinePlayers);
+            }
+        } catch (RuntimeException error) {
+            if (DIRECTORY_REFRESH_FAILURE_LOGGED.compareAndSet(false, true)) {
+                WaystonesPlayer.LOGGER.warn(
+                        "Waystones player list could not be refreshed; the last valid list will remain visible.",
+                        error);
+            }
         }
     }
 
@@ -92,7 +129,10 @@ public final class WaystonePlayerScreenInjector {
 
         List<PlayerInfo> onlinePlayers = new ArrayList<>(minecraft.getConnection().getListedOnlinePlayers());
         onlinePlayers.removeIf(info -> info.getProfile().getId().equals(minecraft.player.getUUID()));
-        onlinePlayers.sort(Comparator.comparing(info -> info.getProfile().getName(), String.CASE_INSENSITIVE_ORDER));
+        onlinePlayers.sort(Comparator
+                .comparing((PlayerInfo info) -> info.getProfile().getName(), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(info -> info.getProfile().getName())
+                .thenComparing(info -> info.getProfile().getId()));
         return onlinePlayers;
     }
 
@@ -139,16 +179,18 @@ public final class WaystonePlayerScreenInjector {
     }
 
     private static final class PlayerPanel {
-        private final List<PlayerInfo> onlinePlayers;
+        private final List<PlayerInfo> initialPlayers;
         private final int x;
         private final int y;
         private final int width;
         private final int height;
         private final boolean avatarOnly;
+        private PlayerPanelLabels labels;
+        private PlayerDestinationList playerList;
 
         private PlayerPanel(List<PlayerInfo> onlinePlayers, int x, int y, int width, int height,
                             boolean avatarOnly) {
-            this.onlinePlayers = onlinePlayers;
+            this.initialPlayers = onlinePlayers;
             this.x = x;
             this.y = y;
             this.width = width;
@@ -157,22 +199,27 @@ public final class WaystonePlayerScreenInjector {
         }
 
         private void attach(Screen screen) {
-            PlayerPanelLabels labels = new PlayerPanelLabels(x, y, width, height, onlinePlayers.size(), avatarOnly);
+            labels = new PlayerPanelLabels(x, y, width, height, initialPlayers.size(), avatarOnly);
             BalmScreenUtils.addRenderableWidget(screen, labels);
 
-            int listHeight = Math.max(PlayerDestinationList.ENTRY_HEIGHT, height - HEADER_HEIGHT - FOOTER_HEIGHT);
-            PlayerDestinationList playerList = new PlayerDestinationList(
-                    x, y + HEADER_HEIGHT, width, listHeight, onlinePlayers, avatarOnly, targetPlayerId -> {
+            int listHeight = height - HEADER_HEIGHT - FOOTER_HEIGHT;
+            playerList = new PlayerDestinationList(
+                    x, y + HEADER_HEIGHT, width, listHeight, initialPlayers, avatarOnly, targetPlayerId -> {
                 Balm.networking().sendToServer(new RequestPlayerTeleportPayload(targetPlayerId));
             });
             BalmScreenUtils.addRenderableWidget(screen, playerList);
         }
+
+        private void refresh(List<PlayerInfo> currentPlayers) {
+            playerList.updatePlayers(currentPlayers);
+            labels.setPlayerCount(currentPlayers.size());
+        }
     }
 
     private static final class PlayerPanelLabels extends AbstractWidget {
-        private final boolean empty;
+        private boolean empty;
         private final boolean avatarOnly;
-        private final int playerCount;
+        private int playerCount;
         private final int panelHeight;
         private final Component title = Component.translatable("gui.waystonesplayer.online_players");
         private final Component emptyMessage = Component.translatable("gui.waystonesplayer.no_other_players")
@@ -185,9 +232,20 @@ public final class WaystonePlayerScreenInjector {
             this.avatarOnly = avatarOnly;
             this.playerCount = playerCount;
             this.panelHeight = height;
-            if (avatarOnly) {
-                setTooltip(Tooltip.create(getMessage()));
+            updateState(playerCount);
+        }
+
+        private void setPlayerCount(int playerCount) {
+            if (this.playerCount != playerCount) {
+                updateState(playerCount);
             }
+        }
+
+        private void updateState(int playerCount) {
+            this.playerCount = playerCount;
+            this.empty = playerCount == 0;
+            setMessage(narrationMessage(playerCount));
+            setTooltip(avatarOnly ? Tooltip.create(getMessage()) : null);
         }
 
         @Override

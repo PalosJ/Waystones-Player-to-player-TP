@@ -22,17 +22,20 @@ neoForge {
 
         client {
             client()
+            gameDirectory.set(layout.buildDirectory.dir('runs/client'))
         }
 
         server {
             server()
             programArgument '--nogui'
+            gameDirectory.set(layout.buildDirectory.dir('runs/server'))
         }
     }
 
     mods {
         "${mod_id}" {
             sourceSet sourceSets.main
+            sourceSet project(':core').sourceSets.main
         }
     }
 }
@@ -50,6 +53,7 @@ configurations {
 }
 
 dependencies {
+    implementation project(':core')
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
 
@@ -97,6 +101,7 @@ sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
 tasks.named('jar', Jar).configure {
+    from project(':core').sourceSets.main.output
     from(rootProject.file('LICENSE')) {
         into 'META-INF'
         rename { "LICENSE_${mod_id}" }
@@ -120,6 +125,11 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
 
     doLast {
         File archive = releaseJar.get().archiveFile.get().asFile
+        def targetMatrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
+        def target = targetMatrix.targets.find { it.id == "neoforge-${minecraft_version}" }
+        if (target == null || archive.name != target.artifactFile) {
+            throw new GradleException("Release JAR name ${archive.name} does not match the canonical target matrix.")
+        }
         def requiredEntries = [
                 'META-INF/neoforge.mods.toml',
                 'META-INF/LICENSE_waystonesplayer',
@@ -127,6 +137,12 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 'META-INF/THIRD_PARTY_NOTICES_waystonesplayer.md',
                 'waystonesplayer.png',
                 'waystonesplayer.mixins.json',
+                'waystonesplayer.network.json',
+                'com/palosj/waystonesplayer/PlayerTeleportExperienceMode.class',
+                'com/palosj/waystonesplayer/client/PlayerPanelLayout.class',
+                'com/palosj/waystonesplayer/teleport/TeleportArrivalVerifier.class',
+                'com/palosj/waystonesplayer/mixin/WarpStoneItemMixin.class',
+                'com/palosj/waystonesplayer/mixin/WaystoneSelectionMenuMixin.class',
                 'com/palosj/waystonesplayer/mixin/client/AbstractContainerScreenAccessor.class',
                 'com/palosj/waystonesplayer/neoforge/NeoForgeWaystonesPlayer.class',
         ]
@@ -139,14 +155,36 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 throw new GradleException("Release JAR is missing required entries: ${missingEntries.join(', ')}")
             }
 
-            if (zip.getEntry('waystonesplayer.png').size <= 0) {
+            def iconEntry = zip.getEntry('waystonesplayer.png')
+            if (iconEntry.size <= 0) {
                 throw new GradleException('Release JAR icon is empty.')
             }
-            if (entries.any { it.name.startsWith('net/blay09/') }) {
-                throw new GradleException('Release JAR must not bundle Waystones or Balm classes.')
+            def icon = javax.imageio.ImageIO.read(zip.getInputStream(iconEntry))
+            if (icon == null || icon.width != 1024 || icon.height != 1024 || !icon.colorModel.hasAlpha()) {
+                throw new GradleException('Release JAR icon must be a readable 1024x1024 PNG with an alpha channel.')
             }
-            if (entries.any { it.name.startsWith('org/spongepowered/') }) {
-                throw new GradleException('Release JAR must not bundle the loader-provided Mixin runtime.')
+            byte[] iconBytes = zip.getInputStream(iconEntry).bytes
+            String iconSha256 = java.security.MessageDigest.getInstance('SHA-256')
+                    .digest(iconBytes)
+                    .encodeHex()
+                    .toString()
+            if (iconSha256 != targetMatrix.iconSha256) {
+                throw new GradleException('Release JAR does not contain the approved existing project icon.')
+            }
+
+            def forbiddenPackagePrefixes = [
+                    'com/mojang/',
+                    'net/blay09/',
+                    'net/fabricmc/',
+                    'net/minecraft/',
+                    'net/neoforged/',
+                    'org/spongepowered/',
+            ]
+            def bundledDependencies = entries.findAll { entry ->
+                forbiddenPackagePrefixes.any { prefix -> entry.name.startsWith(prefix) }
+            }
+            if (!bundledDependencies.isEmpty()) {
+                throw new GradleException("Release JAR bundles loader, game, or dependency classes: ${bundledDependencies*.name.take(10).join(', ')}")
             }
 
             String metadata = zip.getInputStream(zip.getEntry('META-INF/neoforge.mods.toml')).getText('UTF-8')
@@ -154,17 +192,40 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 throw new GradleException('Release JAR metadata contains unexpanded template placeholders.')
             }
             if (!metadata.contains('config="waystonesplayer.mixins.json"')) {
-                throw new GradleException('Release JAR metadata does not register the client mixin configuration.')
+                throw new GradleException('Release JAR metadata does not register the mixin configuration.')
             }
             if (!metadata.contains("version=\"${mod_version}\"")) {
                 throw new GradleException("Release JAR metadata does not contain version ${mod_version}.")
             }
+            [
+                    minecraft_version_range,
+                    neo_version_range,
+                    waystones_version_range,
+                    balm_version_range,
+            ].each { requiredRange ->
+                if (!metadata.contains("versionRange=\"${requiredRange}\"")) {
+                    throw new GradleException("Release JAR metadata is missing dependency range ${requiredRange}.")
+                }
+            }
+            if (!metadata.contains('logoFile="waystonesplayer.png"')
+                    || !metadata.contains('side="BOTH"')) {
+                throw new GradleException('Release JAR metadata has an invalid icon or physical-side declaration.')
+            }
 
             String mixinConfig = zip.getInputStream(zip.getEntry('waystonesplayer.mixins.json')).getText('UTF-8')
             def parsedMixinConfig = new groovy.json.JsonSlurper().parseText(mixinConfig)
-            if (!parsedMixinConfig.client?.contains('client.AbstractContainerScreenAccessor')
-                    || parsedMixinConfig.mixins) {
-                throw new GradleException('Release JAR mixin configuration must contain only the client layout accessor.')
+            def requiredCommonMixins = ['WarpStoneItemMixin', 'WaystoneSelectionMenuMixin'] as Set
+            if ((parsedMixinConfig.mixins as Set) != requiredCommonMixins
+                    || parsedMixinConfig.client != ['client.AbstractContainerScreenAccessor']) {
+                throw new GradleException('Release JAR mixin configuration does not contain the required server-safe and client-only mixins.')
+            }
+
+            String networkContract = zip.getInputStream(zip.getEntry('waystonesplayer.network.json')).getText('UTF-8')
+            def parsedNetworkContract = new groovy.json.JsonSlurper().parseText(networkContract)
+            if (parsedNetworkContract.networkVersion != '1'
+                    || parsedNetworkContract.payloads*.id != ['waystonesplayer:request_player_teleport']
+                    || parsedNetworkContract.payloads*.direction != ['client_to_server']) {
+                throw new GradleException('Release JAR network contract does not match protocol version 1.')
             }
         }
     }

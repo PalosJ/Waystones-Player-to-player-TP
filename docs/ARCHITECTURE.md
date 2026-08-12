@@ -1,140 +1,179 @@
 # 项目架构
 
-本文记录 Waystones Player 的稳定技术边界、分支职责和验证门禁，供后续加载器与 Minecraft 版本移植使用。玩家安装和玩法说明以根目录 README 为准，具体上游版本与升级步骤见 [COMPATIBILITY.md](COMPATIBILITY.md)。
+本文固定 Waystones Player 的模块、信任、兼容和多目标维护边界。领域词汇以 [CONTEXT.md](../CONTEXT.md) 为准，真实依赖矩阵以 [gradle/targets.json](../gradle/targets.json) 为准。
 
-## 仓库与分支边界
+## 仓库与分支
 
-`发行版` 是唯一正式 Git 仓库。默认分支不会随移植试验改变含义：
+`发行版` 是唯一正式 Git 仓库。三个长期分支的含义不可互换：
 
-| 分支 | 定位 | 模块 |
-|---|---|---|
-| `main` | 原设计、默认发布与长期回归基线 | `common + neoforge`，Minecraft 1.21.1 |
-| `fabric/1.21.1` | 同一 Minecraft 版本的多加载器移植验证 | `common + neoforge + fabric`，同时构建两端作对照 |
-| `neoforge/1.21.11` | 新 Minecraft 版本移植验证 | `common + neoforge`，Minecraft 1.21.11 |
+| 分支 | 固定职责 | 正式目标 |
+|---|---|---:|
+| `main` | NeoForge 1.21.1 原设计、默认分支、共享行为语义源 | 1 |
+| `neoforge/1.21.x` | NeoForge 1.21.2–1.21.11 统一维护线 | 9 |
+| `fabric/1.21.x` | Fabric 1.21.1–1.21.11 统一维护线 | 10 |
 
-Forge 不在计划内。移植分支可以因上游 API 差异调整兼容实现，但玩家传送语义、协议方向、配置键和失败关闭策略应与 `main` 保持一致。
+每个加载器的 Minecraft 1.21.2/1.21.3 共用一个经两版运行验收的产物，其余目标各自精确限制一个 Minecraft 小版本。Forge 不在范围内。所有产物继续使用 `1.0.0`，只有用户明确批准后才能变更。
 
-## 模块职责
+统一分支不是把多套不兼容源码塞进一个 source set。它们使用显式目标工程，每个工程有独立 Minecraft、映射、Loader、Waystones、Balm、元数据、运行目录和发行 JAR；共享只发生在已经证明签名一致的源码族。
+
+## 模块模型
 
 ```text
 waystonesplayer
-├── common       共享业务、协议、兼容边界、客户端控件、资源与测试
-├── neoforge     NeoForge 入口、SERVER 配置、元数据与发行 JAR
-└── fabric       仅存在于 Fabric 移植分支：Fabric 入口、配置桥接、元数据与发行 JAR
+├── core                 纯 Java 规则、值对象、布局/差分算法和单元测试
+├── common               Minecraft-bound 业务、协议、兼容、Mixin、客户端控件和资源
+├── loader target        入口、配置、加载器网络桥接、元数据与发行打包
+└── gradle/targets.json  20 个正式产物的机器可读依赖/适配矩阵
 ```
 
-### `common`
+### core
 
-- 只依赖 Minecraft/映射、`balm-common` 和 `waystones-common`。
-- 禁止导入 `net.neoforged.*` 或 `net.fabricmc.*`；根工程的 `verifyCommonLoaderBoundary` 会在每次 `check` 自动阻止越界。
-- 定义网络载荷、服务端验证、传送事务、Waystones 兼容层、客户端控件、语言和共享图标。
-- 独立编译并运行单元测试，但不生成可安装模组。
-- 通过 `commonJava`、`commonResources` 两个只读 Gradle 变体交给加载器模块；不得复制业务源码。
+- 禁止链接 Minecraft、Fabric、NeoForge、Waystones、Balm 或 Mixin。
+- 保存跨版本真正稳定的业务规则，例如费用模式、请求限流、响应式几何、玩家目录差分和到达判定。
+- `verifyCorePurity` 在每次 `check` 扫描边界；各发行 JAR显式合并 core 输出。
 
-### `neoforge`
+### common
 
-- 提供通用和物理客户端两个 `@Mod` 入口。
-- 注册 NeoForge `ModConfig.Type.SERVER`，保留全局默认、按世界 `serverconfig` 覆盖和重载语义。
-- 合并 common Java/资源并生成最终 JAR；`verifyReleaseJarContents` 检查元数据、图标、许可证、第三方声明及未打包 Waystones/Balm 类。
-- 只保留入口、配置、元数据和无法跨加载器的桥接，不承载传送业务。
+- 按每个目标的 Minecraft/Waystones/Balm 重新编译，不作为跨 Minecraft 版本复用的已编译 JAR。
+- 保存网络契约、服务端授权与结算、Waystones 兼容边界、客户端玩家目录、语言、原图标和 Mixin。
+- 禁止导入 `net.fabricmc.*` 或 `net.neoforged.*`；`verifyCommonLoaderBoundary` 自动拒绝越界。
+- 可以按已确认的 API 断点选择少量 source family，但不能复制业务语义。
 
-### `fabric`
+### loader target
 
-- 只在 `fabric/1.21.1` 分支存在，提供 Fabric 通用/客户端入口和 `fabric.mod.json`。
-- 通过 Balm Fabric 初始化同一组共享模块，并把 Fabric 配置值以相同的 `Supplier<PlayerTeleportExperienceMode>` 契约注入 common。
-- Fabric 端配置位于实例 `config` 目录；它保持键名、默认值和运行时读取语义，但 Fabric 没有 NeoForge SERVER 的按世界覆盖机制。这个差异必须在分支 README 和配置注释中明示。
-- Fabric 分支保留 NeoForge 模块并同时构建，借此发现 common 被某一加载器 API 污染的问题。
+- 只负责物理端入口、加载器配置、网络注册、加载器元数据、运行配置和最终打包。
+- NeoForge 保留 SERVER 配置的全局默认、按世界覆盖与重载语义。
+- Fabric 保持同名 `waystonesplayer-server.toml`、同键、同默认值和重启读取，但只提供实例全局配置。
+- 客户端入口必须与通用/服务端入口分离；物理服务器不得链接 Minecraft 客户端、Waystones GUI 或客户端 Mixin 类。
 
-根工程只统一版本、仓库、Java 21、UTF-8、测试与架构门禁。依赖解析优先使用官方仓库，腾讯 Maven 仅为最后的后备源。
-
-## 初始化、物理端与配置注入
+## 初始化与物理端边界
 
 ```mermaid
 flowchart LR
-    N["NeoForge 通用入口"] --> NC["注册 SERVER 配置"]
-    NC --> NB["Balm.initializeMod"]
-    F["Fabric 通用入口"] --> FC["注册 Fabric 配置"]
-    FC --> FB["Balm.initializeMod"]
-    NB --> M["共享 WaystonesPlayerModule"]
-    FB --> M
-    M --> S["服务端网络 + 玩家退出清理"]
-
-    NCL["NeoForge 客户端入口"] --> BCL["BalmClient.initializeMod"]
-    FCL["Fabric 客户端入口"] --> BCL
-    BCL --> CM["共享 WaystonesPlayerClientModule"]
-    CM --> UI["屏幕事件 + 玩家面板"]
+    L["Loader common entry"] --> C["Loader config bridge"]
+    C --> M["Shared common module"]
+    M --> N["C2S payload registration"]
+    M --> X["Disconnect cleanup"]
+    LC["Loader client entry"] --> CM["Shared client module"]
+    CM --> SE["Screen/tick events"]
+    SE --> UI["Deferred client injector"]
 ```
 
-common 只接收配置供应器，不知道配置文件或加载器。客户端类只能从物理客户端入口触达；服务端公共入口不得直接链接 Minecraft 客户端或 Waystones GUI 类。共享客户端入口先按类名筛选界面，再延迟加载注入器，以便不兼容的 GUI 变化安全降级。客户端专用 Mixin 只暴露原版容器的布局字段，不承载业务、网络或加载器桥接，并通过加载器元数据仅在物理客户端应用。
+共享客户端入口仅按屏幕类名进行轻量筛选，再反射延迟加载 Minecraft/Waystones GUI 绑定类；这是物理服务端类加载隔离，不是用反射掩盖任意兼容问题。布局结构、菜单和传送内部访问只允许集中在 `compat`、`mixin` 和客户端注入边界。
 
-## 网络与服务端信任边界
+## 网络与服务端信任
 
-- 协议版本固定为 `1`，唯一服务端载荷只包含目标玩家 UUID，方向固定为 client → server。
-- Balm 的服务端包处理器在主线程执行；世界、实体、菜单、物品和费用只在主线程读取或修改。
-- 客户端在线列表只是展示快照，不是可信状态。服务端重新检查目标在线、不是自身、当前菜单、菜单保存的原始传送石，以及该对象仍在主手或副手。
-- 每名玩家使用 10 tick 请求窗口限流；重复请求最多提示一次，退出时清理状态。
-- 失败响应只显示消息，不主动关闭界面，不改变位置、经验或耐久。
+[waystonesplayer.network.json](../common/src/main/resources/waystonesplayer.network.json) 是协议的机器契约：
 
-任何新增字段都必须同时固定编解码、方向、协议兼容策略和服务端验证；不能让客户端提交费用、坐标或“已经验证”的状态。
+- 网络版本 `1`。
+- 唯一载荷 `waystonesplayer:request_player_teleport`。
+- 方向固定 client → server。
+- 载荷只包含目标 UUID。
+- Balm/加载器桥接必须把处理放回服务器主线程。
 
-## 传送事务与费用
+服务端从不接受客户端提交的坐标、费用、物品、手、可见性或成功状态。每次请求重新查询服务器状态；每名发送者有 10 tick 限流，退出时清理。
 
-服务端按固定顺序处理玩家目的地：
+任何协议变更都必须同时更新 payload 编解码、方向、主线程保证、服务端验证、网络契约资源、所有目标构建和兼容策略。
 
-1. 执行每玩家限流。
-2. 验证传送石菜单与同一个主手/副手 `ItemStack`。
-3. 验证目标仍在线且不是发送者。
-4. 按配置解析 Waystones 当前经验点数/等级要求。
-5. 检查并先扣经验，再调用返回成功状态的服务端传送方法。
-6. 传送失败或抛出运行时异常时回滚经验。
-7. 仅在成功后重置坠落距离、对原传送石执行一次 `hurtAndBreak(1, ...)`，最后关闭容器。
+## Warp Stone 使用绑定
 
-`TeleportTransaction` 隔离检查、消费和回滚。`TeleportCost.exemptWhen` 在三条费用路径上统一处理创造模式，确保创造玩家不会只绕过 affordability 检查却仍在 `consume` 中被扣经验。原生耐久结算继续负责创造模式、耐久附魔和物品损坏。
+上游菜单保存 Warp Stone 的方式在 1.21.x 中不稳定；`getWarpItem()` 既不是所有版本都有，也不足以证明对象仍在玩家手中。统一语义采用菜单实例载体：
 
-玩家目的地只选择经验点数和经验等级要求；Waystones 冷却、物品费用和其他目的地限制不会被隐式继承。
+1. Waystones 的 `WarpStoneItem.finishUsingItem` 返回且菜单已经打开后，服务端 Mixin读取该次调用的真实 `ItemStack`。
+2. 只通过对象身份在当前主手/副手解析使用手。
+3. 当前 `WaystoneSelectionMenu` Mixin保存该栈引用和手，不使用全局映射。
+4. 请求处理时核对菜单注册表 ID、载体存在、栈仍是 Warp Stone，并且玩家该手中的对象仍为同一实例。
 
-## Waystones 兼容边界与关闭策略
+菜单不匹配、物品被换走、Mixin 失效或上游结构变化都会拒绝请求且不收费。兼容错误只记录一次，避免日志洪泛。
 
-对主模组内部实现的依赖只允许出现在 `compat` 包和客户端注入类：
+## 玩家目的地与结算
 
-- 菜单边界先核对注册表 ID，再反射读取 `getWarpItem`。
-- 经验边界延迟加载 evaluator；结构不兼容时只告警一次，并拒绝需要计算经验的请求。
-- evaluator 创建瞬态玩家目的地上下文，解析当前 Waystones 规则，只应用 Waystones 自己的经验点数/等级函数。
-- 客户端布局只从已确认的 Waystones 控件/几何信息推导；找不到预期结构时不注入玩家面板。
-- `NEVER` 不进入经验 evaluator，所以经验结构变化时仍可保持无经验模式；菜单本身不可识别时则整体禁用玩家目的地。
+服务端顺序是安全语义的一部分：
 
-兼容失败不得返回零费用来伪装成功，也不得放宽菜单或物品校验。Minecraft/Waystones API 在 1.21.11 分支发生的包名、标识符和 GUI 变化应在该分支的兼容边界吸收，不能用重复业务实现绕过。
+1. 限流。
+2. 验证菜单及 Warp Stone 使用绑定。
+3. 重新解析目标，要求在线、不是发送者并且 `allowsListing()` 为真。
+4. 以目标当时的维度、方块位置和名称创建 transient、未注册的玩家 Waystone。
+5. 创建 unbound Waystones context，启用声音/效果、关闭 Waystone 方块 modifiers，并附加玩家目的地标记。
+6. 按配置只筛选经验点数/等级 requirement；创造模式使用空 requirement。
+7. 在任何消费前捕获发送者的精确经验进度、等级和总经验。
+8. 调用当前版本适配的 Waystones 同步传送管线。
+9. 同时要求 API 报告发送者，并确认发送者到达目标区域或被事件重定向后确实移动；取消、假成功或未移动都恢复经验。
+10. 确认成功后才重置坠落距离、对绑定物品执行一次 `hurtAndBreak(1, ...)`，最后关闭菜单。
 
-## 客户端布局与可访问性
+如果上游在已经移动发送者后抛出运行时/链接异常，实际移动优先作为确认成功，避免把已完成传送错误地回滚费用而造成免费传送。未移动异常会恢复经验并由兼容层拒绝。虚拟机级严重错误不被吞掉。
 
-玩家面板始终位于 Waystones 主界面左侧，不再隐藏到切换按钮或覆盖层。布局先保留 Waystones 原来的居中位置；只有左侧不足以放下当前玩家面板时，才把 Waystones 控件、标题、当前位置文本和鼠标命中区域同步右移到刚好可用的位置。1.21.1 通过 `leftPos` 与已初始化控件的相同增量实现整体移动，界面重新初始化时从上游原始坐标重新计算，因此反复缩放不会累计偏移。
+玩家目的地不注册到 Waystones 数据库，不携带宠物/牵引实体，不应用物品、冷却或非经验 requirement。相邻落点严格沿用 Waystones 的非窒息规则，不额外保证地面、流体或悬崖安全。
 
-| 模式 | 触发条件与宽度 | 玩家行 | 滚动条间距 |
-|---|---|---|---:|
-| 完整名单 | 可用宽度至少 164 像素；面板固定 164 | 行宽最多 132，显示头像与名称 | 6 |
-| 收窄名单 | 可用宽度 128–163 像素；面板随空间收窄 | 行宽为面板宽度减 24，显示头像与截断名称 | 6 |
-| 头像栏 | 命名面板不足 128 像素；面板固定 36 | 行宽 24、按钮 20，仅显示头像 | 2 |
+## 客户端实时目录与布局
 
-玩家按钮在所有模式下都提供完整名称 tooltip 和默认按钮叙述；头像纹理不可用时显示姓名首字符。头像栏标题只绘制在线人数，完整标题或空状态仍通过 tooltip 与叙述提供。面板标题可通过键盘聚焦，命名模式的空列表会同时绘制并叙述空状态。客户端发送请求后不关闭界面，只有服务端确认成功才关闭容器。
+客户端复用当前连接已经维护的 listed `PlayerInfo`：
 
-在线玩家列表是界面初始化时的快照。目标离线等变化由服务端再次验证；未来若加入实时刷新，应复用现有网络状态并保持选择、滚动和焦点稳定，而不是信任客户端缓存。
+- 每个客户端 tick 构造按名称排序的轻量 UUID/名称视图。
+- 视图未变化时不重建控件；变化时按 UUID 差分，保留顶部可见玩家、行内偏移和仍存在的键盘焦点。
+- 皮肤从当前连接重新查询；纹理加载/绘制失败时回退为姓名首个 Unicode code point。
+- 完整姓名始终存在于 tooltip 和按钮叙述；长名称按实际可用宽度截断。
+- 客户端展示不构成授权，服务端仍独立执行 listed 检查。
 
-## 多版本维护原则
+布局以 Waystones 真实列表边界计算：
 
-- `main` 始终是 NeoForge 1.21.1 原设计基线；不能把默认分支直接改成 Fabric 或 1.21.11。
-- 同 Minecraft 版本的加载器实现共享 common；不同 Minecraft 版本使用独立移植分支，不在一个分支堆叠多套 Minecraft 源码集。
-- 行为修复先落 `main`，再按适用性移植；版本专属 API 调整留在相应分支。
-- 开发/当前依赖版本与元数据最低范围分开维护。升级编译依赖不应意外抬高声明的最低兼容版本。
-- 依赖范围限制在对应 Minecraft 系列，不用无上界范围把未经验证的新内部结构声明为兼容。
-- 协议变化或破坏性配置变化必须显式评估迁移影响，不能只靠分支名掩盖不兼容；模组版本仍只在用户明确确认后修改。
+| 模式 | 面板 | 玩家行 | 按钮与滚动条间距 |
+|---|---:|---|---:|
+| 完整名单 | 164px | 头像 + 名称，最多 132px | 6px |
+| 收窄名单 | 128–163px | 头像 + 截断名称 | 6px |
+| 头像栏 | 36px | 24px 行、20px 按钮 | 2px |
 
-## 验证门禁
+1.21.1 通过 `leftPos` 与实际 Waystones 控件同步增量移动；布局每次从上游原始坐标重新计算，不累计偏移。正常最小逻辑宽度为 320px。短屏若不足以容纳一个可交互行，则不注入面板并安全保留原界面。
 
-- 共享代码：`:common:compileJava`、单元测试、`verifyCommonLoaderBoundary`。
-- 网络/兼容：最低与当前 NeoForge、Waystones、Balm 成套依赖执行 `clean test build`。
-- GUI：宽屏零偏移、自动缩放下的完整/收窄名单、320 像素头像栏、反复调整窗口、空列表、长名称、可滚动列表和键盘/叙述路径冒烟。
-- 配置/物理端：客户端与专用服务器分别启动；NeoForge 核对世界级 SERVER 配置，Fabric 核对全局配置生成和默认值。
-- 发布：检查最终 JAR 文件名、图标、元数据、入口、语言、许可证、第三方声明、敏感信息、绝对路径、大文件和未捆绑上游依赖。
-- 分支：推送后确认本地 HEAD、对应远端分支和 GitHub Actions 一致。
+1.21.11 适配族使用 `imageWidth` 调整视觉中心并移动实际 Waystones 控件；动态重建的排序、删除和目的地按钮在渲染前从原始坐标重新应用偏移。搜索框识别必须同时满足已知几何和宽度，不能抓取任意第三方 `EditBox`。
 
-仅编译通过不等于客户端或专用服务器已冒烟；无法执行的项目必须在交付时明确列出。
+## 版本适配族
+
+目标矩阵显式记录每个 target 使用的 family。当前已确认断点：
+
+| 范围 | Balm 初始化 | 屏幕输入/几何 | Waystones 传送上下文 |
+|---|---|---|---|
+| 1.21.1 | 旧 module API | legacy input + `leftPos` | 1.21.1 同步入口 |
+| 1.21.2/1.21.3 | Runnable API | legacy input | legacy context |
+| 1.21.4–1.21.8 | 旧 module API | legacy input | legacy context |
+| 1.21.9 | 旧 module API | event input | legacy context |
+| 1.21.10 | 旧 module API | event input | hand/context-aware |
+| 1.21.11 | 新 platform module API | Identifier/skin/分页几何 | Identifier family |
+
+适配族只能隔离真实签名断点。新增抽象必须至少消除已确认重复或隔离不稳定依赖；不为猜测的未来版本添加占位层。
+
+## 配置语义
+
+`PlayerTeleportExperienceMode` 是共享领域值：
+
+- `NEVER`：不构造经验费用。
+- `FOLLOW_WAYSTONES`：仅在 Waystones 总费用开关开启时选择其经验函数。
+- `ALWAYS`：无视总开关，但只强制 Waystones 命名空间自身的经验函数。
+
+未知第三方经验函数、物品、冷却和其他 requirement 不会被强制应用。无法解析当前 Waystones 结构时拒绝传送，不返回零费用。
+
+NeoForge 修改配置时必须同步默认值、注释、语言、README、SERVER spec 和测试。Fabric 的小型 TOML存储只为保持同名文件/键/默认值，不伪造世界覆盖或热重载。
+
+## 漂移与 CI
+
+`main` 是共享行为的 canonical source。统一分支记录已同步的 main 提交，并对以下共享面做逐文件/语义门禁：
+
+- pure Java core；
+- 网络契约；
+- 语言和通用资源；
+- 不随版本变化的安全规则。
+
+统一分支 push 检查自身基线；main push 主动检查两个远端统一分支，避免“旧 CI 曾经绿色”掩盖后续漂移。版本专属适配和元数据不要求字节相同。
+
+普通 push 的最低门禁覆盖每个目标最低/当前源码构建、单测、模块边界、JAR内容、元数据和漂移。定时任务与最终交付还必须把最低套件生成的同一 JAR放入最低、关键断点和当前运行时，执行客户端/专服深度冒烟。
+
+## 发行门禁
+
+- 所有归档禁用文件时间戳并固定条目顺序。
+- Gradle wrapper 固定官方 distribution SHA-256，CI 开启 wrapper validation。
+- 发行 JAR必须含 loader 元数据、协议、Mixin、语言、`LICENSE`、`THIRD_PARTY_NOTICES` 和既有图标。
+- 禁止打包 Waystones/Balm/Fabric API/NeoForge 类、缓存、依赖 JAR、日志、崩溃报告、IDE 文件、凭据、私人绝对路径和无关大文件。
+- 每个 JAR文件名、Minecraft/Loader、依赖范围和 SHA-256 必须与目标矩阵及平台文件元数据一致。
+- 编译成功不是完整运行证明；未执行的双客户端、配置或 GUI 场景必须在验收记录中明确标记。
+
+完整操作清单见 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)。

@@ -1,5 +1,5 @@
 plugins {
-    id 'net.neoforged.moddev' version '2.0.141' apply false
+    id 'net.neoforged.moddev' version '2.0.143' apply false
 }
 
 version = mod_version
@@ -8,6 +8,10 @@ group = mod_group_id
 def commonSources = fileTree('common/src') {
     include '**/*.java'
 }
+def coreSources = fileTree('core/src') {
+    include '**/*.java'
+}
+def targetMatrixFile = file('gradle/targets.json')
 
 def verifyCommonLoaderBoundary = tasks.register('verifyCommonLoaderBoundary') {
     group = 'verification'
@@ -28,6 +32,134 @@ def verifyCommonLoaderBoundary = tasks.register('verifyCommonLoaderBoundary') {
         }
         if (!violations.isEmpty()) {
             throw new GradleException("Loader APIs found in common:\n${violations.join('\n')}")
+        }
+    }
+}
+
+def verifyCorePurity = tasks.register('verifyCorePurity') {
+    group = 'verification'
+    description = 'Rejects Minecraft, loader, Balm, Waystones, or Mixin APIs from the pure Java core.'
+    inputs.files(coreSources)
+
+    doLast {
+        def forbiddenPrefixes = [
+                'net.minecraft.',
+                'net.fabricmc.',
+                'net.neoforged.',
+                'net.blay09.',
+                'org.spongepowered.asm.mixin.',
+        ]
+        def violations = []
+        coreSources.files.sort().each { source ->
+            source.eachLine('UTF-8') { line, lineNumber ->
+                forbiddenPrefixes.each { prefix ->
+                    if (line.contains(prefix)) {
+                        violations << "${relativePath(source)}:${lineNumber}: ${prefix}"
+                    }
+                }
+            }
+        }
+        if (!violations.isEmpty()) {
+            throw new GradleException("Platform APIs found in pure core:\n${violations.join('\n')}")
+        }
+    }
+}
+
+def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
+    group = 'verification'
+    description = 'Validates the canonical 1.21.x release and dependency matrix.'
+    inputs.file(targetMatrixFile)
+
+    doLast {
+        def matrix = new groovy.json.JsonSlurper().parse(targetMatrixFile)
+        def require = { boolean condition, String message ->
+            if (!condition) {
+                throw new GradleException("Invalid target matrix: ${message}")
+            }
+        }
+
+        require(matrix.schemaVersion == 1, 'schemaVersion must be 1.')
+        require(matrix.modVersion == mod_version, "modVersion must remain ${mod_version}.")
+        require(matrix.buildTools.java == 21
+                && matrix.buildTools.gradle == '9.2.1'
+                && matrix.buildTools.modDevGradle == '2.0.143'
+                && matrix.buildTools.loom == '1.17.19',
+                'build-tool versions must match the audited release toolchain.')
+        def iconFile = file('common/src/main/resources/waystonesplayer.png')
+        def iconSha256 = java.security.MessageDigest.getInstance('SHA-256')
+                .digest(iconFile.bytes)
+                .encodeHex()
+                .toString()
+        require(matrix.iconSha256 == iconSha256,
+                'the existing project icon must remain byte-for-byte unchanged.')
+        require(matrix.targets instanceof List && matrix.targets.size() == 20,
+                'exactly 20 release artifacts are required.')
+
+        def targets = matrix.targets
+        require(targets*.id.toSet().size() == targets.size(), 'target IDs must be unique.')
+        require(targets*.artifactFile.toSet().size() == targets.size(), 'artifact file names must be unique.')
+        require(targets.count { it.branch == 'main' } == 1, 'main must contain exactly one target.')
+        require(targets.count { it.branch == 'neoforge/1.21.x' } == 9,
+                'neoforge/1.21.x must contain nine targets.')
+        require(targets.count { it.branch == 'fabric/1.21.x' } == 10,
+                'fabric/1.21.x must contain ten targets.')
+
+        def expectedVersions = (1..11).collect { "1.21.${it}" } as Set
+        ['neoforge', 'fabric'].each { loader ->
+            def actualVersions = targets.findAll { it.loader == loader }
+                    .collectMany { it.minecraft as List }
+                    .toSet()
+            require(actualVersions == expectedVersions,
+                    "${loader} must cover every Minecraft release from 1.21.1 through 1.21.11 exactly once.")
+        }
+
+        def sharedIds = ['neoforge-1.21.2-1.21.3', 'fabric-1.21.2-1.21.3'] as Set
+        targets.each { target ->
+            require(target.releaseVersion == matrix.modVersion,
+                    "${target.id} must use release version ${matrix.modVersion}.")
+            require(target.artifactFile == "waystonesplayer-${target.id}-${matrix.modVersion}.jar",
+                    "${target.id} has a non-canonical artifact file name.")
+            require(target.minecraft instanceof List && !target.minecraft.isEmpty(),
+                    "${target.id} must declare supported Minecraft versions.")
+            require(target.minecraft.size() == (sharedIds.contains(target.id) ? 2 : 1),
+                    "${target.id} has an invalid shared-version boundary.")
+            if (sharedIds.contains(target.id)) {
+                require((target.minecraft as Set) == (['1.21.2', '1.21.3'] as Set),
+                        "${target.id} may only share Minecraft 1.21.2 and 1.21.3.")
+            }
+            require(target.minecraft.contains(target.compile.minecraft),
+                    "${target.id} compile Minecraft must be one of its supported versions.")
+            require(target.minimum.waystones && target.minimum.balm
+                    && target.current.waystones && target.current.balm,
+                    "${target.id} must declare minimum and current Waystones/Balm versions.")
+            require(target.families.balm && target.families.screen && target.families.teleport,
+                    "${target.id} must name each source adapter family.")
+
+            if (target.loader == 'neoforge') {
+                require(target.minimum.neoforge && target.current.neoforge,
+                        "${target.id} must declare minimum and current NeoForge versions.")
+                require(!target.containsKey('balmModId'),
+                        "${target.id} must not declare a Fabric Balm mod ID.")
+            } else if (target.loader == 'fabric') {
+                require(target.minimum.fabricLoader && target.minimum.fabricApi
+                        && target.current.fabricLoader && target.current.fabricApi,
+                        "${target.id} must declare minimum and current Fabric Loader/API versions.")
+                def expectedBalmId = target.id == 'fabric-1.21.2-1.21.3' ? 'balm-fabric' : 'balm'
+                require(target.balmModId == expectedBalmId,
+                        "${target.id} must use Fabric dependency ID ${expectedBalmId}.")
+            } else {
+                require(false, "${target.id} has unknown loader ${target.loader}.")
+            }
+
+            if (sharedIds.contains(target.id)) {
+                require(target.runtimeStacks instanceof List && target.runtimeStacks.size() == 2,
+                        "${target.id} must declare separate 1.21.2 and 1.21.3 runtime stacks.")
+                require((target.runtimeStacks*.minecraft as Set) == (target.minecraft as Set),
+                        "${target.id} runtime stacks must cover both shared Minecraft versions.")
+            } else {
+                require(!target.containsKey('runtimeStacks'),
+                        "${target.id} must not declare redundant runtime stacks.")
+            }
         }
     }
 }
@@ -89,6 +221,13 @@ subprojects {
 
     tasks.named('check').configure {
         dependsOn verifyCommonLoaderBoundary
+        dependsOn verifyCorePurity
+        dependsOn verifyTargetMatrix
+    }
+
+    tasks.withType(Jar).configureEach {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
     }
 }
 

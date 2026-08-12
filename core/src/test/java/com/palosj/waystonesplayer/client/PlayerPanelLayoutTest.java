@@ -70,6 +70,12 @@ class PlayerPanelLayoutTest {
         assertEquals(first, second);
     }
 
+    @Test
+    void panelHeightNeverBecomesNegativeOnAnAbnormallyShortScreen() {
+        assertEquals(0, PlayerPanelLayout.resolvePanelHeight(269, 40, 60, 4));
+        assertEquals(176, PlayerPanelLayout.resolvePanelHeight(269, 240, 60, 4));
+    }
+
     private static PlayerPanelLayout resolveCentered(int screenWidth) {
         return PlayerPanelLayout.resolve(screenWidth, (screenWidth - WAYSTONES_WIDTH) / 2, WAYSTONES_WIDTH);
     }

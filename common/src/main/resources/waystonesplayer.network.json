@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "networkVersion": "1",
+  "payloads": [
+    {
+      "id": "waystonesplayer:request_player_teleport",
+      "direction": "client_to_server",
+      "fields": [
+        {
+          "name": "targetPlayerId",
+          "type": "uuid"
+        }
+      ],
+      "serverChecks": [
+        "rate_limit",
+        "warp_stone_menu",
+        "bound_item_identity_and_hand",
+        "listed_online_target",
+        "not_self",
+        "experience_requirement",
+        "waystones_result_and_actual_movement"
+      ]
+    }
+  ]
+}

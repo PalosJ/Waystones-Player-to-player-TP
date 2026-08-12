@@ -19,5 +19,6 @@ plugins {
 
 rootProject.name = 'waystonesplayer'
 
+include('core')
 include('common')
 include('neoforge')

@@ -1,20 +1,20 @@
 package com.palosj.waystonesplayer.client;
 
-record PlayerPanelLayout(
+public record PlayerPanelLayout(
         int waystonesX,
         int panelX,
         int panelWidth,
         int screenMargin,
         Mode mode) {
-    static final int FULL_PANEL_WIDTH = 164;
-    static final int MIN_NAMED_PANEL_WIDTH = 128;
-    static final int AVATAR_PANEL_WIDTH = 36;
-    static final int NAMED_SCREEN_MARGIN = 4;
-    static final int AVATAR_SCREEN_MARGIN = 2;
-    static final int WAYSTONES_SIDE_BUTTON_LEFT_OFFSET = 8;
-    static final int PANEL_GAP = 2;
+    public static final int FULL_PANEL_WIDTH = 164;
+    public static final int MIN_NAMED_PANEL_WIDTH = 128;
+    public static final int AVATAR_PANEL_WIDTH = 36;
+    public static final int NAMED_SCREEN_MARGIN = 4;
+    public static final int AVATAR_SCREEN_MARGIN = 2;
+    public static final int WAYSTONES_SIDE_BUTTON_LEFT_OFFSET = 8;
+    public static final int PANEL_GAP = 2;
 
-    static PlayerPanelLayout resolve(int screenWidth, int preferredWaystonesX, int waystonesWidth) {
+    public static PlayerPanelLayout resolve(int screenWidth, int preferredWaystonesX, int waystonesWidth) {
         int availableNamedWidth = screenWidth
                 - NAMED_SCREEN_MARGIN * 2
                 - waystonesWidth
@@ -54,7 +54,12 @@ record PlayerPanelLayout(
         return new PlayerPanelLayout(waystonesX, panelX, panelWidth, screenMargin, mode);
     }
 
-    boolean avatarOnly() {
+    public static int resolvePanelHeight(int desiredHeight, int screenHeight, int panelY, int screenMargin) {
+        int availableHeight = Math.max(0, screenHeight - panelY - Math.max(0, screenMargin));
+        return Math.min(Math.max(0, desiredHeight), availableHeight);
+    }
+
+    public boolean avatarOnly() {
         return mode == Mode.AVATARS;
     }
 
@@ -62,7 +67,7 @@ record PlayerPanelLayout(
         return Math.max(minimum, Math.min(value, maximum));
     }
 
-    enum Mode {
+    public enum Mode {
         FULL,
         COMPACT,
         AVATARS

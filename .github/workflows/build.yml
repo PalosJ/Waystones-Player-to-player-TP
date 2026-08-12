@@ -6,6 +6,29 @@ permissions:
   contents: read
 
 jobs:
+  branch-parity:
+    name: Unified branch parity
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout canonical main
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Fetch unified branches
+        run: >-
+          git fetch --no-tags origin
+          refs/heads/neoforge/1.21.x:refs/remotes/origin/neoforge/1.21.x
+          refs/heads/fabric/1.21.x:refs/remotes/origin/fabric/1.21.x
+
+      - name: Verify shared semantic parity
+        run: >-
+          ./scripts/verify-branch-parity.sh main
+          origin/neoforge/1.21.x
+          origin/fabric/1.21.x
+
   build:
     name: NeoForge 1.21.1 (${{ matrix.stack }})
     runs-on: ubuntu-latest
@@ -35,6 +58,8 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          validate-wrappers: true
 
       - name: Build and test
         run: >-
@@ -47,8 +72,8 @@ jobs:
           --console=plain
           --warning-mode=all
 
-      - name: Upload current release artifact
-        if: matrix.stack == 'current'
+      - name: Upload minimum-built release artifact
+        if: matrix.stack == 'minimum'
         uses: actions/upload-artifact@v7
         with:
           name: waystonesplayer-neoforge-1.21.1

@@ -4,15 +4,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-final class RequestRateLimiter {
+public final class RequestRateLimiter {
     private final int cooldownTicks;
     private final Map<UUID, RequestState> requestStates = new HashMap<>();
 
-    RequestRateLimiter(int cooldownTicks) {
+    public RequestRateLimiter(int cooldownTicks) {
+        if (cooldownTicks <= 0) {
+            throw new IllegalArgumentException("cooldownTicks must be positive");
+        }
         this.cooldownTicks = cooldownTicks;
     }
 
-    Result acquire(UUID playerId, int currentTick) {
+    public Result acquire(UUID playerId, int currentTick) {
         RequestState state = requestStates.get(playerId);
         if (state == null || !isInsideWindow(currentTick, state.lastAcceptedTick())) {
             requestStates.put(playerId, new RequestState(currentTick, null));
@@ -27,7 +30,7 @@ final class RequestRateLimiter {
         return Result.REJECTED_SILENT;
     }
 
-    void clear(UUID playerId) {
+    public void clear(UUID playerId) {
         requestStates.remove(playerId);
     }
 
@@ -36,7 +39,7 @@ final class RequestRateLimiter {
         return elapsedTicks >= 0 && elapsedTicks < cooldownTicks;
     }
 
-    enum Result {
+    public enum Result {
         ACCEPTED,
         REJECTED_NOTIFY,
         REJECTED_SILENT

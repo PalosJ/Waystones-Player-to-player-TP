@@ -1,11 +1,25 @@
 Copyright (c) 2026 PalosJ
 
-All Rights Reserved.
+All Rights Reserved, subject only to the limited end-user permission below.
 
-No permission is granted to copy, modify, distribute, sublicense, sell, or
-create derivative works from this project or any portion of it without prior
-written permission from the copyright holder, except where applicable law
-expressly permits otherwise.
+Permission is granted to end users to download an official, unmodified binary
+release of Waystones Player from a distribution channel authorized by the
+copyright holder, install that release, and run it as a Minecraft mod for
+personal play or operation of a Minecraft server.
+
+No permission is granted to modify, redistribute, sublicense, sell,
+commercially exploit, or create derivative works from this project or any
+portion of it without prior written permission from the copyright holder,
+except where applicable law expressly permits otherwise. The limited end-user
+permission above does not authorize mirroring, reposting, bundling, or
+redistributing the JAR, including in modpacks, unless separately authorized in
+writing.
+
+THE PROJECT IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED
+BY LAW, THE COPYRIGHT HOLDER IS NOT LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM USE OF THE PROJECT.
 
 Third-party projects, names, trademarks, and assets referenced by this project
 remain the property of their respective owners and are governed by their own
