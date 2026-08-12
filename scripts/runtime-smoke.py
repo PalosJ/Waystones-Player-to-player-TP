@@ -213,7 +213,7 @@ def required_signals(side: str, output: str, mod_version: str,
             ),
             "Balm version exact": fabric_mod_listed(
                 output,
-                target["balmModId"],
+                runtime_stack.get("balmRuntimeModId", target["balmModId"]),
                 display_version(runtime_stack["balm"]),
             ),
         })
@@ -315,6 +315,7 @@ def run_smoke(args: argparse.Namespace) -> int:
     output_parts: List[str] = []
     deadline = time.monotonic() + args.timeout
     success_at: Optional[float] = None
+    readiness_at: Optional[float] = None
     timed_out = False
 
     try:
@@ -326,6 +327,12 @@ def run_smoke(args: argparse.Namespace) -> int:
                     timed_out = True
                     break
                 if success_at is not None and now - success_at >= SUCCESS_GRACE_SECONDS:
+                    break
+                if (
+                    readiness_at is not None
+                    and success_at is None
+                    and now - readiness_at >= SUCCESS_GRACE_SECONDS
+                ):
                     break
 
                 try:
@@ -355,6 +362,13 @@ def run_smoke(args: argparse.Namespace) -> int:
                     runtime_stack,
                     minecraft,
                 )
+                readiness_signal = (
+                    "dedicated server reached Done"
+                    if args.side == "server"
+                    else "client GUI texture atlas created"
+                )
+                if readiness_at is None and signals.get(readiness_signal, False):
+                    readiness_at = time.monotonic()
                 if success_at is None and all(signals.values()):
                     success_at = time.monotonic()
     finally:

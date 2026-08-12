@@ -133,7 +133,7 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
                         balm: '21.11.3',
                 ],
                 'fabric-1.21.4'   : [
-                        fabricLoader: '0.16.9',
+                        fabricLoader: '0.16.10',
                         fabricApi: '0.110.5+1.21.4',
                         waystones: '21.4.5+1.21.4',
                         balm: '21.4.9+1.21.4',
@@ -209,9 +209,16 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
                 require(target.minimum.fabricLoader && target.minimum.fabricApi
                         && target.current.fabricLoader && target.current.fabricApi,
                         "${target.id} must declare minimum and current Fabric Loader/API versions.")
-                def expectedBalmId = target.id == 'fabric-1.21.2-1.21.3' ? 'balm-fabric' : 'balm'
+                def legacyBalmIds = ['fabric-1.21.2-1.21.3', 'fabric-1.21.4'] as Set
+                def expectedBalmId = legacyBalmIds.contains(target.id) ? 'balm-fabric' : 'balm'
                 require(target.balmModId == expectedBalmId,
                         "${target.id} must use Fabric dependency ID ${expectedBalmId}.")
+                [target.minimum, target.key, target.current].findAll { it != null }.each { stack ->
+                    if (stack.containsKey('balmRuntimeModId')) {
+                        require(stack.balmRuntimeModId in ['balm', 'balm-fabric'],
+                                "${target.id} has an invalid Balm runtime mod ID.")
+                    }
+                }
                 def expectedWaystonesCapability = target.id == 'fabric-1.21.11'
                         ? 'waystones-fabric-1.21.11'
                         : null

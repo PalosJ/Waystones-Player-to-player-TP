@@ -98,7 +98,8 @@ Fabric Balm 的模组 ID 是真实断点：
 
 - 1.21.1：`balm`。
 - 1.21.2/1.21.3 共用线：`balm-fabric`，且该旧 JAR不提供 `balm`。
-- 1.21.4–1.21.11：依赖 `balm`；上游同时提供 `balm-fabric` 别名不改变本附属的规范声明。
+- 1.21.4：依赖 `balm-fabric`；最低/关键 Balm 的运行时主 ID 仍是 `balm-fabric`，当前 Balm 的主 ID 是 `balm` 并以 `provides` 保留 `balm-fabric` 别名。机器矩阵分别记录元数据依赖 ID 和实际运行时 ID。
+- 1.21.5–1.21.11：依赖 `balm`；上游同时提供 `balm-fabric` 别名。
 
 部分旧 Balm Fabric POM 对 KumaAPI 声明了跨整个 21.x 的宽版本范围，但 Balm JAR 本身已内嵌与该 Minecraft 线匹配的 KumaAPI。构建和运行器明确排除这份外部重复依赖，避免 Gradle 把最新 Minecraft 线的 KumaAPI 当成旧版根模组加载；Balm 内嵌依赖仍保持不变。
 
