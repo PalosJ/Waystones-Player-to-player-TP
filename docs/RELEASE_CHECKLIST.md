@@ -36,6 +36,12 @@
 
 把最低构建的同一 SHA-256 JAR分别放入目标最低、关键补丁和当前套件：
 
+```bash
+# 在对应统一分支执行；没有 key 套件的目标会自动跳过 key。
+python3 scripts/runtime-matrix.py --target <target-id> \
+  --profiles minimum key current --sides server client --fail-fast
+```
+
 - [ ] 专用服务器到达 `Done`，无客户端类、客户端 Mixin或 GUI 类加载。
 - [ ] 客户端到达主菜单并进入世界，无 Mixin、资源、入口或网络注册错误。
 - [ ] 1.21.2/1.21.3 共用 JAR在两个 Minecraft 版本分别执行。

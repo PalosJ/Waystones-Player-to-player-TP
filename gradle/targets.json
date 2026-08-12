@@ -30,7 +30,7 @@
       "artifactFile": "waystonesplayer-neoforge-1.21.2-1.21.3-1.0.0.jar",
       "minecraft": ["1.21.2", "1.21.3"],
       "compile": {"minecraft": "1.21.3"},
-      "minimum": {"neoforge": "21.3.56", "waystones": "21.3.1+1.21.3", "balm": "21.3.1+1.21.3"},
+      "minimum": {"neoforge": "21.3.56", "waystones": "21.3.2+1.21.3", "balm": "21.3.1+1.21.3"},
       "current": {"neoforge": "21.3.97", "waystones": "21.3.3+1.21.3", "balm": "21.3.5+1.21.3"},
       "runtimeStacks": [
         {"minecraft": "1.21.2", "minimum": {"neoforge": "21.2.0-beta"}, "current": {"neoforge": "21.2.1-beta"}},
@@ -47,6 +47,8 @@
       "minecraft": ["1.21.4"],
       "compile": {"minecraft": "1.21.4"},
       "minimum": {"neoforge": "21.4.121", "waystones": "21.4.1+1.21.4", "balm": "21.4.1+1.21.4"},
+      "key": {"neoforge": "21.4.121", "waystones": "21.4.5+1.21.4", "balm": "21.4.9+1.21.4"},
+      "keyReason": "Waystones 21.4.5 added the menu Warp Stone accessor that the carrier design intentionally does not depend on.",
       "current": {"neoforge": "21.4.157", "waystones": "21.4.19+1.21.4", "balm": "21.4.42+1.21.4"},
       "families": {"balm": "legacy-module", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
     },
@@ -94,7 +96,7 @@
       "artifactFile": "waystonesplayer-neoforge-1.21.8-1.0.0.jar",
       "minecraft": ["1.21.8"],
       "compile": {"minecraft": "1.21.8"},
-      "minimum": {"neoforge": "21.8.9", "waystones": "21.8.1+1.21.8", "balm": "21.8.1+1.21.8"},
+      "minimum": {"neoforge": "21.8.9", "waystones": "21.8.1+1.21.8", "balm": "21.8.3+1.21.8"},
       "current": {"neoforge": "21.8.54", "waystones": "21.8.5+1.21.8", "balm": "21.8.10+1.21.8"},
       "families": {"balm": "legacy-module", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
     },
@@ -118,7 +120,9 @@
       "artifactFile": "waystonesplayer-neoforge-1.21.10-1.0.0.jar",
       "minecraft": ["1.21.10"],
       "compile": {"minecraft": "1.21.10"},
-      "minimum": {"neoforge": "21.10.63", "waystones": "21.10.1+1.21.10", "balm": "21.10.1+1.21.10"},
+      "minimum": {"neoforge": "21.10.63", "waystones": "21.10.1+1.21.10", "balm": "21.10.3+1.21.10"},
+      "key": {"neoforge": "21.10.63", "waystones": "21.10.2+1.21.10", "balm": "21.10.5+1.21.10"},
+      "keyReason": "Waystones 21.10.2 changed requirement consumption to the teleport-context overload and introduced Warp Stone hand context.",
       "current": {"neoforge": "21.10.64", "waystones": "21.10.5+1.21.10", "balm": "21.10.11+1.21.10"},
       "families": {"balm": "legacy-module", "screen": "event-input", "teleport": "context-hand-21.10"}
     },
@@ -130,8 +134,10 @@
       "artifactFile": "waystonesplayer-neoforge-1.21.11-1.0.0.jar",
       "minecraft": ["1.21.11"],
       "compile": {"minecraft": "1.21.11"},
-      "minimum": {"neoforge": "21.11.42", "waystones": "21.11.2+1.21.11", "balm": "21.11.2+1.21.11"},
-      "current": {"neoforge": "21.11.45", "waystones": "21.11.9+1.21.11", "balm": "21.11.9.1+1.21.11"},
+      "minimum": {"neoforge": "21.11.42", "waystones": "21.11.2", "waystonesCapability": "waystones-neoforge-1.21.11", "balm": "21.11.2"},
+      "key": {"neoforge": "21.11.42", "waystones": "21.11.4", "waystonesCapability": "waystones-neoforge-1.21.11", "balm": "21.11.3"},
+      "keyReason": "Waystones 21.11.4 is the first intermediate stable release and still publishes only the custom NeoForge capability.",
+      "current": {"neoforge": "21.11.45", "waystones": "21.11.9", "balm": "21.11.9.1"},
       "families": {"balm": "platform-module", "screen": "identifier-skin", "teleport": "identifier-21.11"}
     },
     {
@@ -156,7 +162,7 @@
       "minecraft": ["1.21.2", "1.21.3"],
       "compile": {"minecraft": "1.21.3"},
       "balmModId": "balm-fabric",
-      "minimum": {"fabricLoader": "0.16.7", "fabricApi": "0.106.1+1.21.3", "waystones": "21.3.1+1.21.3", "balm": "21.3.1+1.21.3"},
+      "minimum": {"fabricLoader": "0.16.7", "fabricApi": "0.106.1+1.21.3", "waystones": "21.3.2+1.21.3", "balm": "21.3.1+1.21.3"},
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.114.1+1.21.3", "waystones": "21.3.3+1.21.3", "balm": "21.3.5+1.21.3"},
       "runtimeStacks": [
         {"minecraft": "1.21.2", "minimum": {"fabricLoader": "0.16.7", "fabricApi": "0.106.1+1.21.2"}, "current": {"fabricLoader": "0.19.3", "fabricApi": "0.106.1+1.21.2"}},
@@ -174,6 +180,8 @@
       "compile": {"minecraft": "1.21.4"},
       "balmModId": "balm",
       "minimum": {"fabricLoader": "0.16.9", "fabricApi": "0.110.5+1.21.4", "waystones": "21.4.1+1.21.4", "balm": "21.4.1+1.21.4"},
+      "key": {"fabricLoader": "0.16.9", "fabricApi": "0.110.5+1.21.4", "waystones": "21.4.5+1.21.4", "balm": "21.4.9+1.21.4"},
+      "keyReason": "Waystones 21.4.5 added the menu Warp Stone accessor that the carrier design intentionally does not depend on.",
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.119.4+1.21.4", "waystones": "21.4.19+1.21.4", "balm": "21.4.41+1.21.4"},
       "families": {"balm": "legacy-module", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
     },
@@ -225,7 +233,7 @@
       "minecraft": ["1.21.8"],
       "compile": {"minecraft": "1.21.8"},
       "balmModId": "balm",
-      "minimum": {"fabricLoader": "0.16.14", "fabricApi": "0.129.0+1.21.8", "waystones": "21.8.1+1.21.8", "balm": "21.8.1+1.21.8"},
+      "minimum": {"fabricLoader": "0.16.14", "fabricApi": "0.129.0+1.21.8", "waystones": "21.8.1+1.21.8", "balm": "21.8.3+1.21.8"},
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.136.1+1.21.8", "waystones": "21.8.5+1.21.8", "balm": "21.8.10+1.21.8"},
       "families": {"balm": "legacy-module", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
     },
@@ -251,7 +259,9 @@
       "minecraft": ["1.21.10"],
       "compile": {"minecraft": "1.21.10"},
       "balmModId": "balm",
-      "minimum": {"fabricLoader": "0.17.2", "fabricApi": "0.134.1+1.21.10", "waystones": "21.10.1+1.21.10", "balm": "21.10.1+1.21.10"},
+      "minimum": {"fabricLoader": "0.17.2", "fabricApi": "0.134.1+1.21.10", "waystones": "21.10.1+1.21.10", "balm": "21.10.6+1.21.10"},
+      "key": {"fabricLoader": "0.17.2", "fabricApi": "0.134.1+1.21.10", "waystones": "21.10.2+1.21.10", "balm": "21.10.6+1.21.10"},
+      "keyReason": "Waystones 21.10.2 changed requirement consumption to the teleport-context overload and introduced Warp Stone hand context.",
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.138.4+1.21.10", "waystones": "21.10.5+1.21.10", "balm": "21.10.11+1.21.10"},
       "families": {"balm": "legacy-module", "screen": "event-input", "teleport": "context-hand-21.10"}
     },
@@ -264,8 +274,10 @@
       "minecraft": ["1.21.11"],
       "compile": {"minecraft": "1.21.11"},
       "balmModId": "balm",
-      "minimum": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.2+1.21.11", "balm": "21.11.2+1.21.11"},
-      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.141.6+1.21.11", "waystones": "21.11.9+1.21.11", "balm": "21.11.9.1+1.21.11"},
+      "minimum": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.2", "balm": "21.11.2"},
+      "key": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.4", "balm": "21.11.3"},
+      "keyReason": "Waystones 21.11.4 is the audited intermediate patch before the current 21.11.9 line.",
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.141.6+1.21.11", "waystones": "21.11.9", "balm": "21.11.9.1"},
       "families": {"balm": "platform-module", "screen": "identifier-skin", "teleport": "identifier-21.11"}
     }
   ]
