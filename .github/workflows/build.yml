@@ -30,6 +30,12 @@ jobs:
       - name: Verify shared semantic parity
         run: ./scripts/verify-branch-parity.sh branch
 
+      - name: Fetch unified sibling branches
+        run: >-
+          git fetch --no-tags origin
+          refs/heads/neoforge/1.21.x:refs/remotes/origin/neoforge/1.21.x
+          refs/heads/fabric/1.21.x:refs/remotes/origin/fabric/1.21.x
+
       - name: Verify unified adapter parity
         run: >-
           ./scripts/verify-branch-parity.sh adapters
