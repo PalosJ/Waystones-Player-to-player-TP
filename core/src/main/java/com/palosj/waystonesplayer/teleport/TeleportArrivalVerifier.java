@@ -8,15 +8,9 @@ public final class TeleportArrivalVerifier {
     private TeleportArrivalVerifier() {
     }
 
-    public static boolean succeeded(
-            boolean apiReportedSender,
-            Position before,
-            Position after,
-            BlockTarget requestedTarget) {
-        Objects.requireNonNull(requestedTarget, "requestedTarget");
-        // Waystones events may redirect the final destination.  The requested target is
-        // retained in the signature for source-family compatibility, but a reported sender
-        // is only successful after the player's position actually changes.
+    public static boolean succeeded(boolean apiReportedSender, Position before, Position after) {
+        // Waystones events may redirect the final destination.  A reported sender is only
+        // successful after the player's position actually changes.
         return apiReportedSender && hasMoved(before, after);
     }
 
@@ -36,9 +30,4 @@ public final class TeleportArrivalVerifier {
         }
     }
 
-    public record BlockTarget(String dimension, int x, int y, int z) {
-        public BlockTarget {
-            Objects.requireNonNull(dimension, "dimension");
-        }
-    }
 }

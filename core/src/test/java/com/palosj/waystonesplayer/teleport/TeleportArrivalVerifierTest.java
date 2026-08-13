@@ -6,29 +6,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 class TeleportArrivalVerifierTest {
-    private static final TeleportArrivalVerifier.BlockTarget TARGET =
-            new TeleportArrivalVerifier.BlockTarget("minecraft:overworld", 10, 64, 10);
-
     @Test
-    void acceptsTheTargetBlockAndHorizontalAdjacentBlocks() {
+    void acceptsReportedMovementToTheRequestedArea() {
         var before = position("minecraft:overworld", 0.5, 64.5, 0.5);
 
-        assertTrue(TeleportArrivalVerifier.succeeded(true, before, position("minecraft:overworld", 10.5, 64.5, 10.5), TARGET));
-        assertTrue(TeleportArrivalVerifier.succeeded(true, before, position("minecraft:overworld", 11.5, 64.5, 10.5), TARGET));
+        assertTrue(TeleportArrivalVerifier.succeeded(true, before, position("minecraft:overworld", 10.5, 64.5, 10.5)));
+        assertTrue(TeleportArrivalVerifier.succeeded(true, before, position("minecraft:overworld", 11.5, 64.5, 10.5)));
     }
 
     @Test
     void rejectsAnOldApiFalsePositiveWhenThePlayerDidNotMove() {
         var unchanged = position("minecraft:overworld", 0.5, 64.5, 0.5);
 
-        assertFalse(TeleportArrivalVerifier.succeeded(true, unchanged, unchanged, TARGET));
+        assertFalse(TeleportArrivalVerifier.succeeded(true, unchanged, unchanged));
     }
 
     @Test
     void rejectsAnApiSuccessWhenThePlayerWasAlreadyAtTheRequestedArea() {
         var alreadyThere = position("minecraft:overworld", 10.5, 64.5, 10.5);
 
-        assertFalse(TeleportArrivalVerifier.succeeded(true, alreadyThere, alreadyThere, TARGET));
+        assertFalse(TeleportArrivalVerifier.succeeded(true, alreadyThere, alreadyThere));
     }
 
     @Test
@@ -36,7 +33,7 @@ class TeleportArrivalVerifierTest {
         var before = position("minecraft:overworld", 0.5, 64.5, 0.5);
         var redirected = position("minecraft:the_nether", 100.5, 70.5, 100.5);
 
-        assertTrue(TeleportArrivalVerifier.succeeded(true, before, redirected, TARGET));
+        assertTrue(TeleportArrivalVerifier.succeeded(true, before, redirected));
     }
 
     @Test
@@ -44,7 +41,7 @@ class TeleportArrivalVerifierTest {
         var before = position("minecraft:overworld", 0.5, 64.5, 0.5);
         var after = position("minecraft:overworld", 10.5, 64.5, 10.5);
 
-        assertFalse(TeleportArrivalVerifier.succeeded(false, before, after, TARGET));
+        assertFalse(TeleportArrivalVerifier.succeeded(false, before, after));
     }
 
     @Test
