@@ -31,7 +31,7 @@ jobs:
         run: ./scripts/verify-branch-parity.sh branch
 
       - name: Verify target matrix references
-        run: python3 scripts/verify-target-matrix.py
+        run: python3 scripts/verify-target-matrix.py --branch fabric/1.21.x
 
   build:
     name: ${{ matrix.target }} (${{ matrix.stack }})
