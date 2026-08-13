@@ -96,6 +96,7 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 
 - [ ] 审查完整 diff、暂存清单、敏感信息和大文件；不提交 JAR、缓存、日志或本地运行文件。
 - [ ] 先提交 canonical `main`，再按已确认基线移植两条统一分支。
+- [ ] core、完整 common、目标矩阵、运行脚本、文档、许可证与既有图标和统一分支记录的 canonical 提交逐文件一致。
 - [ ] 普通推送，不强推，不创建 PR、标签、GitHub Release，也不代为上传平台。
 - [ ] 本地 HEAD、`origin/<branch>` 和 GitHub 远端提交一致。
 - [ ] 三条分支 GitHub Actions 全绿，main/统一分支共享漂移门禁通过。
