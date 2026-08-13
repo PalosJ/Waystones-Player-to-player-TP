@@ -146,7 +146,7 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
                 ],
                 'fabric-1.21.11'  : [
                         fabricLoader: '0.18.1',
-                        fabricApi: '0.139.4+1.21.11',
+                        fabricApi: '0.141.6+1.21.11',
                         waystones: '21.11.4',
                         waystonesCapability: 'waystones-fabric-1.21.11',
                         balm: '21.11.3',
