@@ -276,8 +276,8 @@
       "compile": {"minecraft": "1.21.11"},
       "balmModId": "balm",
       "minimum": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.2", "waystonesCapability": "waystones-fabric-1.21.11", "balm": "21.11.2"},
-      "key": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.4", "waystonesCapability": "waystones-fabric-1.21.11", "balm": "21.11.3"},
-      "keyReason": "Waystones 21.11.4 is the audited intermediate patch before the current 21.11.9 line.",
+      "key": {"fabricLoader": "0.18.1", "fabricApi": "0.141.6+1.21.11", "waystones": "21.11.4", "waystonesCapability": "waystones-fabric-1.21.11", "balm": "21.11.3"},
+      "keyReason": "Waystones 21.11.4 is the audited intermediate patch before the current 21.11.9 line; Fabric API 0.141.6 is required because Balm 21.11.3 invokes the model-loading API.",
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.141.6+1.21.11", "waystones": "21.11.9", "balm": "21.11.9.1"},
       "families": {"balm": "platform-module", "screen": "identifier-skin", "teleport": "identifier-21.11"}
     }

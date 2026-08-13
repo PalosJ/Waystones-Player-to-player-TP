@@ -105,7 +105,7 @@ Fabric Balm 的模组 ID 是真实断点：
 
 部分旧 Balm Fabric POM 对 KumaAPI 声明了跨整个 21.x 的宽版本范围，但 Balm JAR 本身已内嵌与该 Minecraft 线匹配的 KumaAPI。构建和运行器明确排除这份外部重复依赖，避免 Gradle 把最新 Minecraft 线的 KumaAPI 当成旧版根模组加载；Balm 内嵌依赖仍保持不变。
 
-1.21.4、1.21.10 与 1.21.11 还固定了一组关键补丁运行套件，用于覆盖菜单载体 getter、requirement `consume` 签名和 Identifier/platform 大断点；NeoForge 与 Fabric 都用各自加载器套件执行。精确版本由 `gradle/targets.json` 的 `key` 字段锁定，其他目标不得虚构与最低或当前重复的“关键套件”。
+1.21.4、1.21.10 与 1.21.11 还固定了一组关键补丁运行套件，用于覆盖菜单载体 getter、requirement `consume` 签名和 Identifier/platform 大断点；NeoForge 与 Fabric 都用各自加载器套件执行。精确版本由 `gradle/targets.json` 的 `key` 字段锁定，其他目标不得虚构与最低或当前重复的“关键套件”。Fabric 1.21.11 的关键套件使用 Fabric API 0.141.6：Waystones 21.11.4 所带 Balm 21.11.3 的客户端入口会调用 Fabric 模型加载 API，而 0.139.4 未提供该入口。
 
 ## 为什么 1.21.2 与 1.21.3 共用
 
