@@ -348,6 +348,13 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 throw new GradleException(
                         "Release JAR is missing required entries: ${missingEntries.join(', ')}")
             }
+            def removedEntries = [
+                    'com/palosj/waystonesplayer/teleport/TeleportArrivalVerifier$BlockTarget.class',
+            ].findAll { entryNameSet.contains(it) }
+            if (!removedEntries.isEmpty()) {
+                throw new GradleException(
+                        "Release JAR contains removed API entries: ${removedEntries.join(', ')}")
+            }
 
             def manifest = new java.util.jar.Manifest(zip.getInputStream(zip.getEntry('META-INF/MANIFEST.MF')))
             def attributes = manifest.mainAttributes
