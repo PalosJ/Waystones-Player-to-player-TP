@@ -44,7 +44,10 @@ public final class WaystonesCompat {
     }
 
     public static Optional<WarpStoneUse> resolveWarpStoneUse(ServerPlayer player, AbstractContainerMenu menu) {
-        if (!isWarpStoneMenu(menu) || !(menu instanceof WarpStoneUseCarrier carrier)) {
+        if (!isWarpStoneMenu(menu)) {
+            return Optional.empty();
+        }
+        if (!(menu instanceof WarpStoneUseCarrier carrier)) {
             logMenuCompatibilityFailure(menu, null);
             return Optional.empty();
         }

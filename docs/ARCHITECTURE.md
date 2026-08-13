@@ -109,11 +109,11 @@ flowchart LR
 
 客户端复用当前连接已经维护的 listed `PlayerInfo`：
 
-- 每个客户端 tick 构造按名称排序的轻量 UUID/名称视图。
+- 每个客户端 tick 从 Minecraft 的 listed `PlayerInfo` 构造按名称排序的轻量 UUID/名称视图。
 - 视图未变化时不重建控件；变化时按 UUID 差分，保留顶部可见玩家、行内偏移和仍存在的键盘焦点。
 - 皮肤从当前连接重新查询；纹理加载/绘制失败时回退为姓名首个 Unicode code point。
 - 完整姓名始终存在于 tooltip 和按钮叙述；长名称按实际可用宽度截断。
-- 客户端展示不构成授权，服务端仍独立执行 listed 检查。
+- 客户端展示不构成授权，服务端独立执行 `ServerPlayer.allowsListing()` 硬校验；第三方逐客户端 `UPDATE_LISTED` 隐藏可能造成已显示条目被拒绝，本模组不承诺阻止针对该第三方状态的猜 UUID 请求。
 
 布局以 Waystones 真实列表边界计算：
 
