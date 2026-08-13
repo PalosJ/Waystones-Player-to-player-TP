@@ -12,7 +12,7 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 
 - 玩家目录始终位于左侧：宽屏显示 164px 完整名单，中等空间收窄至 128px，继续不足时改为 36px 可点击头像栏；只有必要时才把 Waystones 原界面整体右移。
 - 名单实时复用 Minecraft 已同步的 listed 玩家数据，不增加第二套名单协议；加入、离开或改名时保留可见锚点与键盘焦点。
-- 客户端只发送目标 UUID。服务端重新验证菜单、打开菜单的确切 Warp Stone 与使用手、目标在线且允许列出、费用和最终移动。
+- 客户端只发送目标 UUID。客户端目录复用 Minecraft 的 listed 玩家流；服务端则独立用 `allowsListing()` 作为硬授权，并重新验证菜单、打开菜单的确切 Warp Stone 与使用手、费用和最终移动。
 - 传送进入 Waystones 的可取消事件、声音、效果和相邻非窒息落点流程，兼容其他观察或取消 Waystones 传送的模组。
 - 每次确认成功后才对原 Warp Stone 结算 1 点原生耐久；失败不扣耐久，经验会恢复且界面保持打开。
 - 三种经验模式：免费、跟随 Waystones 总开关，或始终计算 Waystones 当前的经验点数/等级公式。
@@ -21,7 +21,7 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 
 ### 安装与支持范围
 
-Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端，并使用与 Minecraft 小版本及加载器匹配的三个 JAR。Java 版本为 21，模组版本始终为 `1.0.0`。
+Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端，并使用与 Minecraft 小版本及加载器匹配的三个 JAR；Fabric 目标还需要对应版本的 Fabric API，NeoForge 目标不需要 Fabric API。Java 版本为 21，模组版本始终为 `1.0.0`。
 
 | 分支 | 加载器 | Minecraft | 可上传 JAR |
 |---|---|---|---:|
@@ -40,7 +40,7 @@ Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端
 3. 服务端验证本次菜单仍绑定同一个主手或副手物品，并重新查询目标。
 4. Waystones 执行事件、效果和落点流程；只有服务器确认发送者实际移动后，才结算费用、耐久并关闭界面。
 
-隐藏于原版玩家列表的玩家不会显示，也不能通过猜测 UUID 绕过服务端限制。玩家目的地不会写入 Waystones 数据库，不会继承物品费用、冷却或非经验 requirement。
+客户端只展示原版 listed 玩家流中的目标；服务端另行要求目标的 `allowsListing()` 为真。因此第三方逐客户端 `UPDATE_LISTED` 隐藏可能让一个已显示条目在服务端被拒绝，而本模组不承诺阻止针对这类第三方隐藏状态的猜 UUID 请求。玩家目的地不会写入 Waystones 数据库，不会继承物品费用、冷却或非经验 requirement。
 
 ### 经验配置
 
@@ -91,7 +91,7 @@ Waystones Player is an unofficial add-on for [Waystones](https://modrinth.com/mo
 
 - A responsive player directory: 164px full list, 128–163px narrowed list, or a 36px clickable avatar rail. The Waystones UI moves right only when required.
 - Live updates from Minecraft's existing listed-player data, preserving the visible anchor and keyboard focus without adding a duplicate directory protocol.
-- Server-authoritative validation of the menu, exact Warp Stone and hand, listed target, cost, and confirmed movement.
+- Server-authoritative validation of the menu, exact Warp Stone and hand, `allowsListing()` authorization, cost, and confirmed movement.
 - Waystones' cancellable events, sound, effects, and adjacent non-suffocating destination selection.
 - One point of native Warp Stone durability only after confirmed success; failures restore experience, preserve durability, and keep the menu open.
 - `NEVER`, `FOLLOW_WAYSTONES`, and `ALWAYS` experience modes.
@@ -100,7 +100,7 @@ Adjacent non-suffocating placement is not an absolute safety guarantee: it does 
 
 ### Installation and supported targets
 
-Install matching Waystones Player, Waystones, and Balm JARs on both client and server. Java 21 is required, and every project artifact remains version `1.0.0`.
+Install matching Waystones Player, Waystones, and Balm JARs on both client and server; Fabric targets also require the matching Fabric API, while NeoForge targets do not. Java 21 is required, and every project artifact remains version `1.0.0`.
 
 | Branch | Loader | Minecraft | Uploadable JARs |
 |---|---|---|---:|
@@ -114,7 +114,7 @@ The exact minimum/current dependency suites and canonical filenames are in [grad
 
 ### Rules and configuration
 
-Only players exposed through Minecraft's listed-player stream are shown or accepted. The client sends a UUID; the server independently resolves and authorizes it. A player destination is transient and is never stored as a Waystone.
+The client displays players from Minecraft's listed-player stream. The client sends a UUID, and the server independently resolves it and authorizes it only when `allowsListing()` is true. These are separate boundaries: a third-party per-client `UPDATE_LISTED` hide can leave an entry displayed but rejected by the server, and this add-on does not promise to prevent guessed-UUID requests against such third-party hiding. A player destination is transient and is never stored as a Waystone.
 
 `playerTeleportExperienceMode` defaults to `NEVER`. Only experience-point and experience-level requirements are selected; item costs, cooldowns, and unrelated requirements are ignored. NeoForge keeps SERVER config and per-world override semantics. Fabric uses the same `config/waystonesplayer-server.toml`, key, and default as a global instance configuration, without claiming per-world overrides.
 

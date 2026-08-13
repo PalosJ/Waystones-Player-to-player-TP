@@ -13,19 +13,11 @@ public final class TeleportArrivalVerifier {
             Position before,
             Position after,
             BlockTarget requestedTarget) {
-        if (!apiReportedSender) {
-            return false;
-        }
-
-        boolean reachedRequestedArea = after.dimension().equals(requestedTarget.dimension())
-                && floor(after.y()) == requestedTarget.y()
-                && Math.abs(floor(after.x()) - requestedTarget.x())
-                        + Math.abs(floor(after.z()) - requestedTarget.z()) <= 1;
-        if (reachedRequestedArea) {
-            return true;
-        }
-
-        return hasMoved(before, after);
+        Objects.requireNonNull(requestedTarget, "requestedTarget");
+        // Waystones events may redirect the final destination.  The requested target is
+        // retained in the signature for source-family compatibility, but a reported sender
+        // is only successful after the player's position actually changes.
+        return apiReportedSender && hasMoved(before, after);
     }
 
     public static boolean hasMoved(Position before, Position after) {
@@ -36,11 +28,6 @@ public final class TeleportArrivalVerifier {
         double deltaY = after.y() - before.y();
         double deltaZ = after.z() - before.z();
         return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ > MOVEMENT_EPSILON_SQUARED;
-    }
-
-    private static int floor(double value) {
-        int integer = (int) value;
-        return value < integer ? integer - 1 : integer;
     }
 
     public record Position(String dimension, double x, double y, double z) {

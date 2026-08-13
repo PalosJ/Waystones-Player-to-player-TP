@@ -29,6 +29,12 @@ jobs:
           origin/neoforge/1.21.x
           origin/fabric/1.21.x
 
+      - name: Verify unified adapter parity
+        run: >-
+          ./scripts/verify-branch-parity.sh adapters
+          origin/neoforge/1.21.x
+          origin/fabric/1.21.x
+
   build:
     name: NeoForge 1.21.1 (${{ matrix.stack }})
     runs-on: ubuntu-latest

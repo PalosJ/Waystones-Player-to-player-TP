@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,6 +37,11 @@ public final class WaystonePlayerScreenInjector {
     private static final AtomicBoolean LAYOUT_COMPAT_FAILURE_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean DIRECTORY_REFRESH_FAILURE_LOGGED = new AtomicBoolean();
     private static final Map<Screen, PlayerPanel> PANELS = new WeakHashMap<>();
+    private static Object cachedConnection;
+    private static UUID cachedSelf;
+    private static long cachedDirectoryFingerprint;
+    private static List<PlayerInfo> cachedOnlinePlayers = List.of();
+    private static boolean directoryCacheInitialized;
     private static final int HEADER_HEIGHT = 64;
     private static final int FOOTER_HEIGHT = 25;
     private static final int TITLE_Y = 20;
@@ -123,17 +129,49 @@ public final class WaystonePlayerScreenInjector {
 
     private static List<PlayerInfo> getOnlinePlayers() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.getConnection() == null || minecraft.player == null) {
+        var connection = minecraft.getConnection();
+        if (connection == null || minecraft.player == null) {
+            cachedConnection = null;
+            cachedSelf = null;
+            cachedOnlinePlayers = List.of();
+            directoryCacheInitialized = false;
             return null;
         }
 
-        List<PlayerInfo> onlinePlayers = new ArrayList<>(minecraft.getConnection().getListedOnlinePlayers());
-        onlinePlayers.removeIf(info -> info.getProfile().getId().equals(minecraft.player.getUUID()));
+        UUID selfId = minecraft.player.getUUID();
+        long fingerprint = 0xcbf29ce484222325L;
+        int count = 0;
+        for (PlayerInfo info : connection.getListedOnlinePlayers()) {
+            var profile = info.getProfile();
+            fingerprint = mixFingerprint(fingerprint, profile.getId().getMostSignificantBits());
+            fingerprint = mixFingerprint(fingerprint, profile.getId().getLeastSignificantBits());
+            fingerprint = mixFingerprint(fingerprint, profile.getName().hashCode());
+            count++;
+        }
+        fingerprint = mixFingerprint(fingerprint, count);
+        if (directoryCacheInitialized
+                && connection == cachedConnection
+                && selfId.equals(cachedSelf)
+                && fingerprint == cachedDirectoryFingerprint) {
+            return cachedOnlinePlayers;
+        }
+
+        List<PlayerInfo> onlinePlayers = new ArrayList<>(connection.getListedOnlinePlayers());
+        onlinePlayers.removeIf(info -> info.getProfile().getId().equals(selfId));
         onlinePlayers.sort(Comparator
                 .comparing((PlayerInfo info) -> info.getProfile().getName(), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(info -> info.getProfile().getName())
                 .thenComparing(info -> info.getProfile().getId()));
-        return onlinePlayers;
+        cachedConnection = connection;
+        cachedSelf = selfId;
+        cachedDirectoryFingerprint = fingerprint;
+        cachedOnlinePlayers = List.copyOf(onlinePlayers);
+        directoryCacheInitialized = true;
+        return cachedOnlinePlayers;
+    }
+
+    private static long mixFingerprint(long hash, long value) {
+        return (hash ^ value) * 0x100000001b3L;
     }
 
     private static AbstractWaystoneList<?> findWaystoneList(WaystoneSelectionScreenBase screen) {

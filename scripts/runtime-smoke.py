@@ -8,6 +8,7 @@ minimum-built release JAR and the dependency stack selected from targets.json.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -168,6 +169,20 @@ def display_version(version: str) -> str:
     return version.split("+", 1)[0]
 
 
+def binary_path(target: Dict[str, object]) -> Path:
+    if target["branch"] == "main":
+        return ROOT / "neoforge" / "build" / "libs" / target["artifactFile"]
+    return ROOT / "targets" / target["id"] / "build" / "libs" / target["artifactFile"]
+
+
+def binary_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as binary:
+        for chunk in iter(lambda: binary.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def fabric_mod_listed(output: str, mod_id: str, version: str) -> bool:
     return bool(
         re.search(
@@ -273,6 +288,10 @@ def run_smoke(args: argparse.Namespace) -> int:
     result_dir.mkdir(parents=True, exist_ok=True)
     result_file = result_dir / f"{args.side}.log"
     command = build_command(target, minecraft, args.stack, args.side, args.xvfb)
+    release_jar = binary_path(target)
+    if not release_jar.is_file():
+        raise ValueError(f"minimum release JAR is missing: {release_jar}")
+    release_sha256 = binary_sha256(release_jar)
 
     run_directory = (
         ROOT
@@ -317,6 +336,7 @@ def run_smoke(args: argparse.Namespace) -> int:
     success_at: Optional[float] = None
     readiness_at: Optional[float] = None
     timed_out = False
+    unexpected_exit = False
 
     try:
         with result_file.open("w", encoding="utf-8") as evidence:
@@ -339,9 +359,13 @@ def run_smoke(args: argparse.Namespace) -> int:
                     line = queued_lines.get(timeout=min(0.5, deadline - now))
                 except queue.Empty:
                     if process.poll() is not None:
+                        if success_at is None:
+                            unexpected_exit = True
                         break
                     continue
                 if line is None:
+                    if process.poll() is not None and success_at is None:
+                        unexpected_exit = True
                     break
 
                 output_parts.append(line)
@@ -386,6 +410,19 @@ def run_smoke(args: argparse.Namespace) -> int:
     )
     fatal = fatal_matches(output)
     missing = [name for name, present in signals.items() if not present]
+    crash_reports = list((run_directory / "crash-reports").glob("crash-*.txt"))
+    if crash_reports:
+        unexpected_exit = True
+
+    with result_file.open("a", encoding="utf-8") as evidence:
+        evidence.write(f"BINARY: {release_jar.relative_to(ROOT)}\n")
+        evidence.write(f"BINARY-SHA256: {release_sha256}\n")
+        evidence.write(f"PROCESS-EXIT-CODE: {process.returncode}\n")
+        evidence.write(f"UNEXPECTED-EXIT: {unexpected_exit}\n")
+        if crash_reports:
+            evidence.write("CRASH-REPORTS:\n")
+            for report in crash_reports:
+                evidence.write(f"- {report.relative_to(ROOT)}\n")
 
     if timed_out:
         print(f"Smoke test timed out after {args.timeout} seconds.", file=sys.stderr)
@@ -393,12 +430,15 @@ def run_smoke(args: argparse.Namespace) -> int:
         print("Fatal startup signatures found:", file=sys.stderr)
         for match in fatal:
             print(f"  - {match}", file=sys.stderr)
+    if unexpected_exit:
+        print("Runtime process exited before the required startup signals or left a crash report.",
+              file=sys.stderr)
     if missing:
         print("Missing startup evidence:", file=sys.stderr)
         for name in missing:
             print(f"  - {name}", file=sys.stderr)
 
-    if timed_out or fatal or missing:
+    if timed_out or fatal or missing or unexpected_exit:
         if not args.verbose:
             print("Last startup log lines:", file=sys.stderr)
             for line in output.splitlines()[-120:]:

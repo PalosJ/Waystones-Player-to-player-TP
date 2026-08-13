@@ -25,6 +25,13 @@ class TeleportArrivalVerifierTest {
     }
 
     @Test
+    void rejectsAnApiSuccessWhenThePlayerWasAlreadyAtTheRequestedArea() {
+        var alreadyThere = position("minecraft:overworld", 10.5, 64.5, 10.5);
+
+        assertFalse(TeleportArrivalVerifier.succeeded(true, alreadyThere, alreadyThere, TARGET));
+    }
+
+    @Test
     void acceptsAnEventRedirectThatActuallyMovedThePlayer() {
         var before = position("minecraft:overworld", 0.5, 64.5, 0.5);
         var redirected = position("minecraft:the_nether", 100.5, 70.5, 100.5);
