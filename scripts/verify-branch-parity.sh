@@ -12,6 +12,7 @@ readonly -a SHARED_PATHS=(
   "scripts/verify-branch-parity.sh"
   "scripts/runtime-matrix.py"
   "scripts/runtime-smoke.py"
+  "scripts/release-manifest.py"
   "README.md"
   "CONTEXT.md"
   "docs"

@@ -92,6 +92,14 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 - [ ] 页面包含非官方声明、既有图标署名和“相邻非窒息不是绝对安全”说明。
 - [ ] 上传清单同时保存文件名、大小、SHA-256、分支提交、目标和依赖。
 
+生成仓库外/忽略目录中的清单（必须先完成当前分支全部最低套件构建）：
+
+```bash
+python3 scripts/release-manifest.py --output build/release-manifest.json
+```
+
+清单中的每个 `sha256` 必须与实际上传文件和运行证据中的 `BINARY-SHA256` 一致；清单不提交到仓库。
+
 ## 9. GitHub 与分支收尾
 
 - [ ] 审查完整 diff、暂存清单、敏感信息和大文件；不提交 JAR、缓存、日志或本地运行文件。
