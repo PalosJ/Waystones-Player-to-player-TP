@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +40,11 @@ public final class WaystonePlayerScreenInjector {
     private static final AtomicBoolean DIRECTORY_REFRESH_FAILURE_LOGGED = new AtomicBoolean();
     private static final Map<Screen, PlayerPanel> PANELS = new WeakHashMap<>();
     private static final Map<WaystoneSelectionScreenBase, WaystonesLayoutState> ACTIVE_LAYOUTS = new WeakHashMap<>();
+    private static Object cachedConnection;
+    private static UUID cachedSelf;
+    private static long cachedDirectoryFingerprint;
+    private static List<PlayerInfo> cachedOnlinePlayers = List.of();
+    private static boolean directoryCacheInitialized;
     private static final int HEADER_HEIGHT = 64;
     private static final int FOOTER_HEIGHT = 25;
     private static final int TITLE_Y = 20;
@@ -175,17 +181,48 @@ public final class WaystonePlayerScreenInjector {
 
     private static List<PlayerInfo> getOnlinePlayers() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.getConnection() == null || minecraft.player == null) {
+        var connection = minecraft.getConnection();
+        if (connection == null || minecraft.player == null) {
+            cachedConnection = null;
+            cachedSelf = null;
+            cachedOnlinePlayers = List.of();
+            directoryCacheInitialized = false;
             return null;
         }
 
-        List<PlayerInfo> onlinePlayers = new ArrayList<>(minecraft.getConnection().getListedOnlinePlayers());
-        onlinePlayers.removeIf(info -> PlayerProfileCompat.id(info).equals(minecraft.player.getUUID()));
+        UUID selfId = minecraft.player.getUUID();
+        long fingerprint = 0xcbf29ce484222325L;
+        int count = 0;
+        for (PlayerInfo info : connection.getListedOnlinePlayers()) {
+            fingerprint = mixFingerprint(fingerprint, PlayerProfileCompat.id(info).getMostSignificantBits());
+            fingerprint = mixFingerprint(fingerprint, PlayerProfileCompat.id(info).getLeastSignificantBits());
+            fingerprint = mixFingerprint(fingerprint, PlayerProfileCompat.name(info).hashCode());
+            count++;
+        }
+        fingerprint = mixFingerprint(fingerprint, count);
+        if (directoryCacheInitialized
+                && connection == cachedConnection
+                && selfId.equals(cachedSelf)
+                && fingerprint == cachedDirectoryFingerprint) {
+            return cachedOnlinePlayers;
+        }
+
+        List<PlayerInfo> onlinePlayers = new ArrayList<>(connection.getListedOnlinePlayers());
+        onlinePlayers.removeIf(info -> PlayerProfileCompat.id(info).equals(selfId));
         onlinePlayers.sort(Comparator
                 .comparing(PlayerProfileCompat::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(PlayerProfileCompat::name)
                 .thenComparing(PlayerProfileCompat::id));
-        return onlinePlayers;
+        cachedConnection = connection;
+        cachedSelf = selfId;
+        cachedDirectoryFingerprint = fingerprint;
+        cachedOnlinePlayers = List.copyOf(onlinePlayers);
+        directoryCacheInitialized = true;
+        return cachedOnlinePlayers;
+    }
+
+    private static long mixFingerprint(long hash, long value) {
+        return (hash ^ value) * 0x100000001b3L;
     }
 
     private static EditBox findSearchBox(WaystoneSelectionScreenBase screen) {
@@ -238,7 +275,7 @@ public final class WaystonePlayerScreenInjector {
     }
 
     private static boolean isPageButton(AbstractWidget widget, int contentCenter) {
-        if (widget.getClass() != Button.class || widget.getWidth() != PAGE_BUTTON_WIDTH) {
+        if (!(widget instanceof Button) || widget.getWidth() != PAGE_BUTTON_WIDTH) {
             return false;
         }
         int x = widget.getX();
@@ -258,7 +295,7 @@ public final class WaystonePlayerScreenInjector {
     private static final class WaystonesLayoutState {
         private final int baseLeftPos;
         private final int shiftX;
-        private final Map<AbstractWidget, Integer> baseX = new IdentityHashMap<>();
+        private final Map<AbstractWidget, Integer> baseX = new WeakHashMap<>();
 
         private WaystonesLayoutState(
                 WaystoneSelectionScreenBase screen,

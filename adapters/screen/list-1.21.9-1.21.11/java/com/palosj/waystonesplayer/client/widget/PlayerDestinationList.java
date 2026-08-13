@@ -22,6 +22,7 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
     private final int rowWidth;
     private final Consumer<UUID> onPlayerSelected;
     private List<PlayerDirectoryEntry> players = List.of();
+    private List<PlayerInfo> sourcePlayers = List.of();
 
     public PlayerDestinationList(int x, int y, int width, int height, List<PlayerInfo> onlinePlayers,
                                  boolean avatarOnly, Consumer<UUID> onPlayerSelected) {
@@ -57,6 +58,10 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
     }
 
     public void updatePlayers(List<PlayerInfo> onlinePlayers) {
+        if (onlinePlayers == sourcePlayers) {
+            return;
+        }
+        sourcePlayers = onlinePlayers;
         List<PlayerDirectoryEntry> current = onlinePlayers.stream()
                 .map(info -> new PlayerDirectoryEntry(PlayerProfileCompat.id(info), PlayerProfileCompat.name(info)))
                 .toList();
