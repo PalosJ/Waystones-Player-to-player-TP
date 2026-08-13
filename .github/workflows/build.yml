@@ -29,6 +29,9 @@ jobs:
           origin/neoforge/1.21.x
           origin/fabric/1.21.x
 
+      - name: Verify target matrix references
+        run: python3 scripts/verify-target-matrix.py --branch main
+
       - name: Verify unified adapter parity
         run: >-
           ./scripts/verify-branch-parity.sh adapters
