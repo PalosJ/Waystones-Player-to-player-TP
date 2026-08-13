@@ -8,6 +8,7 @@
 - [ ] 当前分支与目标矩阵中的 branch 一致。
 - [ ] `origin` 指向预期仓库；已获取远端且本地未落后或分叉。
 - [ ] `gradle/targets.json` 通过 JSON 解析和 `verifyTargetMatrix`。
+- [ ] `python3 scripts/verify-target-matrix.py` 通过，settings 与 Build/Runtime workflow 的 target 列表和中央矩阵一致。
 - [ ] 所有 `mod_version`、加载器元数据、文件名、changelog 和平台版本均为 `1.0.0`。
 - [ ] 原 `common/src/main/resources/waystonesplayer.png` 字节未改变。
 
