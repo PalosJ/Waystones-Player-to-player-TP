@@ -44,6 +44,17 @@ class PlayerPanelLayoutTest {
     }
 
     @Test
+    void respectsTheFullToCompactBoundaryAt164And163Pixels() {
+        PlayerPanelLayout fullBoundary = resolveCentered(452);
+        PlayerPanelLayout compactBoundary = resolveCentered(451);
+
+        assertEquals(164, fullBoundary.panelWidth());
+        assertEquals(PlayerPanelLayout.Mode.FULL, fullBoundary.mode());
+        assertEquals(163, compactBoundary.panelWidth());
+        assertEquals(PlayerPanelLayout.Mode.COMPACT, compactBoundary.mode());
+    }
+
+    @Test
     void switchesToTheAvatarRailBelowTheNamedMinimum() {
         PlayerPanelLayout layout = resolveCentered(415);
 
