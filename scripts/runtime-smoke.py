@@ -156,6 +156,12 @@ def stop_process_group(process: subprocess.Popen[str]) -> None:
     raise RuntimeError(f"Could not stop runtime process group {process.pid}")
 
 
+def process_exited_unexpectedly(process: subprocess.Popen[str], success_at: Optional[float]) -> bool:
+    return process.poll() is not None and (
+        success_at is None or process.returncode not in (0,)
+    )
+
+
 def fatal_matches(output: str) -> List[str]:
     matches = []
     for pattern in FATAL_PATTERNS:
@@ -359,12 +365,12 @@ def run_smoke(args: argparse.Namespace) -> int:
                     line = queued_lines.get(timeout=min(0.5, deadline - now))
                 except queue.Empty:
                     if process.poll() is not None:
-                        if success_at is None:
+                        if process_exited_unexpectedly(process, success_at):
                             unexpected_exit = True
                         break
                     continue
                 if line is None:
-                    if process.poll() is not None and success_at is None:
+                    if process_exited_unexpectedly(process, success_at):
                         unexpected_exit = True
                     break
 
