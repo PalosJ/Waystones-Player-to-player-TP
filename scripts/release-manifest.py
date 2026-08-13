@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 from typing import Dict, List
@@ -31,9 +32,18 @@ def parse_args() -> argparse.Namespace:
 
 
 def checked_out_branch() -> str:
-    return subprocess.check_output(
+    checked_out = subprocess.check_output(
         ["git", "branch", "--show-current"], cwd=ROOT, text=True
     ).strip()
+    if checked_out:
+        return checked_out
+    for environment_key in ("GITHUB_HEAD_REF", "GITHUB_REF_NAME"):
+        value = os.environ.get(environment_key, "").strip()
+        if value:
+            return value
+    raise ValueError(
+        "cannot infer branch from detached HEAD; pass --branch or set GITHUB_HEAD_REF/GITHUB_REF_NAME"
+    )
 
 
 def sha256(path: Path) -> str:
