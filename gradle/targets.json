@@ -121,8 +121,8 @@
       "artifactFile": "waystonesplayer-neoforge-1.21.10-1.0.0.jar",
       "minecraft": ["1.21.10"],
       "compile": {"minecraft": "1.21.10"},
-      "minimum": {"neoforge": "21.10.63", "waystones": "21.10.1+1.21.10", "balm": "21.10.3+1.21.10"},
-      "key": {"neoforge": "21.10.63", "waystones": "21.10.2+1.21.10", "balm": "21.10.5+1.21.10"},
+      "minimum": {"neoforge": "21.10.64", "waystones": "21.10.1+1.21.10", "balm": "21.10.3+1.21.10"},
+      "key": {"neoforge": "21.10.64", "waystones": "21.10.2+1.21.10", "balm": "21.10.5+1.21.10"},
       "keyReason": "Waystones 21.10.2 changed requirement consumption to the teleport-context overload and introduced Warp Stone hand context.",
       "current": {"neoforge": "21.10.64", "waystones": "21.10.5+1.21.10", "balm": "21.10.11+1.21.10"},
       "families": {"balm": "legacy-module", "screen": "event-input", "teleport": "context-hand-21.10"}
