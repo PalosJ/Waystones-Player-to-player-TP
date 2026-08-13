@@ -3,7 +3,7 @@
 - Adds a live directory of other Minecraft-listed players to the Waystones Warp Stone screen.
 - Uses responsive full, compact, and avatar-only layouts while preserving the original Waystones controls.
 - Routes player destinations through Waystones events, sound, effects, and adjacent non-suffocating placement.
-- Revalidates the exact Warp Stone, hand, listed target, cost, and confirmed movement on the server.
+- Revalidates the exact Warp Stone, hand, `allowsListing()` target authorization, cost, and confirmed movement on the server.
 - Applies one point of native Warp Stone durability only after confirmed success.
 - Supports `NEVER`, `FOLLOW_WAYSTONES`, and `ALWAYS` experience modes with exact failure rollback.
 - Includes NeoForge targets for Minecraft 1.21.1–1.21.11 and Fabric targets for Minecraft 1.21.1–1.21.11.
