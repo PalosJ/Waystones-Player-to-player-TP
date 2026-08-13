@@ -20,6 +20,8 @@ public class PlayerTeleportButton extends Button {
     private final boolean avatarOnly;
     private UUID playerId;
     private PlayerSkin skin;
+    private PlayerInfo skinSource;
+    private int skinRetryTicks;
 
     public PlayerTeleportButton(int x, int y, int width, int height, boolean avatarOnly, OnPress onPress) {
         super(x, y, width, height, Component.empty(), onPress, DEFAULT_NARRATION);
@@ -30,6 +32,8 @@ public class PlayerTeleportButton extends Button {
 
     public void bind(PlayerInfo playerInfo) {
         playerId = playerInfo.getProfile().getId();
+        skinSource = playerInfo;
+        skinRetryTicks = 0;
         refreshSkin(playerInfo);
         Component name = Component.literal(playerInfo.getProfile().getName());
         setMessage(name);
@@ -49,6 +53,7 @@ public class PlayerTeleportButton extends Button {
                 hasFace = true;
             } catch (RuntimeException error) {
                 skin = null;
+                skinRetryTicks = 20;
             }
         }
 
@@ -88,6 +93,15 @@ public class PlayerTeleportButton extends Button {
         }
         PlayerInfo current = minecraft.getConnection().getPlayerInfo(playerId);
         if (current != null) {
+            if (current != skinSource) {
+                skinSource = current;
+                skin = null;
+                skinRetryTicks = 0;
+            }
+            if (skinRetryTicks > 0) {
+                skinRetryTicks--;
+                return;
+            }
             refreshSkin(current);
         }
     }
@@ -95,8 +109,10 @@ public class PlayerTeleportButton extends Button {
     private void refreshSkin(PlayerInfo playerInfo) {
         try {
             skin = playerInfo.getSkin();
+            skinRetryTicks = skin == null ? 20 : 0;
         } catch (RuntimeException error) {
             skin = null;
+            skinRetryTicks = 20;
         }
     }
 }
