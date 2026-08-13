@@ -196,6 +196,6 @@ python3 scripts/runtime-matrix.py \
 
 ## 分支同步
 
-共享行为先落 `main`，然后移植到两条统一分支。统一分支记录 canonical main 基线并由 CI 比对 core、网络契约和共享资源；main push 也检查两条远端分支是否落后。
+共享行为先落 `main`，然后移植到两条统一分支。统一分支记录 canonical main 基线，CI 逐文件比对 pure Java `core`、完整 `common`、目标矩阵与运行脚本、README/CONTEXT/全部文档以及许可证和既有图标；main push 也检查两条远端统一分支是否落后。只有加载器入口、目标工程、版本适配族、构建器和加载器元数据允许按分支不同。
 
 旧 `fabric/1.21.1` 与 `neoforge/1.21.11` 只有在新统一分支已经普通推送、远端提交可验证且 GitHub Actions 全绿后才能删除本地与远端引用。删除旧分支不删除对应正式目标。
