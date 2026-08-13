@@ -114,6 +114,13 @@ def verifyBinaryUnderTest = tasks.register('verifyBinaryUnderTest') {
                 throw new GradleException(
                         'Runtime smoke tests must use the unchanged minimum-built release JAR.')
             }
+            def staleEntries = [
+                    'com/palosj/waystonesplayer/teleport/TeleportArrivalVerifier$BlockTarget.class',
+            ].findAll { jar.getJarEntry(it) != null }
+            if (!staleEntries.isEmpty()) {
+                throw new GradleException(
+                        "Binary under test contains removed API entries: ${staleEntries.join(', ')}")
+            }
         }
     }
 }
