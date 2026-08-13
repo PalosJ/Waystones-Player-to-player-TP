@@ -30,6 +30,12 @@ jobs:
       - name: Verify shared semantic parity
         run: ./scripts/verify-branch-parity.sh branch
 
+      - name: Verify unified adapter parity
+        run: >-
+          ./scripts/verify-branch-parity.sh adapters
+          origin/neoforge/1.21.x
+          origin/fabric/1.21.x
+
   build:
     name: ${{ matrix.target }} (${{ matrix.stack }})
     runs-on: ubuntu-latest

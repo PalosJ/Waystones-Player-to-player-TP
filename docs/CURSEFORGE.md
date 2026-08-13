@@ -11,7 +11,7 @@ Use the exact artifact filename, game versions, loader, and dependency suite fro
 | Main category | Addons |
 | Client / server | Required on both |
 | License | Custom License; use the repository `LICENSE` text/URL |
-| Required relations | Waystones, Balm |
+| Required relations | Waystones, Balm；Fabric files also require Fabric API |
 | Unsupported loader | Forge |
 
 ## Project description
@@ -20,14 +20,14 @@ Use the exact artifact filename, game versions, loader, and dependency suite fro
 
 Waystones Player is an unofficial Waystones add-on that lets a Warp Stone target other listed online players. The directory updates live and stays on the left of the original screen, using a full list, compact list, or clickable avatar rail depending on available GUI space.
 
-The client sends only a target UUID. The server revalidates the exact Warp Stone and hand, the target's listed status, experience requirements, and actual movement. A successful player destination uses Waystones' cancellable events, sound, effects, and adjacent non-suffocating placement, then applies exactly one point of native Warp Stone durability. Failed or cancelled attempts restore experience, preserve durability, and keep the menu open.
+The client sends only a target UUID. The server revalidates the exact Warp Stone and hand, `ServerPlayer.allowsListing()` authorization, experience requirements, and actual movement. The client listed stream and server authorization are separate: a third-party per-client `UPDATE_LISTED` hide can leave a displayed entry rejected by the server, and this add-on does not promise to prevent guessed-UUID requests against that third-party state. A successful player destination uses Waystones' cancellable events, sound, effects, and adjacent non-suffocating placement, then applies exactly one point of native Warp Stone durability. Failed or cancelled attempts restore experience, preserve durability, and keep the menu open.
 
 Adjacent non-suffocating placement is not a guarantee of solid ground or protection from dangerous fluids and cliffs.
 
 ## Requirements
 
 - Install on both client and server.
-- Install matching Waystones and Balm versions on both sides.
+- Install matching Waystones and Balm versions on both sides. Fabric files additionally require the matching Fabric API; NeoForge files do not.
 - Java 21.
 - NeoForge: Minecraft 1.21.1 through 1.21.11.
 - Fabric: Minecraft 1.21.1 through 1.21.11.
@@ -62,7 +62,7 @@ For every JAR:
 - Release type: Release.
 - Game version(s): exactly the target's `minecraft` array.
 - Mod loader: exactly one of NeoForge or Fabric.
-- Required dependencies: Waystones and Balm.
+- Required dependencies: Waystones and Balm; Fabric files also require Fabric API.
 - Changelog: use [CHANGELOG-1.0.0.md](CHANGELOG-1.0.0.md), plus the target dependency block generated from the matrix.
 - Verify the local SHA-256 before selecting the file.
 - Never upload sources, development JARs, caches, dependency JARs, or a JAR rebuilt against the current stack in place of the minimum-built release binary.

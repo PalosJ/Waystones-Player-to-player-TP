@@ -11,7 +11,7 @@
 | Client side | Required |
 | Server side | Required |
 | Project license | Custom；链接仓库根 `LICENSE` |
-| Required dependencies | Waystones、Balm |
+| Required dependencies | Waystones、Balm；Fabric 文件另需 Fabric API |
 | Unsupported loader | Forge |
 | Version number | 所有文件均为 `1.0.0` |
 
@@ -20,7 +20,7 @@
 - Release type：Release。
 - Game versions：仅选择矩阵中该 JAR的 `minecraft` 列表。
 - Loaders：只选择该 JAR的 NeoForge 或 Fabric。
-- Dependencies：Waystones 与 Balm 均标记 Required。
+- Dependencies：Waystones 与 Balm 均标记 Required；Fabric 文件另外将 Fabric API 标记 Required，NeoForge 文件不添加 Fabric API。
 - 1.21.2/1.21.3 共用 JAR同时选择两个游戏版本；其他文件只选择一个。
 - NeoForge 1.21.2、1.21.6、1.21.7、1.21.9 的 changelog 增加“requires an official beta NeoForge build”提示。
 - 上传前核对 SHA-256 与最终交付清单；不要上传 `-sources`、`-dev`、缓存或当前套件重编译产物。
@@ -49,13 +49,13 @@ Waystones Player is an unofficial add-on that brings other listed players into t
 - Free, follow-Waystones, or always-evaluate-Waystones experience modes.
 - No telemetry, advertising, analytics, or external uploads.
 
-The client sends only the selected target UUID. The server independently resolves the target and rejects players hidden from Minecraft's listed-player stream. Player destinations are transient and are not stored as Waystones.
+The client sends only the selected target UUID. The server independently resolves the target and requires `ServerPlayer.allowsListing()`. The client listed stream and this server authorization are separate boundaries: a third-party per-client `UPDATE_LISTED` hide can leave a displayed entry rejected by the server, and this add-on does not promise to prevent guessed-UUID requests against that third-party state. Player destinations are transient and are not stored as Waystones.
 
 Adjacent non-suffocating placement is not an absolute safety guarantee. It does not require solid ground and does not exclude dangerous fluids or cliffs.
 
 ## Compatibility
 
-Waystones Player must be installed on both client and server together with matching [Waystones](https://modrinth.com/mod/waystones) and [Balm](https://modrinth.com/mod/balm) files.
+Waystones Player must be installed on both client and server together with matching [Waystones](https://modrinth.com/mod/waystones) and [Balm](https://modrinth.com/mod/balm) files. Fabric files additionally require the matching [Fabric API](https://modrinth.com/mod/fabric-api); NeoForge files do not.
 
 - NeoForge: Minecraft 1.21.1–1.21.11.
 - Fabric: Minecraft 1.21.1–1.21.11.
@@ -103,11 +103,11 @@ NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR 
 
 Waystones Player 会把当前连接中可列出的其他玩家加入 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的 Warp Stone 菜单。选择玩家后，传送会进入 Waystones 的事件、声音、效果与相邻落点流程，不需要命令、OP 权限或第二次确认。
 
-玩家目录会实时更新，并按界面空间显示完整名单、收窄名单或可点击头像栏。客户端只发送目标 UUID；服务端重新检查确切物品、使用手、目标可见性、经验和实际移动。确认成功后才损耗 1 点原生耐久；失败恢复经验、保留耐久并保持界面打开。
+玩家目录会实时更新，并按界面空间显示完整名单、收窄名单或可点击头像栏。客户端复用 listed 玩家流并只发送目标 UUID；服务端独立以 `allowsListing()` 授权，再检查确切物品、使用手、经验和实际移动。两者不是同一状态：第三方逐客户端 `UPDATE_LISTED` 隐藏可能导致已显示条目被拒绝，本模组不承诺阻止针对该状态的猜 UUID 请求。确认成功后才损耗 1 点原生耐久；失败恢复经验、保留耐久并保持界面打开。
 
 相邻非窒息落点不是绝对安全保证：它不要求脚下有实体方块，也不会排除危险流体或悬崖。
 
-本模组需要在客户端和服务端同时安装，并配套安装对应版本的 Waystones 与 Balm：
+本模组需要在客户端和服务端同时安装，并配套安装对应版本的 Waystones 与 Balm；Fabric 文件还需要对应版本的 Fabric API，NeoForge 文件不需要 Fabric API：
 
 - NeoForge：Minecraft 1.21.1–1.21.11。
 - Fabric：Minecraft 1.21.1–1.21.11。

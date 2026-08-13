@@ -18,7 +18,7 @@
 - [ ] `common` 不含 Fabric/NeoForge API。
 - [ ] 客户端类只从客户端入口或 mixin `client` 列表触达。
 - [ ] payload 方向、编解码、主线程执行和 `waystonesplayer.network.json` 一致。
-- [ ] 服务端重新验证菜单、确切物品/手、listed 目标、费用和实际移动。
+- [ ] 服务端重新验证菜单、确切物品/手、`allowsListing()` 目标授权、费用和实际移动；客户端 listed 展示仅是目录输入。
 - [ ] Waystones/Balm 内部访问集中在兼容/适配边界。
 - [ ] NeoForge SERVER 与 Fabric 全局配置语义没有被混写。
 
@@ -45,14 +45,14 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 ```
 
 - [ ] 专用服务器到达 `Done`，无客户端类、客户端 Mixin或 GUI 类加载。
-- [ ] 客户端到达主菜单并进入世界，无 Mixin、资源、入口或网络注册错误。
+- [ ] 客户端完成资源重载、GUI atlas 创建、入口和 Mixin 注册启动信号；这项脚本检查不等同于进入世界或实际玩法验收。
 - [ ] 1.21.2/1.21.3 共用 JAR在两个 Minecraft 版本分别执行。
 - [ ] 每个运行使用隔离的新目录、配置和世界。
 - [ ] 退出方式和退出码已记录；Ctrl-C 启动冒烟不能写成优雅关服。
 
 ## 5. 双客户端功能验收
 
-- [ ] listed 玩家出现；隐藏玩家不出现且猜 UUID 请求被服务端拒绝。
+- [ ] 客户端 listed 玩家出现；`allowsListing()=false` 的目标被服务端拒绝。记录客户端可见但服务端拒绝的双层边界；不把第三方 `UPDATE_LISTED` 隐藏或猜 UUID 防护写成已保证能力。
 - [ ] 玩家加入、退出、重连或改名时实时更新，滚动锚点和焦点稳定。
 - [ ] 空列表、长名称、大量玩家、皮肤失败首字符回退、滚动、tooltip 和叙述正常。
 - [ ] 854px 宽屏不移动 Waystones；480px 自动缩放仍为完整名单。
@@ -84,8 +84,8 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 
 ## 8. 平台文件
 
-- [ ] Modrinth：客户端 Required、服务端 Required、正确游戏版本/Loader、Waystones/Balm Required。
-- [ ] CurseForge：英文描述、正确 Game Version/Mod Loader、Waystones/Balm Required、Release 类型。
+- [ ] Modrinth：客户端 Required、服务端 Required、正确游戏版本/Loader、Waystones/Balm Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它。
+- [ ] CurseForge：英文描述、正确 Game Version/Mod Loader、Waystones/Balm Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它，Release 类型。
 - [ ] Custom License 链接/文本与根 LICENSE 一致，不标成开源许可证。
 - [ ] beta NeoForge 文件在 changelog 明确披露。
 - [ ] 1.21.2/1.21.3 共用文件同时勾选两版；其他文件只勾选一版。

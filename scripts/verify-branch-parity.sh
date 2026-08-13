@@ -19,6 +19,16 @@ readonly -a SHARED_PATHS=(
   "TEMPLATE_LICENSE.txt"
   "THIRD_PARTY_NOTICES.md"
 )
+readonly -a UNIFIED_ADAPTER_PATHS=(
+  "adapters/balm"
+  "adapters/client-balm"
+  "adapters/durability"
+  "adapters/identifier"
+  "adapters/network"
+  "adapters/profile"
+  "adapters/screen"
+  "adapters/teleport"
+)
 
 fail() {
   echo "Branch parity check failed: $*" >&2
@@ -45,6 +55,14 @@ verify_branch_against_baseline() {
     || fail "${branch_ref} shared files differ from recorded canonical commit ${baseline}"
 }
 
+verify_unified_adapters() {
+  [[ "$#" -eq 2 ]] || fail "adapters mode requires exactly two unified branch refs"
+  local left="$1"
+  local right="$2"
+  git diff --quiet "$left" "$right" -- "${UNIFIED_ADAPTER_PATHS[@]}" \
+    || fail "unified adapter source families differ between ${left} and ${right}"
+}
+
 case "$MODE" in
   main)
     [[ "$#" -gt 0 ]] || fail "main mode requires at least one unified branch ref"
@@ -69,7 +87,11 @@ case "$MODE" in
     verify_branch_against_baseline "$baseline" HEAD
     echo "Verified current branch shared parity at canonical ${baseline}."
     ;;
+  adapters)
+    verify_unified_adapters "$@"
+    echo "Verified adapter parity for $1 and $2."
+    ;;
   *)
-    fail "usage: $0 <main <branch-ref>... | branch>"
+    fail "usage: $0 <main <branch-ref>... | branch | adapters <neo-ref> <fabric-ref>>"
     ;;
 esac
