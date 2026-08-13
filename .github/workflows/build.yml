@@ -67,6 +67,7 @@ jobs:
           -Pneo_version=${{ matrix.neo-version }}
           -Pwaystones_version=${{ matrix.waystones-version }}
           -Pbalm_version=${{ matrix.balm-version }}
+          -PdependencyStack=${{ matrix.stack }}
           --no-build-cache
           --no-daemon
           --console=plain
@@ -77,5 +78,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: waystonesplayer-neoforge-1.21.1
-          path: neoforge/build/libs/waystonesplayer-neoforge-1.21.1-*.jar
+          path: neoforge/build/libs/waystonesplayer-neoforge-1.21.1-1.0.0.jar
           if-no-files-found: error
+          retention-days: 14

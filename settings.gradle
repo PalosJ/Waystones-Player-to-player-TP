@@ -22,3 +22,10 @@ rootProject.name = 'waystonesplayer'
 include('core')
 include('common')
 include('neoforge')
+
+def normalizedTasks = gradle.startParameter.taskNames.collect { taskName ->
+    taskName.startsWith(':') ? taskName : ":${taskName}"
+}
+if (normalizedTasks.any { it.startsWith(':runtime:neoforge-smoke:') }) {
+    include('runtime:neoforge-smoke')
+}

@@ -39,6 +39,7 @@
 
 ```bash
 ./gradlew clean test build \
+  -PdependencyStack=current \
   -Pneo_version=21.1.248 \
   -Pwaystones_version=21.1.40+1.21.1 \
   -Pbalm_version=21.0.64+1.21.1 \
@@ -49,6 +50,7 @@
 
 ```bash
 ./gradlew clean test build \
+  -PdependencyStack=minimum \
   -Pneo_version=21.1.229 \
   -Pwaystones_version=21.1.36+1.21.1 \
   -Pbalm_version=21.0.62+1.21.1 \

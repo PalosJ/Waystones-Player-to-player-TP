@@ -32,6 +32,7 @@
 - [ ] 当前分支 wrapper 与矩阵一致：NeoForge 为 Gradle 9.2.1，Fabric 为 Gradle 9.5.1；distribution SHA-256 已锁定。
 - [ ] warning 已审查，未忽略 Mixin target/refmap、弃用 API 或元数据问题。
 - [ ] 上传候选保留最低套件生成的 JAR；当前套件 JAR不覆盖它。
+- [ ] JAR 清单的 `WaystonesPlayer-Target` 与 `WaystonesPlayer-Build-Stack` 分别匹配目标和 `minimum`；运行器拒绝 current 或身份不明的二进制。
 
 ## 4. 同一发行 JAR运行
 
