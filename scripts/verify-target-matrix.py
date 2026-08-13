@@ -127,6 +127,23 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
     require(len(main_targets) == 1 and main_targets[0].get("id") == "neoforge-1.21.1",
             "targets.json must contain exactly one canonical main target")
 
+    versions_by_branch = {
+        branch: [version for target in targets if target.get("branch") == branch
+                 for version in target.get("minecraft", [])]
+        for branch in ("neoforge/1.21.x", "fabric/1.21.x")
+    }
+    minecraft_sort_key = lambda version: tuple(int(part) for part in version.split("."))
+    require(
+        sorted(versions_by_branch["neoforge/1.21.x"], key=minecraft_sort_key) ==
+        sorted([f"1.21.{minor}" for minor in range(2, 12)], key=minecraft_sort_key),
+        "NeoForge unified matrix must cover Minecraft 1.21.2 through 1.21.11 exactly",
+    )
+    require(
+        sorted(versions_by_branch["fabric/1.21.x"], key=minecraft_sort_key) ==
+        sorted([f"1.21.{minor}" for minor in range(1, 12)], key=minecraft_sort_key),
+        "Fabric unified matrix must cover Minecraft 1.21.1 through 1.21.11 exactly",
+    )
+
 
 def main() -> int:
     args = parse_args()
