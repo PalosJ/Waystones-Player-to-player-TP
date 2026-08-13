@@ -64,9 +64,6 @@ final class WaystonesTeleportEvaluator {
                 : new ExactRollbackRequirement(teleportContext, requirement, snapshot));
 
         TeleportArrivalVerifier.Position before = positionOf(sender);
-        TeleportArrivalVerifier.BlockTarget targetBlock = new TeleportArrivalVerifier.BlockTarget(
-                target.level().dimension().identifier().toString(),
-                requestedTarget.getX(), requestedTarget.getY(), requestedTarget.getZ());
         boolean apiReportedSender;
         try {
             var result = WaystonesAPI.tryTeleport(teleportContext);
@@ -84,7 +81,7 @@ final class WaystonesTeleportEvaluator {
             throw error;
         }
 
-        if (!TeleportArrivalVerifier.succeeded(apiReportedSender, before, positionOf(sender), targetBlock)) {
+        if (!TeleportArrivalVerifier.succeeded(apiReportedSender, before, positionOf(sender))) {
             snapshot.restore();
             return TeleportOutcome.FAILED;
         }
