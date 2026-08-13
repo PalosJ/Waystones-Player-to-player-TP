@@ -51,6 +51,7 @@ jobs:
         run: |
           command -v xvfb-run
           ./scripts/verify-branch-parity.sh branch
+          python3 scripts/verify-target-matrix.py
 
       - name: Run unchanged minimum JAR in every audited stack
         run: >-
