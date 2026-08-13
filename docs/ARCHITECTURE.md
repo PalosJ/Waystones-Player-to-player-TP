@@ -175,6 +175,7 @@ NeoForge 修改配置时必须同步默认值、注释、语言、README、SERVE
 - 发行 JAR必须含 loader 元数据、协议、Mixin、语言、`LICENSE`、`THIRD_PARTY_NOTICES` 和既有图标。
 - 禁止打包 Waystones/Balm/Fabric API/NeoForge 类、缓存、依赖 JAR、日志、崩溃报告、IDE 文件、凭据、私人绝对路径和无关大文件。
 - 每个 JAR文件名、Minecraft/Loader、依赖范围和 SHA-256 必须与目标矩阵及平台文件元数据一致。
+- `scripts/release-manifest.py` 在全部最低候选到位后生成忽略目录中的文件名、大小、SHA-256、目标、依赖和提交 provenance；它不把 JAR 或清单提交到仓库。
 - 编译成功不是完整运行证明；未执行的双客户端、配置或 GUI 场景必须在验收记录中明确标记。
 
 完整操作清单见 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)。
