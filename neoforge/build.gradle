@@ -2,6 +2,26 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+def targetMatrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
+def target = targetMatrix.targets.find { it.id == 'neoforge-1.21.1' }
+if (target == null || target.branch != 'main' || target.loader != 'neoforge') {
+    throw new GradleException('The canonical NeoForge 1.21.1 target is missing from gradle/targets.json.')
+}
+def dependencyStack = providers.gradleProperty('dependencyStack').getOrElse('current')
+if (!(dependencyStack in ['minimum', 'current'])) {
+    throw new GradleException("dependencyStack must be minimum or current, got ${dependencyStack}.")
+}
+def expectedStack = target[dependencyStack]
+def actualStack = [
+        neoforge: neo_version,
+        waystones: waystones_version,
+        balm: balm_version,
+]
+if (actualStack != expectedStack) {
+    throw new GradleException(
+            "NeoForge 1.21.1 ${dependencyStack} inputs ${actualStack} do not match ${expectedStack}.")
+}
+
 base {
     archivesName = "${mod_id}-neoforge-${minecraft_version}"
 }
@@ -101,6 +121,14 @@ sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
 tasks.named('jar', Jar).configure {
+    manifest {
+        attributes(
+                'Implementation-Title': mod_name,
+                'Implementation-Version': targetMatrix.modVersion,
+                'WaystonesPlayer-Target': target.id,
+                'WaystonesPlayer-Build-Stack': dependencyStack,
+        )
+    }
     from project(':core').sourceSets.main.output
     from(rootProject.file('LICENSE')) {
         into 'META-INF'
@@ -125,12 +153,11 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
 
     doLast {
         File archive = releaseJar.get().archiveFile.get().asFile
-        def targetMatrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
-        def target = targetMatrix.targets.find { it.id == "neoforge-${minecraft_version}" }
         if (target == null || archive.name != target.artifactFile) {
             throw new GradleException("Release JAR name ${archive.name} does not match the canonical target matrix.")
         }
         def requiredEntries = [
+                'META-INF/MANIFEST.MF',
                 'META-INF/neoforge.mods.toml',
                 'META-INF/LICENSE_waystonesplayer',
                 'META-INF/TEMPLATE_LICENSE_waystonesplayer.txt',
@@ -149,10 +176,32 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
 
         new java.util.zip.ZipFile(archive).withCloseable { zip ->
             def entries = java.util.Collections.list(zip.entries())
-            def entryNames = entries.collect { it.name } as Set
-            def missingEntries = requiredEntries.findAll { !entryNames.contains(it) }
+            def entryNames = entries.collect { it.name }
+            def duplicateEntries = entryNames.countBy { it }.findAll { name, count -> count > 1 }.keySet()
+            if (!duplicateEntries.isEmpty()) {
+                throw new GradleException(
+                        "Release JAR contains duplicate entries: ${duplicateEntries.take(10).join(', ')}")
+            }
+            def nestedArchives = entries.findAll { entry ->
+                !entry.directory && entry.name.toLowerCase(java.util.Locale.ROOT).endsWith('.jar')
+            }
+            if (!nestedArchives.isEmpty()) {
+                throw new GradleException(
+                        "Release JAR contains nested dependency archives: ${nestedArchives*.name.take(10).join(', ')}")
+            }
+            def entryNameSet = entryNames as Set
+            def missingEntries = requiredEntries.findAll { !entryNameSet.contains(it) }
             if (!missingEntries.isEmpty()) {
                 throw new GradleException("Release JAR is missing required entries: ${missingEntries.join(', ')}")
+            }
+
+            def manifest = new java.util.jar.Manifest(zip.getInputStream(zip.getEntry('META-INF/MANIFEST.MF')))
+            def attributes = manifest.mainAttributes
+            if (attributes.getValue('Implementation-Version') != targetMatrix.modVersion
+                    || attributes.getValue('WaystonesPlayer-Target') != target.id
+                    || attributes.getValue('WaystonesPlayer-Build-Stack') != dependencyStack) {
+                throw new GradleException(
+                        'Release JAR manifest does not identify its target and dependency build stack.')
             }
 
             def iconEntry = zip.getEntry('waystonesplayer.png')

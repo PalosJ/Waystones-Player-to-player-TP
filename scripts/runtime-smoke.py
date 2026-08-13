@@ -168,24 +168,57 @@ def display_version(version: str) -> str:
     return version.split("+", 1)[0]
 
 
+def fabric_mod_listed(output: str, mod_id: str, version: str) -> bool:
+    return bool(
+        re.search(
+            rf"^\s*-\s+{re.escape(mod_id)}\s+{re.escape(version)}(?:\s|$)",
+            output,
+            re.MULTILINE,
+        )
+    )
+
+
 def required_signals(side: str, output: str, mod_version: str,
                      target: Dict[str, object], runtime_stack: Dict[str, str],
                      minecraft: str) -> Dict[str, bool]:
-    common = {
-        "minimum JAR manifest verified": "verifyBinaryUnderTest" in output,
-        "Waystones Player listed": f"Waystones Player {mod_version}" in output,
-        "Minecraft version exact": f"Minecraft {minecraft} (minecraft)" in output,
-        "Waystones version exact": (
-            f"Waystones {display_version(runtime_stack['waystones'])} (waystones)" in output
-        ),
-        "Balm version exact": (
-            f"Balm {display_version(runtime_stack['balm'])} (balm)" in output
-        ),
-    }
+    common = {"minimum JAR manifest verified": "verifyBinaryUnderTest" in output}
     if target["loader"] == "neoforge":
-        common["NeoForge version exact"] = (
-            f"NeoForge {runtime_stack['neoforge']} (neoforge)" in output
-        )
+        common.update({
+            "Waystones Player listed": f"Waystones Player {mod_version}" in output,
+            "Minecraft version exact": f"Minecraft {minecraft} (minecraft)" in output,
+            "Waystones version exact": (
+                f"Waystones {display_version(runtime_stack['waystones'])} (waystones)" in output
+            ),
+            "Balm version exact": (
+                f"Balm {display_version(runtime_stack['balm'])} (balm)" in output
+            ),
+            "NeoForge version exact": (
+                f"NeoForge {runtime_stack['neoforge']} (neoforge)" in output
+            ),
+        })
+    elif target["loader"] == "fabric":
+        common.update({
+            "Fabric Loader and Minecraft exact": (
+                f"Loading Minecraft {minecraft} with Fabric Loader "
+                f"{runtime_stack['fabricLoader']}" in output
+            ),
+            "Waystones Player listed": fabric_mod_listed(
+                output, "waystonesplayer", mod_version
+            ),
+            "Fabric API version exact": fabric_mod_listed(
+                output, "fabric-api", runtime_stack["fabricApi"]
+            ),
+            "Waystones version exact": fabric_mod_listed(
+                output, "waystones", display_version(runtime_stack["waystones"])
+            ),
+            "Balm version exact": fabric_mod_listed(
+                output,
+                runtime_stack.get("balmRuntimeModId", target["balmModId"]),
+                display_version(runtime_stack["balm"]),
+            ),
+        })
+    else:
+        raise ValueError(f"Unsupported loader: {target['loader']}")
     if side == "server":
         common["dedicated server reached Done"] = bool(
             re.search(r"Done \([^\r\n)]+\)!", output)
@@ -282,6 +315,7 @@ def run_smoke(args: argparse.Namespace) -> int:
     output_parts: List[str] = []
     deadline = time.monotonic() + args.timeout
     success_at: Optional[float] = None
+    readiness_at: Optional[float] = None
     timed_out = False
 
     try:
@@ -293,6 +327,12 @@ def run_smoke(args: argparse.Namespace) -> int:
                     timed_out = True
                     break
                 if success_at is not None and now - success_at >= SUCCESS_GRACE_SECONDS:
+                    break
+                if (
+                    readiness_at is not None
+                    and success_at is None
+                    and now - readiness_at >= SUCCESS_GRACE_SECONDS
+                ):
                     break
 
                 try:
@@ -322,6 +362,13 @@ def run_smoke(args: argparse.Namespace) -> int:
                     runtime_stack,
                     minecraft,
                 )
+                readiness_signal = (
+                    "dedicated server reached Done"
+                    if args.side == "server"
+                    else "client GUI texture atlas created"
+                )
+                if readiness_at is None and signals.get(readiness_signal, False):
+                    readiness_at = time.monotonic()
                 if success_at is None and all(signals.values()):
                     success_at = time.monotonic()
     finally:
