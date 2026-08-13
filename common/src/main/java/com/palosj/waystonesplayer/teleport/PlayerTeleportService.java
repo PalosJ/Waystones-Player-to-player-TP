@@ -10,6 +10,7 @@ import com.palosj.waystonesplayer.compat.WaystonesTeleportCompat;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
@@ -24,7 +25,8 @@ public final class PlayerTeleportService {
             ServerPlayer sender,
             UUID targetPlayerId,
             PlayerTeleportExperienceMode experienceMode) {
-        int currentTick = sender.level().getServer().getTickCount();
+        MinecraftServer server = sender.level().getServer();
+        int currentTick = server.getTickCount();
         RequestRateLimiter.Result rateLimitResult = REQUEST_LIMITER.acquire(sender.getUUID(), currentTick);
         if (rateLimitResult == RequestRateLimiter.Result.REJECTED_NOTIFY) {
             sender.displayClientMessage(translatable("message.waystonesplayer.teleport_cooling_down"), false);
@@ -37,12 +39,12 @@ public final class PlayerTeleportService {
         AbstractContainerMenu menu = sender.containerMenu;
         Optional<WaystonesCompat.WarpStoneUse> warpStoneUse = WaystonesCompat.resolveWarpStoneUse(sender, menu);
         if (warpStoneUse.isEmpty()) {
-            WaystonesPlayer.LOGGER.debug("{} sent an invalid warp stone player teleport request.", sender.getUUID());
+            WaystonesPlayer.LOGGER.debug("{} sent an invalid warp stone player teleport request.", sender.getScoreboardName());
             sender.displayClientMessage(translatable("message.waystonesplayer.invalid_context"), false);
             return;
         }
 
-        ServerPlayer target = sender.level().getServer().getPlayerList().getPlayer(targetPlayerId);
+        ServerPlayer target = server.getPlayerList().getPlayer(targetPlayerId);
         if (target == null || !target.allowsListing()) {
             sender.displayClientMessage(translatable("message.waystonesplayer.target_unavailable"), false);
             return;

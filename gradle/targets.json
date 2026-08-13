@@ -6,7 +6,7 @@
   "buildTools": {
     "java": 21,
     "gradle": "9.2.1",
-    "fabricGradle": "9.4.1",
+    "fabricGradle": "9.5.1",
     "modDevGradle": "2.0.143",
     "loom": "1.17.19"
   },
@@ -163,11 +163,11 @@
       "minecraft": ["1.21.2", "1.21.3"],
       "compile": {"minecraft": "1.21.3"},
       "balmModId": "balm-fabric",
-      "minimum": {"fabricLoader": "0.16.7", "fabricApi": "0.106.1+1.21.3", "waystones": "21.3.2+1.21.3", "balm": "21.3.1+1.21.3"},
+      "minimum": {"fabricLoader": "0.16.8", "fabricApi": "0.106.1+1.21.3", "waystones": "21.3.2+1.21.3", "balm": "21.3.1+1.21.3"},
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.114.1+1.21.3", "waystones": "21.3.3+1.21.3", "balm": "21.3.5+1.21.3"},
       "runtimeStacks": [
-        {"minecraft": "1.21.2", "minimum": {"fabricLoader": "0.16.7", "fabricApi": "0.106.1+1.21.2"}, "current": {"fabricLoader": "0.19.3", "fabricApi": "0.106.1+1.21.2"}},
-        {"minecraft": "1.21.3", "minimum": {"fabricLoader": "0.16.7", "fabricApi": "0.106.1+1.21.3"}, "current": {"fabricLoader": "0.19.3", "fabricApi": "0.114.1+1.21.3"}}
+        {"minecraft": "1.21.2", "minimum": {"fabricLoader": "0.16.8", "fabricApi": "0.106.1+1.21.2"}, "current": {"fabricLoader": "0.19.3", "fabricApi": "0.106.1+1.21.2"}},
+        {"minecraft": "1.21.3", "minimum": {"fabricLoader": "0.16.8", "fabricApi": "0.106.1+1.21.3"}, "current": {"fabricLoader": "0.19.3", "fabricApi": "0.114.1+1.21.3"}}
       ],
       "families": {"balm": "runnable-21.3", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
     },
@@ -179,11 +179,11 @@
       "artifactFile": "waystonesplayer-fabric-1.21.4-1.0.0.jar",
       "minecraft": ["1.21.4"],
       "compile": {"minecraft": "1.21.4"},
-      "balmModId": "balm",
+      "balmModId": "balm-fabric",
       "minimum": {"fabricLoader": "0.16.9", "fabricApi": "0.110.5+1.21.4", "waystones": "21.4.1+1.21.4", "balm": "21.4.1+1.21.4"},
-      "key": {"fabricLoader": "0.16.9", "fabricApi": "0.110.5+1.21.4", "waystones": "21.4.5+1.21.4", "balm": "21.4.9+1.21.4"},
-      "keyReason": "Waystones 21.4.5 added the menu Warp Stone accessor that the carrier design intentionally does not depend on.",
-      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.119.4+1.21.4", "waystones": "21.4.19+1.21.4", "balm": "21.4.41+1.21.4"},
+      "key": {"fabricLoader": "0.16.10", "fabricApi": "0.110.5+1.21.4", "waystones": "21.4.5+1.21.4", "balm": "21.4.9+1.21.4"},
+      "keyReason": "Waystones 21.4.5 added the menu Warp Stone accessor and raised Fabric Loader to 0.16.10; the carrier design intentionally does not depend on the accessor.",
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.119.4+1.21.4", "waystones": "21.4.19+1.21.4", "balm": "21.4.41+1.21.4", "balmRuntimeModId": "balm"},
       "families": {"balm": "legacy-module", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
     },
     {
@@ -275,8 +275,8 @@
       "minecraft": ["1.21.11"],
       "compile": {"minecraft": "1.21.11"},
       "balmModId": "balm",
-      "minimum": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.2", "balm": "21.11.2"},
-      "key": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.4", "balm": "21.11.3"},
+      "minimum": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.2", "waystonesCapability": "waystones-fabric-1.21.11", "balm": "21.11.2"},
+      "key": {"fabricLoader": "0.18.1", "fabricApi": "0.139.4+1.21.11", "waystones": "21.11.4", "waystonesCapability": "waystones-fabric-1.21.11", "balm": "21.11.3"},
       "keyReason": "Waystones 21.11.4 is the audited intermediate patch before the current 21.11.9 line.",
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.141.6+1.21.11", "waystones": "21.11.9", "balm": "21.11.9.1"},
       "families": {"balm": "platform-module", "screen": "identifier-skin", "teleport": "identifier-21.11"}
