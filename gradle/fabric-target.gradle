@@ -333,6 +333,14 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 throw new GradleException(
                         "Release JAR contains duplicate entries: ${duplicateEntries.take(10).join(', ')}")
             }
+            def nestedArchives = entries.findAll { entry ->
+                !entry.directory && entry.name.toLowerCase(java.util.Locale.ROOT).endsWith('.jar')
+            }
+            if (!nestedArchives.isEmpty()) {
+                throw new GradleException(
+                        "Release JAR contains nested dependency archives: "
+                                + nestedArchives*.name.take(10).join(', '))
+            }
 
             def entryNameSet = entryNames as Set
             def missingEntries = requiredEntries.findAll { !entryNameSet.contains(it) }

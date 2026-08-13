@@ -52,18 +52,33 @@ def load_target(target_id: str) -> Dict[str, object]:
 
 def build_minimum_jar(target: Dict[str, object]) -> int:
     if target["branch"] == "main":
-        raise ValueError("The canonical main target uses its root build, not a unified target project")
-    command = [
-        str(ROOT / "gradlew"),
-        ":core:test",
-        f":targets:{target['id']}:clean",
-        f":targets:{target['id']}:build",
-        "-PdependencyStack=minimum",
-        "--no-build-cache",
-        "--no-daemon",
-        "--console=plain",
-        "--warning-mode=all",
-    ]
+        stack = target["minimum"]
+        command = [
+            str(ROOT / "gradlew"),
+            "clean",
+            "test",
+            "build",
+            "-PdependencyStack=minimum",
+            f"-Pneo_version={stack['neoforge']}",
+            f"-Pwaystones_version={stack['waystones']}",
+            f"-Pbalm_version={stack['balm']}",
+            "--no-build-cache",
+            "--no-daemon",
+            "--console=plain",
+            "--warning-mode=all",
+        ]
+    else:
+        command = [
+            str(ROOT / "gradlew"),
+            ":core:test",
+            f":targets:{target['id']}:clean",
+            f":targets:{target['id']}:build",
+            "-PdependencyStack=minimum",
+            "--no-build-cache",
+            "--no-daemon",
+            "--console=plain",
+            "--warning-mode=all",
+        ]
     print("BUILD " + " ".join(command), flush=True)
     return subprocess.run(command, cwd=ROOT).returncode
 

@@ -1,0 +1,152 @@
+plugins {
+    id 'net.neoforged.moddev'
+}
+
+def matrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
+def targetId = providers.gradleProperty('runtimeTarget').getOrElse('neoforge-1.21.1')
+def stackName = providers.gradleProperty('runtimeStack').getOrElse('minimum')
+if (!(stackName in ['minimum', 'key', 'current'])) {
+    throw new GradleException("runtimeStack must be minimum, key, or current, got ${stackName}.")
+}
+
+def target = matrix.targets.find { it.id == targetId }
+if (target == null || target.loader != 'neoforge' || target.branch != 'main') {
+    throw new GradleException("runtimeTarget must name the canonical NeoForge main target, got ${targetId}.")
+}
+
+def runtimeMinecraft = providers.gradleProperty('runtimeMinecraft')
+        .getOrElse(target.minecraft.size() == 1 ? target.minecraft.first() : target.compile.minecraft)
+if (!target.minecraft.contains(runtimeMinecraft)) {
+    throw new GradleException("${targetId} does not support runtime Minecraft ${runtimeMinecraft}.")
+}
+
+def baseStack = target[stackName]
+def stack = baseStack == null ? new LinkedHashMap() : new LinkedHashMap(baseStack as Map)
+if (target.runtimeStacks) {
+    def runtimeEntry = target.runtimeStacks.find { it.minecraft == runtimeMinecraft }
+    if (runtimeEntry == null) {
+        throw new GradleException("${targetId} has no runtime stack for Minecraft ${runtimeMinecraft}.")
+    }
+    if (runtimeEntry[stackName]) {
+        stack.putAll(runtimeEntry[stackName] as Map)
+    }
+}
+if (stack.isEmpty()) {
+    throw new GradleException(
+            "${targetId} has no ${stackName} runtime stack for Minecraft ${runtimeMinecraft}.")
+}
+
+def defaultBinaryPath = "neoforge/build/libs/${target.artifactFile}"
+def binaryPath = providers.gradleProperty('binaryUnderTest').getOrElse(defaultBinaryPath)
+def binaryFile = rootProject.file(binaryPath)
+def runKey = "${target.id}/${runtimeMinecraft}/${stackName}"
+def serverRunDirectory = layout.buildDirectory.dir("runs/${runKey}/server")
+
+neoForge {
+    version = stack.neoforge
+
+    runs {
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+        }
+
+        client {
+            client()
+            gameDirectory.set(layout.buildDirectory.dir("runs/${runKey}/client"))
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            gameDirectory.set(serverRunDirectory)
+        }
+    }
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    localRuntime files(binaryFile)
+    localRuntime("net.blay09.mods:balm-neoforge:${stack.balm}") {
+        version { strictly(stack.balm as String) }
+    }
+
+    if (stack.waystonesCapability) {
+        localRuntime("net.blay09.mods:waystones-neoforge:${stack.waystones}") {
+            version { strictly(stack.waystones as String) }
+            exclude group: 'net.blay09.mods', module: 'balm-neoforge'
+            exclude group: 'curse.maven'
+            exclude group: 'mysticdrew'
+            capabilities {
+                requireCapability "net.blay09.mods:${stack.waystonesCapability}:${stack.waystones}"
+            }
+        }
+    } else {
+        localRuntime("net.blay09.mods:waystones-neoforge:${stack.waystones}") {
+            version { strictly(stack.waystones as String) }
+            exclude group: 'net.blay09.mods', module: 'balm-neoforge'
+            exclude group: 'curse.maven'
+            exclude group: 'mysticdrew'
+        }
+    }
+}
+
+def verifyBinaryUnderTest = tasks.register('verifyBinaryUnderTest') {
+    group = 'verification'
+    description = 'Requires a minimum-built target JAR before binary runtime smoke tests.'
+    inputs.file(binaryFile)
+
+    doLast {
+        if (!binaryFile.isFile()) {
+            throw new GradleException("Missing binary under test: ${binaryFile}")
+        }
+        if (binaryFile.name != target.artifactFile) {
+            throw new GradleException(
+                    "Binary under test ${binaryFile.name} does not match ${target.artifactFile}.")
+        }
+        new java.util.jar.JarFile(binaryFile).withCloseable { jar ->
+            def attributes = jar.manifest?.mainAttributes
+            if (attributes?.getValue('Implementation-Version') != matrix.modVersion
+                    || attributes?.getValue('WaystonesPlayer-Target') != target.id
+                    || attributes?.getValue('WaystonesPlayer-Build-Stack') != 'minimum') {
+                throw new GradleException(
+                        'Runtime smoke tests must use the unchanged minimum-built release JAR.')
+            }
+        }
+    }
+}
+
+def prepareSmokeServerFiles = tasks.register('prepareSmokeServerFiles') {
+    group = 'verification'
+    description = 'Creates deterministic first-run server files for an isolated smoke directory.'
+    outputs.files(
+            serverRunDirectory.map { it.file('eula.txt') },
+            serverRunDirectory.map { it.file('server.properties') },
+    )
+
+    doLast {
+        def runDirectory = serverRunDirectory.get().asFile
+        runDirectory.mkdirs()
+        new File(runDirectory, 'eula.txt').setText('eula=true\n', 'UTF-8')
+        new File(runDirectory, 'server.properties').setText(
+                'enable-query=false\n'
+                        + 'enable-rcon=false\n'
+                        + 'level-name=world\n'
+                        + 'online-mode=false\n'
+                        + 'server-ip=127.0.0.1\n'
+                        // Port 0 asks the OS for an isolated ephemeral port, so a failed or
+                        // concurrently running smoke process cannot poison another target.
+                        + 'server-port=0\n',
+                'UTF-8')
+    }
+}
+
+tasks.matching { it.name in ['runClient', 'runServer'] }.configureEach {
+    dependsOn verifyBinaryUnderTest
+}
+
+tasks.named('runServer').configure {
+    dependsOn prepareSmokeServerFiles
+}
