@@ -35,7 +35,9 @@ jobs:
           validate-wrappers: true
 
       - name: Verify Xvfb
-        run: command -v xvfb-run
+        run: |
+          command -v xvfb-run
+          python3 scripts/verify-target-matrix.py --branch main
 
       - name: Run unchanged minimum JAR in minimum and current stacks
         run: >-
@@ -100,6 +102,7 @@ jobs:
         run: |
           command -v xvfb-run
           ./scripts/verify-branch-parity.sh branch
+          python3 scripts/verify-target-matrix.py --branch neoforge/1.21.x
 
       - name: Run unchanged minimum JAR in every audited stack
         run: >-
@@ -165,6 +168,7 @@ jobs:
         run: |
           command -v xvfb-run
           ./scripts/verify-branch-parity.sh branch
+          python3 scripts/verify-target-matrix.py --branch fabric/1.21.x
 
       - name: Run unchanged minimum JAR in every audited stack
         run: >-
