@@ -4,6 +4,10 @@ Copyright (c) 2023 NeoForged project
 
 This license applies to the template files as supplied by github.com/NeoForged/MDK
 
+In this repository, the retained MDK template file is
+`neoforge/src/main/templates/META-INF/neoforge.mods.toml`; original project
+source and documentation remain governed by the repository `LICENSE`.
+
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
