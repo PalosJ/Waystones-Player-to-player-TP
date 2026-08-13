@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -22,9 +23,18 @@ def parse_args() -> argparse.Namespace:
 
 
 def branch_name() -> str:
-    return subprocess.check_output(
+    checked_out = subprocess.check_output(
         ["git", "branch", "--show-current"], cwd=ROOT, text=True
     ).strip()
+    if checked_out:
+        return checked_out
+    for environment_key in ("GITHUB_HEAD_REF", "GITHUB_REF_NAME"):
+        value = os.environ.get(environment_key, "").strip()
+        if value:
+            return value
+    raise ValueError(
+        "cannot infer branch from detached HEAD; pass --branch or set GITHUB_HEAD_REF/GITHUB_REF_NAME"
+    )
 
 
 def settings_targets(text: str, variable: str) -> List[str]:
