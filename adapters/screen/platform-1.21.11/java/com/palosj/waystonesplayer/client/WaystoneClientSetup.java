@@ -66,8 +66,12 @@ public final class WaystoneClientSetup {
             return screen;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player != null) {
-            WaystonesCompat.stopUsingWarpStone(minecraft.player);
+        try {
+            if (minecraft.player != null) {
+                WaystonesCompat.stopUsingWarpStone(minecraft.player);
+            }
+        } catch (LinkageError | RuntimeException error) {
+            WaystonesPlayer.LOGGER.error("Failed to clean up Waystones screen state", error);
         }
         return screen;
     }
