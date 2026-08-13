@@ -9,10 +9,11 @@
 
 ## Decision
 
-`main` 是共享语义源。统一分支记录最后同步的 canonical commit，并逐文件校验 pure Java `core`、完整 `common`、目标矩阵与运行脚本、README/CONTEXT/全部文档、许可证和既有图标；`main` push 还主动获取并比较两个统一远端分支的当前共享文件。
+`main` 是共享语义源。统一分支记录最后同步的 canonical commit，并逐文件校验 pure Java `core`、完整 `common`、目标矩阵与运行脚本、README/CONTEXT/全部文档、许可证和既有图标；`main` push 还主动获取并比较两个统一远端分支的当前共享文件。两条统一分支共同使用的 `adapters/` 版本适配族（排除各自 `adapters/loader/` 入口）由独立 parity 模式逐文件比较。
 
 ## Consequences
 
 - 共享文件改变后必须同步两个统一分支，才能恢复全绿。
+- 统一分支共享适配族改变后必须两边同步；加载器入口适配仍可按分支不同。
 - 只改变 main 专属加载器实现、构建器或元数据不会造成共享文件伪漂移；共享文档变更也必须同步到两个统一分支。
 - 分支基线提交记录是审计信息，不授权改写历史或强推。
