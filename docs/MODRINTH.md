@@ -43,7 +43,7 @@ Waystones Player is an unofficial add-on that brings other listed players into t
 
 - A live player directory based on Minecraft's existing listed-player data.
 - A responsive 164px full list, 128–163px compact list, or 36px clickable avatar rail.
-- Server-side validation of the exact Warp Stone and hand, listed target, experience requirement, and confirmed movement.
+- Server-side validation of the exact Warp Stone and hand, `allowsListing()` target authorization, experience requirement, and confirmed movement.
 - Waystones-compatible cancellable events, sound, effects, and adjacent non-suffocating placement.
 - Exactly one point of native Warp Stone durability after confirmed success.
 - Free, follow-Waystones, or always-evaluate-Waystones experience modes.
