@@ -210,10 +210,12 @@ public final class WaystonePlayerScreenInjector {
     private static EditBox findSearchBox(WaystoneSelectionScreenBase screen) {
         EditBox closest = null;
         int distance = Integer.MAX_VALUE;
+        int expectedX = screen.width / 2 - SEARCH_BOX_WIDTH / 2;
         for (GuiEventListener listener : screen.children()) {
             if (listener instanceof EditBox editBox
                     && editBox.getWidth() == SEARCH_BOX_WIDTH
-                    && editBox.getHeight() == SEARCH_BOX_HEIGHT) {
+                    && editBox.getHeight() == SEARCH_BOX_HEIGHT
+                    && editBox.getX() == expectedX) {
                 int candidate = Math.abs(editBox.getX() + editBox.getWidth() / 2 - screen.width / 2);
                 if (candidate < distance) {
                     closest = editBox;
