@@ -68,8 +68,6 @@ class RuntimeWorkflowSourceContractTest(unittest.TestCase):
         self.assertIn('run_branch != "$branch"', fetcher)
         self.assertIn('run_event != push && $run_event != workflow_dispatch', fetcher)
         self.assertIn("expected_workflow='Build'", fetcher)
-        self.assertIn("expected_workflow='NeoForge 1.21.x Build'", fetcher)
-        self.assertIn("expected_workflow='Fabric 1.21.x Build'", fetcher)
 
 
 if __name__ == "__main__":

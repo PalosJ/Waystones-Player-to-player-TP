@@ -11,22 +11,7 @@ requested_run_id=$2
 artifact_name=$3
 artifact_file=$4
 output_directory=$5
-
-case $branch in
-  main)
-    expected_workflow='Build'
-    ;;
-  neoforge/1.21.x)
-    expected_workflow='NeoForge 1.21.x Build'
-    ;;
-  fabric/1.21.x)
-    expected_workflow='Fabric 1.21.x Build'
-    ;;
-  *)
-    echo "Unsupported release branch $branch." >&2
-    exit 2
-    ;;
-esac
+expected_workflow='Build'
 
 if [[ -z ${GH_TOKEN:-} ]]; then
   echo "GH_TOKEN is required to resolve and download Build artifacts." >&2
