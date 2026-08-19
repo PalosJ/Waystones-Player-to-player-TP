@@ -27,6 +27,9 @@ dependencies {
 }
 
 configurations {
+    testCompileOnly.extendsFrom compileOnly
+    testRuntimeOnly.extendsFrom compileOnly
+
     commonJava {
         canBeResolved = false
         canBeConsumed = true
@@ -35,6 +38,11 @@ configurations {
         canBeResolved = false
         canBeConsumed = true
     }
+}
+
+sourceSets.test {
+    compileClasspath += sourceSets.main.compileClasspath
+    runtimeClasspath += sourceSets.main.runtimeClasspath
 }
 
 artifacts {

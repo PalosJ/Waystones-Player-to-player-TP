@@ -3,12 +3,12 @@ package com.palosj.waystonesplayer.client;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.palosj.waystonesplayer.WaystonesPlayer;
+import com.palosj.waystonesplayer.client.PlayerDirectoryRefreshPolicy;
+import com.palosj.waystonesplayer.client.PlayerPanelLifecycle;
 import com.palosj.waystonesplayer.client.widget.PlayerDestinationList;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
 import com.palosj.waystonesplayer.mixin.client.AbstractContainerScreenAccessor;
@@ -36,12 +36,13 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 public final class WaystonePlayerScreenInjector {
     private static final AtomicBoolean LAYOUT_COMPAT_FAILURE_LOGGED = new AtomicBoolean();
     private static final AtomicBoolean DIRECTORY_REFRESH_FAILURE_LOGGED = new AtomicBoolean();
-    private static final Map<Screen, PlayerPanel> PANELS = new WeakHashMap<>();
+    private static final PlayerPanelLifecycle<Screen, PlayerPanel> PANELS = new PlayerPanelLifecycle<>();
     private static Object cachedConnection;
     private static UUID cachedSelf;
-    private static long cachedDirectoryFingerprint;
     private static List<PlayerInfo> cachedOnlinePlayers = List.of();
     private static boolean directoryCacheInitialized;
+    private static long clientTick;
+    private static long lastDirectoryRefreshTick;
     private static final int HEADER_HEIGHT = 64;
     private static final int FOOTER_HEIGHT = 25;
     private static final int TITLE_Y = 20;
@@ -53,7 +54,7 @@ public final class WaystonePlayerScreenInjector {
     }
 
     public static void onScreenInit(Screen candidate) {
-        PANELS.remove(candidate);
+        PANELS.detach(candidate);
         try {
             if (!(candidate instanceof WaystoneSelectionScreenBase screen)) {
                 return;
@@ -68,6 +69,7 @@ public final class WaystonePlayerScreenInjector {
             if (onlinePlayers == null) {
                 return;
             }
+            lastDirectoryRefreshTick = clientTick;
 
             AbstractWaystoneList<?> waystoneList = findWaystoneList(screen);
             if (waystoneList == null) {
@@ -101,7 +103,7 @@ public final class WaystonePlayerScreenInjector {
             PlayerPanel panel = new PlayerPanel(onlinePlayers, layout.panelX(), guiTop, layout.panelWidth(), panelHeight,
                     layout.avatarOnly());
             panel.attach(screen);
-            PANELS.put(screen, panel);
+            PANELS.attach(screen, panel);
         } catch (Exception e) {
             WaystonesPlayer.LOGGER.error("WaystonesPlayer GUI injection failed", e);
         }
@@ -114,10 +116,21 @@ public final class WaystonePlayerScreenInjector {
         }
 
         try {
-            List<PlayerInfo> onlinePlayers = getOnlinePlayers();
-            if (onlinePlayers != null) {
-                panel.refresh(onlinePlayers);
+            clientTick++;
+            Object currentConnection = Minecraft.getInstance().getConnection();
+            boolean connectionChanged = currentConnection != cachedConnection;
+            if (PlayerDirectoryRefreshPolicy.shouldRefresh(
+                    directoryCacheInitialized,
+                    connectionChanged,
+                    clientTick,
+                    lastDirectoryRefreshTick)) {
+                List<PlayerInfo> onlinePlayers = getOnlinePlayers();
+                lastDirectoryRefreshTick = clientTick;
+                if (onlinePlayers != null) {
+                    panel.refresh(onlinePlayers);
+                }
             }
+            panel.tick();
         } catch (RuntimeException error) {
             if (DIRECTORY_REFRESH_FAILURE_LOGGED.compareAndSet(false, true)) {
                 WaystonesPlayer.LOGGER.warn(
@@ -127,35 +140,22 @@ public final class WaystonePlayerScreenInjector {
         }
     }
 
+    public static void onScreenClosed(Screen candidate) {
+        PANELS.detach(candidate);
+        if (PANELS.isEmpty()) {
+            resetDirectoryCache();
+        }
+    }
+
     private static List<PlayerInfo> getOnlinePlayers() {
         Minecraft minecraft = Minecraft.getInstance();
         var connection = minecraft.getConnection();
         if (connection == null || minecraft.player == null) {
-            cachedConnection = null;
-            cachedSelf = null;
-            cachedOnlinePlayers = List.of();
-            directoryCacheInitialized = false;
+            resetDirectoryCache();
             return null;
         }
 
         UUID selfId = minecraft.player.getUUID();
-        long fingerprint = 0xcbf29ce484222325L;
-        int count = 0;
-        for (PlayerInfo info : connection.getListedOnlinePlayers()) {
-            var profile = info.getProfile();
-            fingerprint = mixFingerprint(fingerprint, profile.getId().getMostSignificantBits());
-            fingerprint = mixFingerprint(fingerprint, profile.getId().getLeastSignificantBits());
-            fingerprint = mixFingerprint(fingerprint, profile.getName().hashCode());
-            count++;
-        }
-        fingerprint = mixFingerprint(fingerprint, count);
-        if (directoryCacheInitialized
-                && connection == cachedConnection
-                && selfId.equals(cachedSelf)
-                && fingerprint == cachedDirectoryFingerprint) {
-            return cachedOnlinePlayers;
-        }
-
         List<PlayerInfo> onlinePlayers = new ArrayList<>(connection.getListedOnlinePlayers());
         onlinePlayers.removeIf(info -> info.getProfile().getId().equals(selfId));
         onlinePlayers.sort(Comparator
@@ -164,14 +164,17 @@ public final class WaystonePlayerScreenInjector {
                 .thenComparing(info -> info.getProfile().getId()));
         cachedConnection = connection;
         cachedSelf = selfId;
-        cachedDirectoryFingerprint = fingerprint;
         cachedOnlinePlayers = List.copyOf(onlinePlayers);
         directoryCacheInitialized = true;
         return cachedOnlinePlayers;
     }
 
-    private static long mixFingerprint(long hash, long value) {
-        return (hash ^ value) * 0x100000001b3L;
+    private static void resetDirectoryCache() {
+        cachedConnection = null;
+        cachedSelf = null;
+        cachedOnlinePlayers = List.of();
+        directoryCacheInitialized = false;
+        lastDirectoryRefreshTick = clientTick;
     }
 
     private static AbstractWaystoneList<?> findWaystoneList(WaystoneSelectionScreenBase screen) {
@@ -251,6 +254,10 @@ public final class WaystonePlayerScreenInjector {
         private void refresh(List<PlayerInfo> currentPlayers) {
             playerList.updatePlayers(currentPlayers);
             labels.setPlayerCount(currentPlayers.size());
+        }
+
+        private void tick() {
+            playerList.tickVisibleEntries();
         }
     }
 

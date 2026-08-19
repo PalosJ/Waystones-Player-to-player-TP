@@ -4,6 +4,9 @@ plugins {
 
 def targetMatrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
 def target = targetMatrix.targets.find { it.id == 'neoforge-1.21.1' }
+def sourceCommit = providers.exec {
+    commandLine 'git', 'rev-parse', 'HEAD'
+}.standardOutput.asText.map { it.trim() }
 if (target == null || target.branch != 'main' || target.loader != 'neoforge') {
     throw new GradleException('The canonical NeoForge 1.21.1 target is missing from gradle/targets.json.')
 }
@@ -121,12 +124,14 @@ sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
 tasks.named('jar', Jar).configure {
+    inputs.property('waystonesPlayerSourceCommit', sourceCommit)
     manifest {
         attributes(
                 'Implementation-Title': mod_name,
                 'Implementation-Version': targetMatrix.modVersion,
                 'WaystonesPlayer-Target': target.id,
                 'WaystonesPlayer-Build-Stack': dependencyStack,
+                'WaystonesPlayer-Source-Commit': sourceCommit.get(),
         )
     }
     from project(':core').sourceSets.main.output
@@ -206,9 +211,10 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
             def attributes = manifest.mainAttributes
             if (attributes.getValue('Implementation-Version') != targetMatrix.modVersion
                     || attributes.getValue('WaystonesPlayer-Target') != target.id
-                    || attributes.getValue('WaystonesPlayer-Build-Stack') != dependencyStack) {
+                    || attributes.getValue('WaystonesPlayer-Build-Stack') != dependencyStack
+                    || attributes.getValue('WaystonesPlayer-Source-Commit') != sourceCommit.get()) {
                 throw new GradleException(
-                        'Release JAR manifest does not identify its target and dependency build stack.')
+                        'Release JAR manifest does not identify its target, build stack, and source commit.')
             }
 
             def iconEntry = zip.getEntry('waystonesplayer.png')

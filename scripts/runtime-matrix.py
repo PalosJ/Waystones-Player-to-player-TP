@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +34,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--timeout", type=int, default=300)
     parser.add_argument("--skip-build", action="store_true")
+    parser.add_argument(
+        "--binary",
+        help="Explicit minimum-built JAR to reuse for every runtime case",
+    )
+    parser.add_argument("--expected-sha256", help="Required SHA-256 for --binary")
+    parser.add_argument("--expected-commit", help="Required source commit for --binary")
     parser.add_argument("--xvfb", action="store_true")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--fail-fast", action="store_true")
@@ -104,7 +110,8 @@ def runtime_cases(target: Dict[str, object], profiles: List[str],
 
 
 def run_case(target: Dict[str, object], minecraft: str, profile: str, side: str,
-             timeout: int, xvfb: bool, verbose: bool) -> int:
+             timeout: int, xvfb: bool, verbose: bool, binary: Optional[str],
+             expected_sha256: Optional[str], expected_commit: Optional[str]) -> int:
     command = [
         sys.executable,
         str(ROOT / "scripts" / "runtime-smoke.py"),
@@ -119,6 +126,12 @@ def run_case(target: Dict[str, object], minecraft: str, profile: str, side: str,
         "--timeout",
         str(timeout),
     ]
+    if binary is not None:
+        command.extend([
+            "--binary", binary,
+            "--expected-sha256", expected_sha256 or "",
+            "--expected-commit", expected_commit or "",
+        ])
     if xvfb and side == "client":
         command.append("--xvfb")
     if verbose:
@@ -130,6 +143,13 @@ def main() -> int:
     args = parse_args()
     try:
         target = load_target(args.target)
+        explicit_evidence = (args.binary, args.expected_sha256, args.expected_commit)
+        if any(explicit_evidence) and not all(explicit_evidence):
+            raise ValueError(
+                "--binary, --expected-sha256, and --expected-commit must be provided together"
+            )
+        if args.binary and not args.skip_build:
+            raise ValueError("--binary requires --skip-build; artifact mode must never rebuild")
         if not args.skip_build:
             build_result = build_minimum_jar(target)
             if build_result != 0:
@@ -142,7 +162,16 @@ def main() -> int:
         results = []
         for minecraft, profile, side in cases:
             result = run_case(
-                target, minecraft, profile, side, args.timeout, args.xvfb, args.verbose
+                target,
+                minecraft,
+                profile,
+                side,
+                args.timeout,
+                args.xvfb,
+                args.verbose,
+                args.binary,
+                args.expected_sha256,
+                args.expected_commit,
             )
             results.append((minecraft, profile, side, result))
             if result != 0 and args.fail_fast:

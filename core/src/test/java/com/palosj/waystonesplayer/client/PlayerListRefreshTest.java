@@ -23,6 +23,14 @@ class PlayerListRefreshTest {
     }
 
     @Test
+    void equalJavaNameHashesStillDetectAnExactRename() {
+        assertEquals("FB".hashCode(), "Ea".hashCode());
+        assertTrue(PlayerListRefresh.hasChanged(
+                List.of(player(1, "FB")),
+                List.of(player(1, "Ea"))));
+    }
+
+    @Test
     void joiningBeforeTheVisibleAnchorKeepsTheSamePlayerAtTheTop() {
         double restored = PlayerListRefresh.restoreScrollAmount(
                 List.of(BRAVO, CHARLIE),

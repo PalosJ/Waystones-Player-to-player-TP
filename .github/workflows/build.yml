@@ -1,6 +1,9 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -69,6 +72,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           validate-wrappers: true
+
+      - name: Test release tooling
+        run: python3 -m unittest discover -s scripts/tests -v
 
       - name: Build and test
         run: >-

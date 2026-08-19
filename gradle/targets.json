@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "snapshotDate": "2026-08-12",
+  "snapshotDate": "2026-08-20",
   "modVersion": "1.0.0",
   "iconSha256": "ab4c610217d94f4d19d39b92b698f0ee5c57e46fc4c5bd654ab7923a49d4736d",
   "buildTools": {
@@ -51,7 +51,7 @@
       "key": {"neoforge": "21.4.121", "waystones": "21.4.5+1.21.4", "balm": "21.4.9+1.21.4"},
       "keyReason": "Waystones 21.4.5 added the menu Warp Stone accessor that the carrier design intentionally does not depend on.",
       "current": {"neoforge": "21.4.157", "waystones": "21.4.19+1.21.4", "balm": "21.4.42+1.21.4"},
-      "families": {"balm": "legacy-module", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
+      "families": {"balm": "runnable-21.3", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
     },
     {
       "id": "neoforge-1.21.5",
@@ -184,7 +184,7 @@
       "key": {"fabricLoader": "0.16.10", "fabricApi": "0.110.5+1.21.4", "waystones": "21.4.5+1.21.4", "balm": "21.4.9+1.21.4"},
       "keyReason": "Waystones 21.4.5 added the menu Warp Stone accessor and raised Fabric Loader to 0.16.10; the carrier design intentionally does not depend on the accessor.",
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.119.4+1.21.4", "waystones": "21.4.19+1.21.4", "balm": "21.4.41+1.21.4", "balmRuntimeModId": "balm"},
-      "families": {"balm": "legacy-module", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
+      "families": {"balm": "runnable-21.3", "screen": "legacy-input", "teleport": "legacy-21.3-21.9"}
     },
     {
       "id": "fabric-1.21.5",

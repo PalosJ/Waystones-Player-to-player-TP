@@ -129,7 +129,8 @@ Waystones 21.3.1 虽然声明同时支持 1.21.2/1.21.3，但在 1.21.3 创建�
 |---|---|---|
 | 1.21.1 | `ResourceLocation`、旧屏幕列表、同步 transient 传送 | 保持 canonical 行为；不能切到会验证真实方块的异步入口 |
 | 1.21.2/1.21.3 | Balm 只有 Runnable 初始化；菜单没有稳定 Warp Stone getter | 使用 Runnable family 与菜单载体 Mixin |
-| 1.21.4–1.21.8 | 旧 Balm module；legacy input；菜单 getter 在 21.4 线中途才出现 | 不依赖 getter；继续使用载体 |
+| 1.21.4 | Balm Runnable；legacy input；菜单 getter 在线中途才出现 | 使用 runnable-21.3 family；不依赖 getter，继续使用载体 |
+| 1.21.5–1.21.8 | 旧 Balm module；legacy input | 继续使用载体 |
 | 1.21.9 | GUI 输入事件签名变化 | 单独 event-input screen family |
 | 1.21.10 | Waystones 增加 hand/context-aware requirement | 单独 context-hand family，保持本附属固定耐久 |
 | 1.21.11 | Minecraft `Identifier`、皮肤 API、Balm `platform.*`、分页屏幕几何 | 新 platform/identifier family；动态控件从原始坐标重新偏移 |
@@ -174,10 +175,14 @@ python3 scripts/runtime-matrix.py \
   --target <target-id> \
   --profiles minimum key current \
   --sides server client \
+  --skip-build \
+  --binary <minimum-artifact.jar> \
+  --expected-sha256 <sha256> \
+  --expected-commit <40-hex-source-commit> \
   --fail-fast
 ```
 
-没有 `key` 套件的目标会自动跳过该 profile。Linux CI 对客户端追加 `--xvfb`。这是启动、二进制链接、Mixin 和资源冒烟，不替代双客户端内的交互、费用与事件人工验收。
+没有 `key` 套件的目标会自动跳过该 profile。显式二进制、SHA-256 和提交参数必须一起出现；artifact 模式必须使用 `--skip-build`。Linux CI 对客户端追加 `--xvfb`。GitHub Runtime workflow 仅接受同分支、精确 HEAD 的成功 Build artifact：手动触发必须给出 Build run ID，定时触发无法解析当前提交 artifact 时直接失败。这是启动、二进制链接、Mixin 和资源冒烟，不替代双客户端内的交互、费用与事件人工验收。
 
 ## 逐目标升级流程
 

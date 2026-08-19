@@ -1,11 +1,32 @@
 name: Full 1.21.x Runtime Smoke
 
 on:
+  workflow_run:
+    workflows: [Build]
+    branches:
+      - main
+      - neoforge/1.21.x
+      - fabric/1.21.x
+    types: [completed]
   workflow_dispatch:
+    inputs:
+      main_build_run_id:
+        description: Successful main Build run ID for the exact current main commit
+        required: true
+        type: string
+      neoforge_build_run_id:
+        description: Successful NeoForge Build run ID for the exact unified branch commit
+        required: true
+        type: string
+      fabric_build_run_id:
+        description: Successful Fabric Build run ID for the exact unified branch commit
+        required: true
+        type: string
   schedule:
     - cron: '23 18 * * 6'
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -15,6 +36,11 @@ concurrency:
 jobs:
   canonical-main:
     name: NeoForge 1.21.1 binary runtime
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 75
     steps:
@@ -35,6 +61,19 @@ jobs:
         with:
           validate-wrappers: true
 
+      - name: Download exact main Build artifact
+        id: artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.main_build_run_id }}
+        run: >-
+          ./scripts/fetch-build-artifact.sh
+          main
+          "$REQUESTED_RUN_ID"
+          waystonesplayer-neoforge-1.21.1
+          waystonesplayer-neoforge-1.21.1-1.0.0.jar
+          build/runtime-artifacts/neoforge-1.21.1
+
       - name: Verify Xvfb
         run: |
           command -v xvfb-run
@@ -44,6 +83,10 @@ jobs:
         run: >-
           python3 scripts/runtime-matrix.py
           --target neoforge-1.21.1
+          --skip-build
+          --binary "${{ steps.artifact.outputs.binary }}"
+          --expected-sha256 "${{ steps.artifact.outputs.sha256 }}"
+          --expected-commit "${{ steps.artifact.outputs.commit }}"
           --profiles minimum current
           --sides server client
           --xvfb
@@ -64,6 +107,11 @@ jobs:
 
   neoforge-unified:
     name: ${{ matrix.target }} binary runtime
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'neoforge/1.21.x')
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
@@ -99,6 +147,19 @@ jobs:
         with:
           validate-wrappers: true
 
+      - name: Download exact NeoForge Build artifact
+        id: artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.neoforge_build_run_id }}
+        run: >-
+          ./scripts/fetch-build-artifact.sh
+          neoforge/1.21.x
+          "$REQUESTED_RUN_ID"
+          waystonesplayer-${{ matrix.target }}
+          waystonesplayer-${{ matrix.target }}-1.0.0.jar
+          build/runtime-artifacts/${{ matrix.target }}
+
       - name: Verify Xvfb and canonical parity
         run: |
           command -v xvfb-run
@@ -109,6 +170,10 @@ jobs:
         run: >-
           python3 scripts/runtime-matrix.py
           --target ${{ matrix.target }}
+          --skip-build
+          --binary "${{ steps.artifact.outputs.binary }}"
+          --expected-sha256 "${{ steps.artifact.outputs.sha256 }}"
+          --expected-commit "${{ steps.artifact.outputs.commit }}"
           --profiles minimum key current
           --sides server client
           --xvfb
@@ -129,6 +194,11 @@ jobs:
 
   fabric-unified:
     name: ${{ matrix.target }} binary runtime
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'fabric/1.21.x')
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
@@ -165,6 +235,19 @@ jobs:
         with:
           validate-wrappers: true
 
+      - name: Download exact Fabric Build artifact
+        id: artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.fabric_build_run_id }}
+        run: >-
+          ./scripts/fetch-build-artifact.sh
+          fabric/1.21.x
+          "$REQUESTED_RUN_ID"
+          waystonesplayer-${{ matrix.target }}
+          waystonesplayer-${{ matrix.target }}-1.0.0.jar
+          build/runtime-artifacts/${{ matrix.target }}
+
       - name: Verify Xvfb and canonical parity
         run: |
           command -v xvfb-run
@@ -175,6 +258,10 @@ jobs:
         run: >-
           python3 scripts/runtime-matrix.py
           --target ${{ matrix.target }}
+          --skip-build
+          --binary "${{ steps.artifact.outputs.binary }}"
+          --expected-sha256 "${{ steps.artifact.outputs.sha256 }}"
+          --expected-commit "${{ steps.artifact.outputs.commit }}"
           --profiles minimum key current
           --sides server client
           --xvfb

@@ -9,6 +9,7 @@
 - [ ] `origin` 指向预期仓库；已获取远端且本地未落后或分叉。
 - [ ] `gradle/targets.json` 通过 JSON 解析和 `verifyTargetMatrix`。
 - [ ] `python3 scripts/verify-target-matrix.py` 通过，settings 与 Build/Runtime workflow 的 target 列表和中央矩阵一致。
+- [ ] `python3 -m unittest discover -s scripts/tests -v` 通过，包含 target.properties family/source root 与 artifact provenance 负向测试。
 - [ ] 所有 `mod_version`、加载器元数据、文件名、changelog 和平台版本均为 `1.0.0`。
 - [ ] 原 `common/src/main/resources/waystonesplayer.png` 字节未改变。
 
@@ -33,7 +34,7 @@
 - [ ] 当前分支 wrapper 与矩阵一致：NeoForge 为 Gradle 9.2.1，Fabric 为 Gradle 9.5.1；distribution SHA-256 已锁定。
 - [ ] warning 已审查，未忽略 Mixin target/refmap、弃用 API 或元数据问题。
 - [ ] 上传候选保留最低套件生成的 JAR；当前套件 JAR不覆盖它。
-- [ ] JAR 清单的 `WaystonesPlayer-Target` 与 `WaystonesPlayer-Build-Stack` 分别匹配目标和 `minimum`；运行器拒绝 current 或身份不明的二进制。
+- [ ] JAR 清单的 `WaystonesPlayer-Target`、`WaystonesPlayer-Build-Stack` 与 `WaystonesPlayer-Source-Commit` 分别匹配目标、`minimum` 和精确源码提交；运行器拒绝 current、提交不明或身份不明的二进制。
 
 ## 4. 同一发行 JAR运行
 
@@ -42,7 +43,9 @@
 ```bash
 # 在对应统一分支执行；没有 key 套件的目标会自动跳过 key。
 python3 scripts/runtime-matrix.py --target <target-id> \
-  --profiles minimum key current --sides server client --fail-fast
+  --profiles minimum key current --sides server client --skip-build \
+  --binary <minimum-artifact.jar> --expected-sha256 <sha256> \
+  --expected-commit <40-hex-source-commit> --fail-fast
 ```
 
 - [ ] 专用服务器到达 `Done`，无客户端类、客户端 Mixin或 GUI 类加载。
@@ -50,20 +53,24 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 - [ ] 1.21.2/1.21.3 共用 JAR在两个 Minecraft 版本分别执行。
 - [ ] 每个运行使用隔离的新目录、配置和世界。
 - [ ] 退出方式和退出码已记录；Ctrl-C 启动冒烟不能写成优雅关服。
+- [ ] Runtime workflow 的每个 job 记录 Build run ID；artifact 与当前分支精确 HEAD、文件名、target、版本、minimum 栈、manifest 提交和 SHA-256 全部一致，期间没有重建 JAR。
 
 ## 5. 双客户端功能验收
 
 - [ ] 客户端 listed 玩家出现；`allowsListing()=false` 的目标被服务端拒绝。记录客户端可见但服务端拒绝的双层边界；不把第三方 `UPDATE_LISTED` 隐藏或猜 UUID 防护写成已保证能力。
-- [ ] 玩家加入、退出、重连或改名时实时更新，滚动锚点和焦点稳定。
-- [ ] 空列表、长名称、大量玩家、皮肤失败首字符回退、滚动、tooltip 和叙述正常。
+- [ ] 玩家加入、退出、重连或改名时在 5 tick 内更新；连接变化立即刷新，滚动锚点、UUID 行复用和焦点稳定。Waystones 搜索不筛选玩家目录。
+- [ ] 空列表、长名称、`String.hashCode` 碰撞名称、大量玩家、皮肤失败/20-tick 重试/首字符回退、滚动、tooltip 和叙述正常；渲染期连接/Profile 查询为零。
 - [ ] 854px 宽屏不移动 Waystones；480px 自动缩放仍为完整名单。
 - [ ] 约 426/416px 进入收窄名单；320px 进入头像栏；反复缩放无累计偏移。
 - [ ] 1.21.11 搜索、分页、排序、删除和动态目的地重建后偏移正确。
 - [ ] 主手与副手都能传送；换走物品、关闭菜单、重复包和自身目标被拒绝。
 - [ ] `NEVER`、`FOLLOW_WAYSTONES`、`ALWAYS` 的零费用、足够/不足经验和创造模式正确。
 - [ ] Waystones 事件可观察、取消和重定向；取消/失败恢复精确经验且不扣耐久。
+- [ ] 非空费用规则解析为空、负数、NaN、无穷、缩放/组合溢出、未知第三方 requirement 和事件替换费用均在扣费/移动前拒绝；合法零费用保留，创造模式不能绕过锁。
 - [ ] 同维度、跨维度、相邻落点、目标移动和 post-move 异常符合确认成功语义。
+- [ ] 四个相邻身体/头部格全部封堵、目标世界不可用或落点数据异常时，在扣费/移动前失败；不把地板、流体或悬崖写成保证。
 - [ ] 每次确认成功只结算 1 点原生耐久；创造豁免，附魔/损坏使用原生行为。
+- [ ] 成功移动后物品仍在原手、被同组件替换、原引用移到其他槽位及被第三方彻底移除四种耐久路径均符合语义；不得损坏无关物品或回滚已完成移动。
 
 ## 6. 配置验收
 
@@ -77,6 +84,7 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 - [ ] 文件名与矩阵 `artifactFile` 完全一致。
 - [ ] JAR可读取，模组元数据无模板占位符且 Minecraft/Loader/依赖范围精确。
 - [ ] 包含 LICENSE、THIRD_PARTY_NOTICES、语言、网络契约、Mixin配置和既有图标。
+- [ ] manifest 的 source commit 与 `git rev-parse HEAD`、Build artifact 元数据和运行证据一致。
 - [ ] 图标可读且元数据引用正确；不重新绘制或替换。
 - [ ] 服务端/客户端 Mixin分别位于 `mixins` / `client`，服务端不会加载客户端 accessor。
 - [ ] 不含 `net/blay09`、Fabric API、NeoForge、依赖 JAR、私有路径、凭据或无关大文件。
@@ -99,7 +107,7 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 python3 scripts/release-manifest.py --output build/release-manifest.json
 ```
 
-清单中的每个 `sha256` 必须与实际上传文件和运行证据中的 `BINARY-SHA256` 一致；清单不提交到仓库。
+输出路径必须位于被忽略的 `build/`；脚本会重新检查 manifest、内容门禁、source commit 和 SHA-256。清单中的每个 `sha256` 必须与实际上传文件和运行证据中的 `BINARY-SHA256` 一致；清单不提交到仓库。
 
 ## 9. GitHub 与分支收尾
 
