@@ -1,9 +1,22 @@
 name: Fabric 1.21.x Runtime Smoke
 
 on:
+  workflow_run:
+    workflows: [Build]
+    branches:
+      - fabric/1.21.x
+    types: [completed]
   workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Successful Fabric Build run ID for the exact unified branch commit
+        required: true
+        type: string
+  schedule:
+    - cron: '23 18 * * 6'
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -13,6 +26,11 @@ concurrency:
 jobs:
   runtime-smoke:
     name: ${{ matrix.target }} binary runtime
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'fabric/1.21.x')
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
@@ -32,9 +50,10 @@ jobs:
           - fabric-1.21.11
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Fabric unified branch
         uses: actions/checkout@v7
         with:
+          ref: fabric/1.21.x
           fetch-depth: 0
 
       - name: Setup JDK 21
@@ -48,6 +67,19 @@ jobs:
         with:
           validate-wrappers: true
 
+      - name: Download exact Fabric Build artifact
+        id: artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.build_run_id }}
+        run: >-
+          ./scripts/fetch-build-artifact.sh
+          fabric/1.21.x
+          "$REQUESTED_RUN_ID"
+          waystonesplayer-${{ matrix.target }}
+          waystonesplayer-${{ matrix.target }}-1.0.0.jar
+          build/runtime-artifacts/${{ matrix.target }}
+
       - name: Verify Xvfb and canonical parity
         run: |
           command -v xvfb-run
@@ -58,6 +90,10 @@ jobs:
         run: >-
           python3 scripts/runtime-matrix.py
           --target ${{ matrix.target }}
+          --skip-build
+          --binary "${{ steps.artifact.outputs.binary }}"
+          --expected-sha256 "${{ steps.artifact.outputs.sha256 }}"
+          --expected-commit "${{ steps.artifact.outputs.commit }}"
           --profiles minimum key current
           --sides server client
           --xvfb

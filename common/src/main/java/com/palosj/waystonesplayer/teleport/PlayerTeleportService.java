@@ -6,13 +6,8 @@ import java.util.UUID;
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.WaystonesPlayer;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
-import com.palosj.waystonesplayer.compat.WaystonesTeleportCompat;
 
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 
 public final class PlayerTeleportService {
     private static final int REQUEST_COOLDOWN_TICKS = 10;
@@ -25,66 +20,81 @@ public final class PlayerTeleportService {
             ServerPlayer sender,
             UUID targetPlayerId,
             PlayerTeleportExperienceMode experienceMode) {
-        MinecraftServer server = sender.level().getServer();
-        int currentTick = server.getTickCount();
-        RequestRateLimiter.Result rateLimitResult = REQUEST_LIMITER.acquire(sender.getUUID(), currentTick);
+        handleRequest(sender, targetPlayerId, experienceMode, TeleportRuntime.live(), REQUEST_LIMITER);
+    }
+
+    static void handleRequest(
+            ServerPlayer sender,
+            UUID targetPlayerId,
+            PlayerTeleportExperienceMode experienceMode,
+            TeleportRuntimeBoundary runtime,
+            RequestRateLimiter requestLimiter) {
+        UUID senderId = runtime.playerId(sender);
+        RequestRateLimiter.Result rateLimitResult = requestLimiter.acquire(senderId, runtime.currentTick(sender));
         if (rateLimitResult == RequestRateLimiter.Result.REJECTED_NOTIFY) {
-            sender.displayClientMessage(translatable("message.waystonesplayer.teleport_cooling_down"), false);
+            runtime.displayMessage(sender, "message.waystonesplayer.teleport_cooling_down");
             return;
         }
         if (rateLimitResult == RequestRateLimiter.Result.REJECTED_SILENT) {
             return;
         }
 
-        AbstractContainerMenu menu = sender.containerMenu;
-        Optional<WaystonesCompat.WarpStoneUse> warpStoneUse = WaystonesCompat.resolveWarpStoneUse(sender, menu);
+        Optional<WaystonesCompat.WarpStoneUse> warpStoneUse = runtime.resolveWarpStoneUse(sender);
         if (warpStoneUse.isEmpty()) {
-            WaystonesPlayer.LOGGER.debug("{} sent an invalid warp stone player teleport request.", sender.getScoreboardName());
-            sender.displayClientMessage(translatable("message.waystonesplayer.invalid_context"), false);
+            WaystonesPlayer.LOGGER.debug(
+                    "{} sent an invalid warp stone player teleport request.",
+                    runtime.playerName(sender));
+            runtime.displayMessage(sender, "message.waystonesplayer.invalid_context");
             return;
         }
 
-        ServerPlayer target = server.getPlayerList().getPlayer(targetPlayerId);
-        if (target == null || !target.allowsListing()) {
-            sender.displayClientMessage(translatable("message.waystonesplayer.target_unavailable"), false);
+        Optional<TeleportRuntimeBoundary.TargetPlayer> resolvedTarget =
+                runtime.resolveListedTarget(sender, targetPlayerId);
+        if (resolvedTarget.isEmpty()) {
+            runtime.displayMessage(sender, "message.waystonesplayer.target_unavailable");
             return;
         }
 
-        if (sender.getUUID().equals(target.getUUID())) {
-            sender.displayClientMessage(translatable("message.waystonesplayer.target_self"), false);
+        TeleportRuntimeBoundary.TargetPlayer target = resolvedTarget.orElseThrow();
+        if (senderId.equals(target.id())) {
+            runtime.displayMessage(sender, "message.waystonesplayer.target_self");
             return;
         }
 
-        Optional<TeleportOutcome> result = WaystonesTeleportCompat.tryTeleport(
+        Optional<TeleportOutcome> result = runtime.tryTeleport(
                 sender,
-                target,
+                target.player(),
                 warpStoneUse.orElseThrow(),
                 experienceMode);
         if (result.isEmpty()) {
-            sender.displayClientMessage(translatable("message.waystonesplayer.compatibility_unavailable"), false);
+            runtime.displayMessage(sender, "message.waystonesplayer.compatibility_unavailable");
             return;
         }
 
         if (result.orElseThrow() == TeleportOutcome.UNAFFORDABLE) {
-            sender.displayClientMessage(translatable("message.waystonesplayer.insufficient_experience"), false);
+            runtime.displayMessage(sender, "message.waystonesplayer.insufficient_experience");
             return;
         }
         if (result.orElseThrow() == TeleportOutcome.FAILED) {
-            sender.displayClientMessage(translatable("message.waystonesplayer.teleport_failed"), false);
+            runtime.displayMessage(sender, "message.waystonesplayer.teleport_failed");
             return;
         }
 
-        sender.resetFallDistance();
+        runtime.resetFallDistance(sender);
         WaystonesCompat.WarpStoneUse successfulUse = warpStoneUse.orElseThrow();
-        DurabilityCompat.hurtAndBreak(successfulUse.stack(), sender, successfulUse.hand());
-        sender.closeContainer();
+        Optional<TeleportRuntimeBoundary.DurabilityTarget> durabilityTarget =
+                runtime.resolveDurabilityTarget(sender, successfulUse);
+        if (durabilityTarget.isPresent()) {
+            runtime.damageWarpStone(durabilityTarget.orElseThrow(), sender, successfulUse);
+        } else {
+            WaystonesPlayer.LOGGER.error(
+                    "The bound Warp Stone disappeared after a confirmed player teleport; no unrelated item was damaged.");
+            runtime.displayMessage(sender, "message.waystonesplayer.post_teleport_item_changed");
+        }
+        runtime.closeContainer(sender);
     }
 
     public static void clearCooldown(UUID playerId) {
         REQUEST_LIMITER.clear(playerId);
-    }
-
-    private static Component translatable(String key) {
-        return Component.translatable(key).copy().withStyle(ChatFormatting.RED);
     }
 }

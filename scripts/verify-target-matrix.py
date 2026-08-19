@@ -61,6 +61,111 @@ def require(condition: bool, message: str) -> None:
         raise ValueError(message)
 
 
+def parse_target_properties(path: Path) -> Dict[str, str]:
+    properties: Dict[str, str] = {}
+    for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            raise ValueError(f"{path}: line {line_number} is not key=value")
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if key in properties:
+            raise ValueError(f"{path}: duplicate key {key!r}")
+        properties[key] = value.strip()
+    return properties
+
+
+def comma_values(value: str) -> List[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def expected_adapter_roots(target: Dict[str, object]) -> List[str]:
+    loader = target["loader"]
+    families = target["families"]
+    expected: List[str] = []
+
+    balm_family = families["balm"]
+    if balm_family == "runnable-21.3":
+        expected.append(f"loader/{loader}-runnable-21.3")
+    elif balm_family == "platform-module":
+        expected.extend([
+            "balm/platform-1.21.11",
+            f"loader/{loader}-platform-1.21.11",
+        ])
+    elif balm_family != "legacy-module":
+        raise ValueError(f"{target['id']}: unknown Balm family {balm_family!r}")
+
+    teleport_family = families["teleport"]
+    if teleport_family in {"legacy-21.3-21.9", "context-hand-21.10"}:
+        expected.append("teleport/legacy-21.3")
+    elif teleport_family == "identifier-21.11":
+        expected.append("teleport/identifier-1.21.11")
+    elif teleport_family != "legacy-1.21.1":
+        raise ValueError(f"{target['id']}: unknown teleport family {teleport_family!r}")
+
+    screen_family = families["screen"]
+    if screen_family in {"legacy-input", "event-input"} and "1.21.1" not in target["minecraft"]:
+        expected.append("screen/legacy-1.21.3-1.21.10")
+    elif screen_family == "identifier-skin":
+        expected.append("screen/platform-1.21.11")
+    elif screen_family not in {"legacy-input", "event-input"}:
+        raise ValueError(f"{target['id']}: unknown screen family {screen_family!r}")
+    return expected
+
+
+def validate_target_properties(
+        root: Path,
+        branch: str,
+        targets: List[Dict[str, object]]) -> None:
+    loader = "neoforge" if branch == "neoforge/1.21.x" else "fabric"
+    allowed_keys = {"targetId", "commonExcludes", f"{loader}Excludes", "adapterRoots"}
+    for target in targets:
+        target_id = target["id"]
+        path = root / "targets" / target_id / "target.properties"
+        require(path.is_file(), f"{target_id}: missing target.properties")
+        properties = parse_target_properties(path)
+        unknown_keys = sorted(set(properties).difference(allowed_keys))
+        require(not unknown_keys, f"{target_id}: unknown target.properties keys {unknown_keys}")
+        require(properties.get("targetId") == target_id,
+                f"{target_id}: target.properties targetId mismatch")
+
+        adapter_roots = comma_values(properties.get("adapterRoots", ""))
+        require(len(adapter_roots) == len(set(adapter_roots)),
+                f"{target_id}: duplicate adapterRoots")
+        for adapter_root in adapter_roots:
+            java_root = root / "adapters" / adapter_root / "java"
+            require(java_root.is_dir() and any(java_root.rglob("*.java")),
+                    f"{target_id}: adapter root {adapter_root!r} has no Java sources")
+
+        required_roots = expected_adapter_roots(target)
+        for expected_root in required_roots:
+            require(expected_root in adapter_roots,
+                    f"{target_id}: {target['families']} requires adapter root {expected_root!r}")
+        expected_loader_roots = {
+            root_name for root_name in required_roots if root_name.startswith("loader/")
+        }
+        actual_loader_roots = {
+            root_name for root_name in adapter_roots if root_name.startswith("loader/")
+        }
+        require(actual_loader_roots == expected_loader_roots,
+                f"{target_id}: loader adapter roots do not match its Balm family")
+
+        source_directories = {
+            "commonExcludes": root / "common" / "src" / "main" / "java",
+            f"{loader}Excludes": root / loader / "src" / "main" / "java",
+        }
+        for key, source_directory in source_directories.items():
+            values = comma_values(properties.get(key, ""))
+            require(len(values) == len(set(values)), f"{target_id}: duplicate {key}")
+            for relative_path in values:
+                require(not any(character in relative_path for character in "?*[]"),
+                        f"{target_id}: {key} must use exact paths")
+                require((source_directory / relative_path).is_file(),
+                        f"{target_id}: {key} references missing source {relative_path!r}")
+
+
 def validate_matrix_shape(matrix: Dict[str, object]) -> None:
     """Reject structurally ambiguous targets before Gradle expands any metadata."""
     version = matrix.get("modVersion")
@@ -181,6 +286,8 @@ def main() -> int:
         variable = "neoForgeTargets" if loader == "neoforge" else "fabricTargets"
         settings = (ROOT / "settings.gradle").read_text(encoding="utf-8")
         require_equal("settings.gradle targets", settings_targets(settings, variable), expected)
+        branch_targets = [target for target in matrix["targets"] if target["branch"] == branch]
+        validate_target_properties(ROOT, branch, branch_targets)
         if len(build_blocks) != 1 or len(runtime_blocks) != 1:
             raise ValueError("unified build/runtime workflows must each contain one target list")
         require_equal("build workflow targets", build_blocks[0], expected)

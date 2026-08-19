@@ -13,7 +13,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
-from typing import Dict, List
+from typing import Dict, List, Set
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,10 +61,82 @@ def artifact_path(target: Dict[str, object]) -> Path:
     return ROOT / "targets" / target["id"] / "build" / "libs" / target["artifactFile"]
 
 
-def target_entry(target: Dict[str, object], branch: str, commit: str) -> Dict[str, object]:
+def manifest_attributes(archive: zipfile.ZipFile) -> Dict[str, str]:
+    try:
+        raw = archive.read("META-INF/MANIFEST.MF").decode("utf-8")
+    except KeyError as error:
+        raise ValueError("artifact has no META-INF/MANIFEST.MF") from error
+    unfolded: List[str] = []
+    for line in raw.replace("\r\n", "\n").split("\n"):
+        if line.startswith(" ") and unfolded:
+            unfolded[-1] += line[1:]
+        else:
+            unfolded.append(line)
+    return dict(line.split(": ", 1) for line in unfolded if ": " in line)
+
+
+def inspect_artifact(
+        path: Path,
+        target: Dict[str, object],
+        commit: str,
+        mod_version: str,
+        icon_sha256: str) -> None:
+    required_entries: Set[str] = {
+        "META-INF/MANIFEST.MF",
+        "waystonesplayer.png",
+        "waystonesplayer.mixins.json",
+        "waystonesplayer.network.json",
+        "assets/waystonesplayer/lang/en_us.json",
+        "assets/waystonesplayer/lang/zh_cn.json",
+    }
+    forbidden_prefixes = (
+        "com/mojang/",
+        "net/blay09/",
+        "net/fabricmc/",
+        "net/minecraft/",
+        "net/neoforged/",
+        "org/spongepowered/",
+    )
+    with zipfile.ZipFile(path) as archive:
+        names = archive.namelist()
+        if len(names) != len(set(names)):
+            raise ValueError(f"{path.name}: artifact contains duplicate ZIP entries")
+        missing = sorted(required_entries.difference(names))
+        if missing:
+            raise ValueError(f"{path.name}: missing required entries: {', '.join(missing)}")
+        if any(name.lower().endswith(".jar") for name in names):
+            raise ValueError(f"{path.name}: artifact contains a nested JAR")
+        if any(name.startswith(forbidden_prefixes) for name in names):
+            raise ValueError(f"{path.name}: artifact bundles game, loader, or dependency classes")
+
+        attributes = manifest_attributes(archive)
+        expected = {
+            "Implementation-Version": mod_version,
+            "WaystonesPlayer-Target": target["id"],
+            "WaystonesPlayer-Build-Stack": "minimum",
+            "WaystonesPlayer-Source-Commit": commit,
+        }
+        for key, expected_value in expected.items():
+            if attributes.get(key) != expected_value:
+                raise ValueError(
+                    f"{path.name}: manifest {key} mismatch: "
+                    f"{attributes.get(key)!r} != {expected_value!r}"
+                )
+        icon_bytes = archive.read("waystonesplayer.png")
+        if hashlib.sha256(icon_bytes).hexdigest() != icon_sha256:
+            raise ValueError(f"{path.name}: approved icon SHA-256 mismatch")
+
+
+def target_entry(
+        target: Dict[str, object],
+        branch: str,
+        commit: str,
+        mod_version: str,
+        icon_sha256: str) -> Dict[str, object]:
     path = artifact_path(target)
     if not path.is_file():
         raise FileNotFoundError(f"missing minimum-built artifact: {path}")
+    inspect_artifact(path, target, commit, mod_version, icon_sha256)
     return {
         "artifactFile": target["artifactFile"],
         "size": path.stat().st_size,
@@ -81,6 +154,16 @@ def target_entry(target: Dict[str, object], branch: str, commit: str) -> Dict[st
     }
 
 
+def resolve_output_path(requested: str) -> Path:
+    output = (ROOT / requested).resolve()
+    build_root = (ROOT / "build").resolve()
+    try:
+        output.relative_to(build_root)
+    except ValueError as error:
+        raise ValueError("release manifest output must stay under the ignored build/ directory") from error
+    return output
+
+
 def main() -> int:
     args = parse_args()
     branch = args.branch or checked_out_branch()
@@ -94,14 +177,23 @@ def main() -> int:
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "modVersion": matrix["modVersion"],
         "branch": branch,
         "commit": commit,
         "iconSha256": matrix["iconSha256"],
-        "artifacts": [target_entry(target, branch, commit) for target in targets],
+        "artifacts": [
+            target_entry(
+                target,
+                branch,
+                commit,
+                matrix["modVersion"],
+                matrix["iconSha256"],
+            )
+            for target in targets
+        ],
     }
-    output = (ROOT / args.output).resolve()
+    output = resolve_output_path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {output.relative_to(ROOT)} ({len(targets)} artifacts)")
