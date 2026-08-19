@@ -11,10 +11,10 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 ### 功能
 
 - 玩家目录始终位于左侧：宽屏显示 164px 完整名单，中等空间收窄至 128px，继续不足时改为 36px 可点击头像栏；只有必要时才把 Waystones 原界面整体右移。
-- 名单实时复用 Minecraft 已同步的 listed 玩家数据，不增加第二套名单协议；加入、离开或改名时保留可见锚点与键盘焦点。
+- 名单复用 Minecraft 已同步的 listed 玩家数据，不增加第二套名单协议；每 5 个客户端 tick 刷新一次，连接变化时立即刷新，加入、离开或改名时按 UUID 复用行并保留可见锚点与键盘焦点。Waystones 自身搜索框只筛选 Waystones，不会隐藏玩家目录。
 - 客户端只发送目标 UUID。客户端目录复用 Minecraft 的 listed 玩家流；服务端则独立用 `allowsListing()` 作为硬授权，并重新验证菜单、打开菜单的确切 Warp Stone 与使用手、费用和最终移动。
-- 传送进入 Waystones 的可取消事件、声音、效果和相邻非窒息落点流程，兼容其他观察或取消 Waystones 传送的模组。
-- 每次确认成功后才对原 Warp Stone 结算 1 点原生耐久；失败不扣耐久，经验会恢复且界面保持打开。
+- 传送进入 Waystones 的可取消事件、声音和效果流程；事件重定向完成后还会再次要求目标四个水平相邻位置至少有一处身体与头部均不窒息。事件可以观察、取消或重定向，但不能替换已锁定费用。
+- 每次确认成功后才重新定位原手中的当前 Warp Stone，并结算 1 点原生耐久；失败不扣耐久，经验会恢复且界面保持打开。若第三方模组在移动后彻底移除该物品，不会损坏无关物品或回滚已经完成的移动。
 - 三种经验模式：免费、跟随 Waystones 总开关，或始终计算 Waystones 当前的经验点数/等级公式。
 
 “相邻非窒息”只表示身体与头部空间不会窒息，不保证脚下有方块，也不排除危险流体或悬崖。目标玩家本身也可能在传送期间移动。
@@ -52,7 +52,7 @@ Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端
 | `FOLLOW_WAYSTONES` | 仅当 Waystones 开启费用时，使用其经验点数/等级、距离、跨维度和上下限规则。 |
 | `ALWAYS` | 忽略 Waystones 的费用总开关，但仍使用其当前经验规则。 |
 
-只选择经验点数和经验等级 requirement；物品、冷却及其他费用不会被应用。需要兼容层但无法安全确认时，传送会被拒绝，不会静默变成免费。
+只选择 Waystones 自带且可验证的经验点数和经验等级 requirement；物品、冷却及其他费用不会被应用。合法零费用保留，但非空规则解析为空、未知第三方类型、负数、非有限数、溢出或事件替换费用都会拒绝整次传送，不会静默变成免费。
 
 - NeoForge 使用 SERVER 配置：全局默认位于 `config/waystonesplayer-server.toml`，世界可在 `world/serverconfig` 或单人世界的 `saves/<世界名>/serverconfig` 覆盖，并保留重载语义。
 - Fabric 使用同名 `config/waystonesplayer-server.toml`、同一键和默认值，但它是实例全局配置，不声称支持 NeoForge 的按世界覆盖。
@@ -90,10 +90,10 @@ Waystones Player is an unofficial add-on for [Waystones](https://modrinth.com/mo
 ### Features
 
 - A responsive player directory: 164px full list, 128–163px narrowed list, or a 36px clickable avatar rail. The Waystones UI moves right only when required.
-- Live updates from Minecraft's existing listed-player data, preserving the visible anchor and keyboard focus without adding a duplicate directory protocol.
+- Updates from Minecraft's existing listed-player data every five client ticks, with immediate refresh on connection changes, UUID-based row reuse, and preserved visible anchor and keyboard focus. The Waystones search field filters only Waystones, never the player directory.
 - Server-authoritative validation of the menu, exact Warp Stone and hand, `allowsListing()` authorization, cost, and confirmed movement.
-- Waystones' cancellable events, sound, effects, and adjacent non-suffocating destination selection.
-- One point of native Warp Stone durability only after confirmed success; failures restore experience, preserve durability, and keep the menu open.
+- Waystones' cancellable events, sound, effects, and a final adjacent non-suffocating-space guard after event redirection. Events may observe, cancel, or redirect, but cannot replace the locked cost.
+- One point of native Warp Stone durability only after confirmed success and re-resolving the original hand/reference; failures restore experience, preserve durability, and keep the menu open.
 - `NEVER`, `FOLLOW_WAYSTONES`, and `ALWAYS` experience modes.
 
 Adjacent non-suffocating placement is not an absolute safety guarantee: it does not require solid ground or exclude dangerous fluids and cliffs.
@@ -116,7 +116,7 @@ The exact minimum/current dependency suites and canonical filenames are in [grad
 
 The client displays players from Minecraft's listed-player stream. The client sends a UUID, and the server independently resolves it and authorizes it only when `allowsListing()` is true. These are separate boundaries: a third-party per-client `UPDATE_LISTED` hide can leave an entry displayed but rejected by the server, and this add-on does not promise to prevent guessed-UUID requests against such third-party hiding. A player destination is transient and is never stored as a Waystone.
 
-`playerTeleportExperienceMode` defaults to `NEVER`. Only experience-point and experience-level requirements are selected; item costs, cooldowns, and unrelated requirements are ignored. NeoForge keeps SERVER config and per-world override semantics. Fabric uses the same `config/waystonesplayer-server.toml`, key, and default as a global instance configuration, without claiming per-world overrides.
+`playerTeleportExperienceMode` defaults to `NEVER`. Only verifiable built-in experience-point and experience-level requirements are selected; item costs, cooldowns, and unrelated requirements are ignored. A non-empty rule that parses empty, an unknown third-party type, a negative/non-finite/overflowing value, or an event cost replacement rejects the teleport instead of becoming free. NeoForge keeps SERVER config and per-world override semantics. Fabric uses the same `config/waystonesplayer-server.toml`, key, and default as a global instance configuration, without claiming per-world overrides.
 
 ### Privacy, license, and development
 

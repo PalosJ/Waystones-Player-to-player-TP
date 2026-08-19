@@ -9,5 +9,6 @@
   "message.waystonesplayer.insufficient_experience": "经验不足，无法传送！",
   "message.waystonesplayer.compatibility_unavailable": "无法安全确认传送石碑兼容状态，已取消本次传送。",
   "message.waystonesplayer.teleport_failed": "传送失败，请稍后再试。",
+  "message.waystonesplayer.post_teleport_item_changed": "传送已完成，但绑定的传送石在耐久结算前发生变化。",
   "message.waystonesplayer.teleport_cooling_down": "传送请求过快，请稍后再试。"
 }

@@ -1,0 +1,54 @@
+package com.palosj.waystonesplayer.teleport;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
+import com.palosj.waystonesplayer.compat.WaystonesCompat;
+
+import net.blay09.mods.waystones.api.WaystoneTeleportContext;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+
+interface TeleportRuntimeBoundary {
+    int currentTick(ServerPlayer sender);
+
+    UUID playerId(ServerPlayer player);
+
+    String playerName(ServerPlayer player);
+
+    Optional<WaystonesCompat.WarpStoneUse> resolveWarpStoneUse(ServerPlayer sender);
+
+    Optional<TargetPlayer> resolveListedTarget(ServerPlayer sender, UUID targetPlayerId);
+
+    Optional<TeleportOutcome> tryTeleport(
+            ServerPlayer sender,
+            ServerPlayer target,
+            WaystonesCompat.WarpStoneUse warpStoneUse,
+            PlayerTeleportExperienceMode experienceMode);
+
+    Optional<DurabilityTarget> resolveDurabilityTarget(
+            ServerPlayer sender,
+            WaystonesCompat.WarpStoneUse warpStoneUse);
+
+    void damageWarpStone(
+            DurabilityTarget target,
+            ServerPlayer sender,
+            WaystonesCompat.WarpStoneUse warpStoneUse);
+
+    void resetFallDistance(ServerPlayer sender);
+
+    void closeContainer(ServerPlayer sender);
+
+    void displayMessage(ServerPlayer sender, String translationKey);
+
+    boolean isWarpStoneUseBound(ServerPlayer sender, WaystonesCompat.WarpStoneUse warpStoneUse);
+
+    boolean hasAdjacentNonSuffocatingSpace(ServerPlayer sender, WaystoneTeleportContext context);
+
+    record TargetPlayer(ServerPlayer player, UUID id) {
+    }
+
+    record DurabilityTarget(ItemStack stack) {
+    }
+}

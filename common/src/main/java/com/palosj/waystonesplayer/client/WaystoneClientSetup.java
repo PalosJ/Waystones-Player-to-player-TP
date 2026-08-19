@@ -20,6 +20,7 @@ public final class WaystoneClientSetup {
     private static final AtomicBoolean TICK_FAILURE_LOGGED = new AtomicBoolean();
     private static Method initMethod;
     private static Method tickMethod;
+    private static Method cleanupMethod;
     private static boolean tickInjectionDisabled;
 
     private WaystoneClientSetup() {
@@ -68,16 +69,19 @@ public final class WaystoneClientSetup {
     }
 
     private static void onScreenOpening(OpenScreenEvent event) {
-        if (isWaystoneSelectionScreen(event.getNewScreen())) {
-            return;
-        }
-
         Minecraft minecraft = Minecraft.getInstance();
         try {
+            Screen current = minecraft.screen;
+            if (isWaystoneSelectionScreen(current) && current != event.getNewScreen()) {
+                cleanupMethod().invoke(null, current);
+            }
+            if (isWaystoneSelectionScreen(event.getNewScreen())) {
+                return;
+            }
             if (minecraft.player != null) {
                 WaystonesCompat.stopUsingWarpStone(minecraft.player);
             }
-        } catch (RuntimeException e) {
+        } catch (ReflectiveOperationException | LinkageError | RuntimeException e) {
             WaystonesPlayer.LOGGER.error("Failed to clean up Waystones screen state", e);
         }
     }
@@ -100,5 +104,14 @@ public final class WaystoneClientSetup {
             tickMethod = resolved;
         }
         return resolved;
+    }
+
+    private static Method cleanupMethod() throws ReflectiveOperationException {
+        if (cleanupMethod != null) {
+            return cleanupMethod;
+        }
+        Class<?> injector = Class.forName("com.palosj.waystonesplayer.client.WaystonePlayerScreenInjector");
+        cleanupMethod = injector.getMethod("onScreenClosed", Screen.class);
+        return cleanupMethod;
     }
 }

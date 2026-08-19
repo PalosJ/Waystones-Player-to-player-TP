@@ -75,6 +75,9 @@ jobs:
       - name: Verify canonical branch parity
         run: ./scripts/verify-branch-parity.sh branch
 
+      - name: Test release tooling
+        run: python3 -m unittest discover -s scripts/tests -v
+
       - name: Test core and build target
         run: >-
           ./gradlew

@@ -95,11 +95,11 @@ flowchart LR
 3. 重新解析目标，要求在线、不是发送者并且 `allowsListing()` 为真。
 4. 以目标当时的维度、方块位置和名称创建 transient、未注册的玩家 Waystone。
 5. 创建 unbound Waystones context，启用声音/效果、关闭 Waystone 方块 modifiers，并附加玩家目的地标记。
-6. 按配置只筛选经验点数/等级 requirement；创造模式使用空 requirement。
-7. 在任何消费前捕获发送者的精确经验进度、等级和总经验。
-8. 调用当前版本适配的 Waystones 同步传送管线。
-9. 同时要求 API 报告发送者，并确认发送者到达目标区域或被事件重定向后确实移动；取消、假成功或未移动都恢复经验。
-10. 确认成功后才重置坠落距离、对绑定物品执行一次 `hurtAndBreak(1, ...)`，最后关闭菜单。
+6. 按配置只筛选 Waystones 自带的经验点数/等级 requirement；解析形状、参数、中间运算和最终 requirement 树都必须可验证、有限、非负且不溢出。创造模式明确使用空 requirement。
+7. 锁定费用并在任何消费前捕获发送者的精确经验进度、等级和总经验。Before/Pre 事件仍可观察、取消或重定向目标；任何 `setRequirements` 替换企图都会使整次传送失败。
+8. 在事件重定向完成后的 `canAfford`/`consume` 最终边界重新验证玩家、手、物品对象/组件，以及目标四个水平相邻位置中至少一个身体格和头部格均不窒息的候选；创造模式也不能跳过该边界。
+9. 调用当前版本适配的 Waystones 同步传送管线，同时要求 API 报告发送者，并确认发送者到达目标区域或被事件重定向后确实移动；取消、假成功或未移动都恢复经验。
+10. 确认成功后才重置坠落距离，并重新读取原手当前栈：优先同一引用，其次接受同物品同组件替换，或在背包中定位被移动的原引用，再执行一次 `hurtAndBreak(1, ...)`。若第三方已彻底移除物品，不损坏无关栈、不回滚已完成移动，记录兼容性错误并关闭菜单。
 
 如果上游在已经移动发送者后抛出运行时/链接异常，实际移动优先作为确认成功，避免把已完成传送错误地回滚费用而造成免费传送。未移动异常会恢复经验并由兼容层拒绝。虚拟机级严重错误不被吞掉。
 
@@ -109,9 +109,10 @@ flowchart LR
 
 客户端复用当前连接已经维护的 listed `PlayerInfo`：
 
-- 每个客户端 tick 检查 Minecraft 的 listed `PlayerInfo` 指纹；只有连接、UUID 或名称集合变化时才复制并按名称排序轻量 UUID/名称视图。
-- 视图未变化时不重建控件；变化时按 UUID 差分，保留顶部可见玩家、行内偏移和仍存在的键盘焦点。
-- 皮肤从当前连接重新查询；纹理加载/绘制失败时回退为姓名首个 Unicode code point。
+- 每 5 个客户端 tick 读取一次 Minecraft 的 listed `PlayerInfo`；连接建立或连接对象变化时立即读取，因此目录变化的正常延迟上限为 250ms。比较使用完整 UUID/名称，不使用名称哈希指纹。
+- 视图未变化时不重建控件；变化时按 UUID 差分并复用行，只新增、删除或重绑定实际变化条目，同时保留顶部可见玩家、行内偏移和仍存在的键盘焦点。
+- 皮肤/ProfileInfo 在行绑定或身份变化时解析并缓存，失败最多每 20 tick 重试一次；渲染路径只绘制缓存或姓名首个 Unicode code point，不查询连接。
+- Waystones 搜索框只过滤 Waystones；玩家目录始终展示当前连接中的全部 listed 玩家。屏幕关闭、连接断开或屏幕替换时显式清理布局、控件和皮肤状态。
 - 完整姓名始终存在于 tooltip 和按钮叙述；长名称按实际可用宽度截断。
 - 客户端展示不构成授权，服务端独立执行 `ServerPlayer.allowsListing()` 硬校验；第三方逐客户端 `UPDATE_LISTED` 隐藏可能造成已显示条目被拒绝，本模组不承诺阻止针对该第三方状态的猜 UUID 请求。
 
@@ -135,7 +136,8 @@ flowchart LR
 |---|---|---|---|
 | 1.21.1 | 旧 module API | legacy input + `leftPos` | 1.21.1 同步入口 |
 | 1.21.2/1.21.3 | Runnable API | legacy input | legacy context |
-| 1.21.4–1.21.8 | 旧 module API | legacy input | legacy context |
+| 1.21.4 | Runnable API | legacy input | legacy context |
+| 1.21.5–1.21.8 | 旧 module API | legacy input | legacy context |
 | 1.21.9 | 旧 module API | event input | legacy context |
 | 1.21.10 | 旧 module API | event input | hand/context-aware |
 | 1.21.11 | 新 platform module API | Identifier/skin/分页几何 | Identifier family |
@@ -150,7 +152,7 @@ flowchart LR
 - `FOLLOW_WAYSTONES`：仅在 Waystones 总费用开关开启时选择其经验函数。
 - `ALWAYS`：无视总开关，但只强制 Waystones 命名空间自身的经验函数。
 
-未知第三方经验函数、物品、冷却和其他 requirement 不会被强制应用。无法解析当前 Waystones 结构时拒绝传送，不返回零费用。
+合法的明确零费用仍然成立。非空规则解析为空、未知第三方经验函数或 requirement、负数、`NaN`、无穷、缩放/组合中间溢出及无法识别的返回形状都会拒绝传送；物品、冷却和其他 requirement 不会被强制应用。无法解析当前 Waystones 结构时绝不返回零费用。
 
 NeoForge 修改配置时必须同步默认值、注释、语言、README、SERVER spec 和测试。Fabric 的小型 TOML存储只为保持同名文件/键/默认值，不伪造世界覆盖或热重载。
 
@@ -166,7 +168,7 @@ NeoForge 修改配置时必须同步默认值、注释、语言、README、SERVE
 
 统一分支 push 检查自身基线；main push 主动检查两个远端统一分支，并额外比较两条统一分支的共享 `adapters/` 适配族，避免“旧 CI 曾经绿色”掩盖后续漂移。只有加载器入口、目标工程、版本适配族、构建器和加载器元数据允许按分支不同；两边共同使用的适配族仍必须保持一致，并通过中央目标矩阵和各分支全目标构建/运行门禁。
 
-普通 push 的最低门禁覆盖每个目标最低/当前源码构建、单测、模块边界、JAR内容、元数据和漂移。定时任务与最终交付还必须把最低套件生成的同一 JAR放入最低、关键断点和当前运行时，执行客户端/专服深度冒烟。
+普通 push 的最低门禁覆盖每个目标最低/当前源码构建、单测、模块边界、JAR内容、元数据和漂移。Build 上传的 minimum JAR必须带 `WaystonesPlayer-Source-Commit`；Runtime 只下载同分支、精确 HEAD 的成功 Build artifact，并以文件名、target、版本、build stack、source commit 和 SHA-256 六重绑定后，把同一 JAR放入最低、关键断点和当前运行时。手动 Runtime 必须提供 Build run ID；定时任务找不到精确 artifact 时失败，禁止静默重建。
 
 ## 发行门禁
 
@@ -175,7 +177,7 @@ NeoForge 修改配置时必须同步默认值、注释、语言、README、SERVE
 - 发行 JAR必须含 loader 元数据、协议、Mixin、语言、`LICENSE`、`THIRD_PARTY_NOTICES` 和既有图标。
 - 禁止打包 Waystones/Balm/Fabric API/NeoForge 类、缓存、依赖 JAR、日志、崩溃报告、IDE 文件、凭据、私人绝对路径和无关大文件。
 - 每个 JAR文件名、Minecraft/Loader、依赖范围和 SHA-256 必须与目标矩阵及平台文件元数据一致。
-- `scripts/release-manifest.py` 在全部最低候选到位后生成忽略目录中的文件名、大小、SHA-256、目标、依赖和提交 provenance；它不把 JAR 或清单提交到仓库。
+- `scripts/release-manifest.py` 只允许在被忽略的 `build/` 下输出；它重新验证每个最低候选的 manifest、内容门禁、SHA-256、目标、构建栈和源码提交，再生成文件名、大小、依赖和 provenance。JAR 与清单都不提交到仓库。
 - 编译成功不是完整运行证明；未执行的双客户端、配置或 GUI 场景必须在验收记录中明确标记。
 
 完整操作清单见 [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)。

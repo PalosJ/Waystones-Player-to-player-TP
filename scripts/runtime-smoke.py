@@ -21,6 +21,7 @@ import sys
 import threading
 import time
 from typing import Dict, List, Optional, TextIO, Tuple
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,6 +72,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--verbose", action="store_true", help="Mirror the complete Gradle/game log to stdout"
     )
+    parser.add_argument(
+        "--binary",
+        help="Explicit minimum-built JAR to run; relative paths are resolved from the repository root",
+    )
+    parser.add_argument("--expected-sha256", help="Required SHA-256 for an explicit binary")
+    parser.add_argument("--expected-commit", help="Required source commit for an explicit binary")
     return parser.parse_args()
 
 
@@ -175,7 +182,10 @@ def display_version(version: str) -> str:
     return version.split("+", 1)[0]
 
 
-def binary_path(target: Dict[str, object]) -> Path:
+def binary_path(target: Dict[str, object], requested: Optional[str] = None) -> Path:
+    if requested:
+        path = Path(requested)
+        return (path if path.is_absolute() else ROOT / path).resolve()
     if target["branch"] == "main":
         return ROOT / "neoforge" / "build" / "libs" / target["artifactFile"]
     return ROOT / "targets" / target["id"] / "build" / "libs" / target["artifactFile"]
@@ -187,6 +197,61 @@ def binary_sha256(path: Path) -> str:
         for chunk in iter(lambda: binary.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def jar_manifest(path: Path) -> Dict[str, str]:
+    with zipfile.ZipFile(path) as archive:
+        try:
+            raw = archive.read("META-INF/MANIFEST.MF").decode("utf-8")
+        except KeyError as error:
+            raise ValueError(f"binary has no META-INF/MANIFEST.MF: {path}") from error
+
+    unfolded: List[str] = []
+    for line in raw.replace("\r\n", "\n").split("\n"):
+        if line.startswith(" ") and unfolded:
+            unfolded[-1] += line[1:]
+        else:
+            unfolded.append(line)
+    attributes: Dict[str, str] = {}
+    for line in unfolded:
+        if ": " in line:
+            key, value = line.split(": ", 1)
+            attributes[key] = value
+    return attributes
+
+
+def verify_binary(
+        path: Path,
+        matrix: Dict[str, object],
+        target: Dict[str, object],
+        expected_sha256: Optional[str],
+        expected_commit: Optional[str]) -> Tuple[str, str]:
+    if not path.is_file():
+        raise ValueError(f"minimum release JAR is missing: {path}")
+    if path.name != target["artifactFile"]:
+        raise ValueError(f"binary filename does not match target {target['id']}: {path.name}")
+
+    actual_sha256 = binary_sha256(path)
+    if expected_sha256 is not None and actual_sha256 != expected_sha256.lower():
+        raise ValueError(
+            f"binary SHA-256 mismatch: expected {expected_sha256.lower()}, got {actual_sha256}"
+        )
+    manifest = jar_manifest(path)
+    expected_attributes = {
+        "Implementation-Version": matrix["modVersion"],
+        "WaystonesPlayer-Target": target["id"],
+        "WaystonesPlayer-Build-Stack": "minimum",
+    }
+    if expected_commit is not None:
+        expected_attributes["WaystonesPlayer-Source-Commit"] = expected_commit
+    for key, expected in expected_attributes.items():
+        actual = manifest.get(key)
+        if actual != expected:
+            raise ValueError(f"binary manifest {key} mismatch: expected {expected!r}, got {actual!r}")
+    source_commit = manifest.get("WaystonesPlayer-Source-Commit", "")
+    if not source_commit:
+        raise ValueError("binary manifest has no WaystonesPlayer-Source-Commit")
+    return actual_sha256, source_commit
 
 
 def fabric_mod_listed(output: str, mod_id: str, version: str) -> bool:
@@ -257,7 +322,8 @@ def required_signals(side: str, output: str, mod_version: str,
 
 
 def build_command(target: Dict[str, object], minecraft: str, stack: str, side: str,
-                  use_xvfb: bool) -> List[str]:
+                  use_xvfb: bool, binary: Path, expected_sha256: str,
+                  expected_commit: str) -> List[str]:
     runtime_project = f":runtime:{target['loader']}-smoke"
     command = [
         str(ROOT / "gradlew"),
@@ -265,6 +331,9 @@ def build_command(target: Dict[str, object], minecraft: str, stack: str, side: s
         f"-PruntimeTarget={target['id']}",
         f"-PruntimeMinecraft={minecraft}",
         f"-PruntimeStack={stack}",
+        f"-PbinaryUnderTest={binary}",
+        f"-PexpectedBinarySha256={expected_sha256}",
+        f"-PexpectedSourceCommit={expected_commit}",
         "--no-daemon",
         "--console=plain",
     ]
@@ -282,6 +351,11 @@ def run_smoke(args: argparse.Namespace) -> int:
     runtime_stack = select_stack(target, minecraft, args.stack)
     if args.xvfb and args.side != "client":
         raise ValueError("--xvfb is only valid for client smoke tests")
+    explicit_evidence = (args.binary, args.expected_sha256, args.expected_commit)
+    if any(explicit_evidence) and not all(explicit_evidence):
+        raise ValueError(
+            "--binary, --expected-sha256, and --expected-commit must be provided together"
+        )
 
     result_dir = (
         ROOT
@@ -293,11 +367,20 @@ def run_smoke(args: argparse.Namespace) -> int:
     )
     result_dir.mkdir(parents=True, exist_ok=True)
     result_file = result_dir / f"{args.side}.log"
-    command = build_command(target, minecraft, args.stack, args.side, args.xvfb)
-    release_jar = binary_path(target)
-    if not release_jar.is_file():
-        raise ValueError(f"minimum release JAR is missing: {release_jar}")
-    release_sha256 = binary_sha256(release_jar)
+    release_jar = binary_path(target, args.binary)
+    release_sha256, release_commit = verify_binary(
+        release_jar, matrix, target, args.expected_sha256, args.expected_commit
+    )
+    command = build_command(
+        target,
+        minecraft,
+        args.stack,
+        args.side,
+        args.xvfb,
+        release_jar,
+        release_sha256,
+        release_commit,
+    )
 
     run_directory = (
         ROOT
@@ -421,8 +504,13 @@ def run_smoke(args: argparse.Namespace) -> int:
         unexpected_exit = True
 
     with result_file.open("a", encoding="utf-8") as evidence:
-        evidence.write(f"BINARY: {release_jar.relative_to(ROOT)}\n")
+        try:
+            evidence_path = release_jar.relative_to(ROOT)
+        except ValueError:
+            evidence_path = release_jar
+        evidence.write(f"BINARY: {evidence_path}\n")
         evidence.write(f"BINARY-SHA256: {release_sha256}\n")
+        evidence.write(f"BINARY-SOURCE-COMMIT: {release_commit}\n")
         evidence.write(f"PROCESS-EXIT-CODE: {process.returncode}\n")
         evidence.write(f"UNEXPECTED-EXIT: {unexpected_exit}\n")
         if crash_reports:
