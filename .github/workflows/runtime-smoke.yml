@@ -2,7 +2,7 @@ name: NeoForge 1.21.x Runtime Smoke
 
 on:
   workflow_run:
-    workflows: [NeoForge 1.21.x Build]
+    workflows: [Build]
     branches:
       - neoforge/1.21.x
     types: [completed]
