@@ -39,6 +39,8 @@ if (stack.isEmpty()) {
 def defaultBinaryPath = "targets/${target.id}/build/libs/${target.artifactFile}"
 def binaryPath = providers.gradleProperty('binaryUnderTest').getOrElse(defaultBinaryPath)
 def binaryFile = rootProject.file(binaryPath)
+def expectedBinarySha256 = providers.gradleProperty('expectedBinarySha256').orNull
+def expectedSourceCommit = providers.gradleProperty('expectedSourceCommit').orNull
 def runKey = "${target.id}/${runtimeMinecraft}/${stackName}"
 def serverRunDirectory = layout.buildDirectory.dir("runs/${runKey}/server")
 
@@ -116,12 +118,25 @@ def verifyBinaryUnderTest = tasks.register('verifyBinaryUnderTest') {
                 throw new GradleException(
                         'Runtime smoke tests must use the unchanged minimum-built release JAR.')
             }
+            if (expectedSourceCommit != null
+                    && attributes?.getValue('WaystonesPlayer-Source-Commit') != expectedSourceCommit) {
+                throw new GradleException('Binary under test does not match the expected source commit.')
+            }
             def staleEntries = [
                     'com/palosj/waystonesplayer/teleport/TeleportArrivalVerifier$BlockTarget.class',
             ].findAll { jar.getJarEntry(it) != null }
             if (!staleEntries.isEmpty()) {
                 throw new GradleException(
                         "Binary under test contains removed API entries: ${staleEntries.join(', ')}")
+            }
+        }
+        if (expectedBinarySha256 != null) {
+            String actualSha256 = java.security.MessageDigest.getInstance('SHA-256')
+                    .digest(binaryFile.bytes)
+                    .encodeHex()
+                    .toString()
+            if (actualSha256 != expectedBinarySha256) {
+                throw new GradleException('Binary under test does not match the expected SHA-256.')
             }
         }
     }
