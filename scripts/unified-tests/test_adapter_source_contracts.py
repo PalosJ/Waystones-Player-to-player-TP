@@ -63,5 +63,33 @@ class UnifiedNetworkFamilySourceContractTest(unittest.TestCase):
                 self.assertNotIn("registerClientboundPacket", networking)
 
 
+class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
+    def test_legacy_family_does_not_link_newer_warp_hand_api(self) -> None:
+        context_path = (
+            "adapters/teleport/legacy-21.3/java/com/palosj/waystonesplayer/compat/"
+            "LockedWaystoneTeleportContext.java"
+        )
+        context = source(context_path)
+
+        self.assertNotIn("InteractionHand", context)
+        self.assertNotIn("getWarpHand", context)
+        self.assertIn('findMethod("appliesModifiers")', context)
+        self.assertIn('"setAppliesModifiers", boolean.class', context)
+
+    def test_legacy_targets_replace_the_common_context_implementation(self) -> None:
+        settings = source("settings.gradle")
+        loader = "fabric" if "fabricTargets" in settings else "neoforge"
+        target_suffixes = ["1.21.2-1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9"]
+        for suffix in target_suffixes:
+            path = f"targets/{loader}-{suffix}/target.properties"
+            with self.subTest(path=path):
+                properties = source(path)
+                self.assertIn(
+                    "com/palosj/waystonesplayer/compat/LockedWaystoneTeleportContext.java",
+                    properties,
+                )
+                self.assertIn("teleport/legacy-21.3", properties)
+
+
 if __name__ == "__main__":
     unittest.main()
