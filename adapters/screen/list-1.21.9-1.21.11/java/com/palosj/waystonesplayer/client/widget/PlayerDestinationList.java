@@ -1,6 +1,8 @@
 package com.palosj.waystonesplayer.client.widget;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -23,6 +25,7 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
     private final Consumer<UUID> onPlayerSelected;
     private List<PlayerDirectoryEntry> players = List.of();
     private List<PlayerInfo> sourcePlayers = List.of();
+    private Map<UUID, PlayerEntry> entriesById = Map.of();
 
     public PlayerDestinationList(int x, int y, int width, int height, List<PlayerInfo> onlinePlayers,
                                  boolean avatarOnly, Consumer<UUID> onPlayerSelected) {
@@ -66,6 +69,12 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
                 .map(info -> new PlayerDirectoryEntry(PlayerProfileCompat.id(info), PlayerProfileCompat.name(info)))
                 .toList();
         if (!PlayerListRefresh.hasChanged(players, current)) {
+            for (PlayerInfo playerInfo : onlinePlayers) {
+                PlayerEntry entry = entriesById.get(PlayerProfileCompat.id(playerInfo));
+                if (entry != null) {
+                    entry.bind(playerInfo);
+                }
+            }
             return;
         }
 
@@ -74,10 +83,21 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
         List<PlayerDirectoryEntry> previous = players;
         players = List.copyOf(current);
 
+        Map<UUID, PlayerEntry> previousEntries = new HashMap<>(entriesById);
+        Map<UUID, PlayerEntry> currentEntries = new HashMap<>();
         clearEntries();
         for (PlayerInfo playerInfo : onlinePlayers) {
-            addEntry(new PlayerEntry(playerInfo, onPlayerSelected));
+            UUID playerId = PlayerProfileCompat.id(playerInfo);
+            PlayerEntry entry = previousEntries.remove(playerId);
+            if (entry == null) {
+                entry = new PlayerEntry(playerInfo, onPlayerSelected);
+            } else {
+                entry.bind(playerInfo);
+            }
+            currentEntries.put(playerId, entry);
+            addEntry(entry);
         }
+        entriesById = Map.copyOf(currentEntries);
 
         setScrollAmount(PlayerListRefresh.restoreScrollAmount(
                 previous,
@@ -93,6 +113,15 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
                     break;
                 }
             }
+        }
+    }
+
+    public void tickVisibleEntries() {
+        int first = Math.max(0, (int) Math.floor(scrollAmount() / ENTRY_HEIGHT));
+        int visibleCount = Math.max(1, (getHeight() + ENTRY_HEIGHT - 1) / ENTRY_HEIGHT + 1);
+        int last = Math.min(children().size(), first + visibleCount);
+        for (int index = first; index < last; index++) {
+            children().get(index).tick();
         }
     }
 
@@ -125,6 +154,14 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
                     ignored -> onPlayerSelected.accept(playerId));
             playerButton.bind(playerInfo);
             widgets = List.of(playerButton);
+        }
+
+        private void bind(PlayerInfo playerInfo) {
+            playerButton.bind(playerInfo);
+        }
+
+        private void tick() {
+            playerButton.tickSkin();
         }
 
         private UUID playerId() {

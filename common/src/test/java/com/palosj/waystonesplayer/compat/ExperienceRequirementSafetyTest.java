@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +22,14 @@ class ExperienceRequirementSafetyTest {
     void rejectsRulesThatParseToNoModifiers() {
         assertThrows(IllegalArgumentException.class,
                 () -> ExperienceRequirementSafety.parseRequiredRule("not a valid requirement"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ExperienceRequirementSafety.normalizeParsedRule("empty optional", Optional.empty()));
+        assertThrows(IllegalArgumentException.class,
+                () -> ExperienceRequirementSafety.normalizeParsedRule("empty iterable", List.of()));
+        assertThrows(IllegalArgumentException.class,
+                () -> ExperienceRequirementSafety.normalizeParsedRule("unknown optional", Optional.of("unknown")));
+        assertThrows(IllegalArgumentException.class,
+                () -> ExperienceRequirementSafety.normalizeParsedRule("unknown shape", "unknown"));
     }
 
     @Test

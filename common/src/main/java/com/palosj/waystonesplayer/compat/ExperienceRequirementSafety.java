@@ -3,6 +3,7 @@ package com.palosj.waystonesplayer.compat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import com.palosj.waystonesplayer.compat.ExperienceCostSafety;
 
@@ -26,12 +27,39 @@ final class ExperienceRequirementSafety {
     }
 
     static List<? extends ConfiguredRequirementModifier<?, ?>> parseRequiredRule(String configuredRule) {
-        List<? extends ConfiguredRequirementModifier<?, ?>> parsed = RequirementModifierParser.parse(configuredRule);
-        if (parsed == null || parsed.isEmpty()) {
-            throw new IllegalArgumentException("Configured Waystones requirement did not produce any modifiers: "
-                    + configuredRule);
+        return normalizeParsedRule(configuredRule, RequirementModifierParser.parse(configuredRule));
+    }
+
+    static List<? extends ConfiguredRequirementModifier<?, ?>> normalizeParsedRule(
+            String configuredRule,
+            Object parsed) {
+        List<ConfiguredRequirementModifier<?, ?>> modifiers = new ArrayList<>();
+        if (parsed instanceof Optional<?> optional) {
+            if (optional.isEmpty()
+                    || !(optional.orElseThrow() instanceof ConfiguredRequirementModifier<?, ?> modifier)) {
+                throw invalidParsedRule(configuredRule);
+            }
+            modifiers.add(modifier);
+        } else if (parsed instanceof Iterable<?> candidates) {
+            for (Object candidate : candidates) {
+                if (!(candidate instanceof ConfiguredRequirementModifier<?, ?> modifier)) {
+                    throw invalidParsedRule(configuredRule);
+                }
+                modifiers.add(modifier);
+            }
+        } else {
+            throw invalidParsedRule(configuredRule);
         }
-        return parsed;
+        if (modifiers.isEmpty()) {
+            throw invalidParsedRule(configuredRule);
+        }
+        return List.copyOf(modifiers);
+    }
+
+    private static IllegalArgumentException invalidParsedRule(String configuredRule) {
+        return new IllegalArgumentException(
+                "Configured Waystones requirement produced an empty or unknown result shape: "
+                        + configuredRule);
     }
 
     static int expectedCost(

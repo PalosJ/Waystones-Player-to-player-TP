@@ -3,8 +3,8 @@ package com.palosj.waystonesplayer.client.widget;
 import java.util.UUID;
 
 import com.palosj.waystonesplayer.client.PlayerProfileCompat;
+import com.palosj.waystonesplayer.client.SkinRetryThrottle;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -18,12 +18,13 @@ import net.minecraft.world.entity.player.PlayerSkin;
 public class PlayerTeleportButton extends Button {
     private static final int FACE_SIZE = 16;
     private static final int FACE_PADDING = 2;
+    private static final int SKIN_RETRY_TICKS = 20;
 
     private final boolean avatarOnly;
     private UUID playerId;
     private PlayerSkin skin;
     private PlayerInfo skinSource;
-    private int skinRetryTicks;
+    private final SkinRetryThrottle skinRetry = new SkinRetryThrottle(SKIN_RETRY_TICKS);
 
     public PlayerTeleportButton(int x, int y, int width, int height, boolean avatarOnly, OnPress onPress) {
         super(x, y, width, height, Component.empty(), onPress, DEFAULT_NARRATION);
@@ -33,10 +34,13 @@ public class PlayerTeleportButton extends Button {
     }
 
     public void bind(PlayerInfo playerInfo) {
-        playerId = PlayerProfileCompat.id(playerInfo);
-        skinSource = playerInfo;
-        skinRetryTicks = 0;
-        refreshSkin(playerInfo);
+        UUID newPlayerId = PlayerProfileCompat.id(playerInfo);
+        if (!newPlayerId.equals(playerId) || playerInfo != skinSource) {
+            playerId = newPlayerId;
+            skinSource = playerInfo;
+            skin = null;
+            skinRetry.reset();
+        }
         Component name = Component.literal(PlayerProfileCompat.name(playerInfo));
         setMessage(name);
         setTooltip(Tooltip.create(name));
@@ -46,7 +50,6 @@ public class PlayerTeleportButton extends Button {
 
     @Override
     public void renderString(GuiGraphics guiGraphics, Font font, int color) {
-        refreshSkinFromConnection();
         boolean hasFace = false;
         if (skin != null) {
             try {
@@ -55,7 +58,7 @@ public class PlayerTeleportButton extends Button {
                 hasFace = true;
             } catch (RuntimeException error) {
                 skin = null;
-                skinRetryTicks = 20;
+                skinRetry.delayAfterFailure();
             }
         }
 
@@ -88,33 +91,27 @@ public class PlayerTeleportButton extends Button {
         guiGraphics.drawString(font, name.getString(), textX, textY, color, false);
     }
 
-    private void refreshSkinFromConnection() {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (playerId == null || minecraft.getConnection() == null) {
+    public void tickSkin() {
+        if (playerId == null || skinSource == null || skin != null) {
             return;
         }
-        PlayerInfo current = minecraft.getConnection().getPlayerInfo(playerId);
-        if (current != null) {
-            if (current != skinSource) {
-                skinSource = current;
-                skin = null;
-                skinRetryTicks = 0;
-            }
-            if (skinRetryTicks > 0) {
-                skinRetryTicks--;
-                return;
-            }
-            refreshSkin(current);
+        if (!skinRetry.advanceAndIsReady()) {
+            return;
         }
+        refreshSkin(skinSource);
     }
 
     private void refreshSkin(PlayerInfo playerInfo) {
         try {
             skin = playerInfo.getSkin();
-            skinRetryTicks = skin == null ? 20 : 0;
+            if (skin == null) {
+                skinRetry.delayAfterFailure();
+            } else {
+                skinRetry.reset();
+            }
         } catch (RuntimeException error) {
             skin = null;
-            skinRetryTicks = 20;
+            skinRetry.delayAfterFailure();
         }
     }
 }

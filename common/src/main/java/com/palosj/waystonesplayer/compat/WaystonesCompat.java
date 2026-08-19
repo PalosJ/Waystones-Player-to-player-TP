@@ -92,7 +92,7 @@ public final class WaystonesCompat {
     public static boolean hasAdjacentNonSuffocatingSpace(
             ServerPlayer player,
             WaystoneTeleportContext context) {
-        ServerLevel targetLevel = player.getServer().getLevel(context.getTargetWaystone().getDimension());
+        ServerLevel targetLevel = player.level().getServer().getLevel(context.getTargetWaystone().getDimension());
         if (targetLevel == null) {
             return false;
         }
