@@ -46,7 +46,7 @@ class TargetPropertiesTest(unittest.TestCase):
         properties.write_text(
             f"targetId={target_id}\n"
             "commonExcludes=\n"
-            "neoforgeExcludes=\n"
+            "neoForgeExcludes=\n"
             f"adapterRoots={','.join(selected_roots)}\n",
             encoding="utf-8",
         )

@@ -4,6 +4,9 @@ plugins {
 
 def matrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
 def target = matrix.targets.find { it.id == project.name }
+def sourceCommit = providers.exec {
+    commandLine 'git', 'rev-parse', 'HEAD'
+}.standardOutput.asText.map { it.trim() }
 if (target == null || target.loader != 'neoforge' || target.branch != 'neoforge/1.21.x') {
     throw new GradleException("Missing NeoForge target matrix entry for ${project.path}.")
 }
@@ -278,12 +281,14 @@ neoForge.ideSyncTask generateModMetadata
 
 tasks.named('jar', Jar).configure {
     duplicatesStrategy = DuplicatesStrategy.FAIL
+    inputs.property('waystonesPlayerSourceCommit', sourceCommit)
     manifest {
         attributes(
                 'Implementation-Title': mod_name,
                 'Implementation-Version': matrix.modVersion,
                 'WaystonesPlayer-Target': target.id,
                 'WaystonesPlayer-Build-Stack': stackName,
+                'WaystonesPlayer-Source-Commit': sourceCommit.get(),
         )
     }
     from project(':core').sourceSets.main.output
@@ -369,8 +374,10 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
             def attributes = manifest.mainAttributes
             if (attributes.getValue('Implementation-Version') != matrix.modVersion
                     || attributes.getValue('WaystonesPlayer-Target') != target.id
-                    || attributes.getValue('WaystonesPlayer-Build-Stack') != stackName) {
-                throw new GradleException('Release JAR manifest does not identify its target and dependency build stack.')
+                    || attributes.getValue('WaystonesPlayer-Build-Stack') != stackName
+                    || attributes.getValue('WaystonesPlayer-Source-Commit') != sourceCommit.get()) {
+                throw new GradleException(
+                        'Release JAR manifest does not identify its target, dependency build stack, and source commit.')
             }
 
             def iconEntry = zip.getEntry('waystonesplayer.png')

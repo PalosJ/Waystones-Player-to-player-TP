@@ -2,12 +2,12 @@ package com.palosj.waystonesplayer.compat;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Optional;
 
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.WaystonesPlayer;
 import com.palosj.waystonesplayer.teleport.TeleportArrivalVerifier;
 import com.palosj.waystonesplayer.teleport.TeleportOutcome;
+import com.palosj.waystonesplayer.teleport.TeleportRuntime;
 
 import net.blay09.mods.waystones.api.WaystoneOrigin;
 import net.blay09.mods.waystones.api.WaystoneTeleportContext;
@@ -19,7 +19,6 @@ import net.blay09.mods.waystones.config.WaystonesConfig;
 import net.blay09.mods.waystones.core.WaystoneImpl;
 import net.blay09.mods.waystones.requirement.ConfiguredRequirementModifier;
 import net.blay09.mods.waystones.requirement.NoRequirement;
-import net.blay09.mods.waystones.requirement.RequirementModifierParser;
 import net.blay09.mods.waystones.requirement.WarpRequirementsContextImpl;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -66,22 +65,29 @@ final class WaystonesTeleportEvaluator {
         targetWaystone.setName(Component.literal(target.getScoreboardName()));
         markTransientWhenSupported(targetWaystone);
 
-        WaystoneTeleportContext teleportContext = WaystonesAPI.createUnboundTeleportContext(sender, targetWaystone)
+        WaystoneTeleportContext baseContext = WaystonesAPI.createUnboundTeleportContext(sender, targetWaystone)
                 .setWarpItem(warpStoneUse.stack())
                 .setPlaysSound(true)
                 .setPlaysEffect(true)
                 .addFlag(WaystonesPlayer.id("player_destination"));
-        configureOptionalContextFeatures(teleportContext, warpStoneUse);
+        configureOptionalContextFeatures(baseContext, warpStoneUse);
 
-        WarpRequirement requirement = resolveExperienceRequirement(teleportContext, mode);
+        WarpRequirement requirement = resolveExperienceRequirement(baseContext, mode);
         if (!sender.getAbilities().instabuild && !requirement.canAfford(sender)) {
             return TeleportOutcome.UNAFFORDABLE;
         }
 
-        ExperienceSnapshot experienceSnapshot = ExperienceSnapshot.capture(sender);
-        teleportContext.setRequirements(sender.getAbilities().instabuild
+        ExperienceSnapshot snapshot = ExperienceSnapshot.capture(sender);
+        LockedWaystoneTeleportContext teleportContext = new LockedWaystoneTeleportContext(baseContext);
+        WarpRequirement chargedRequirement = sender.getAbilities().instabuild
                 ? NoRequirement.INSTANCE
-                : new ExactRollbackRequirement(requirement, experienceSnapshot));
+                : requirement;
+        teleportContext.lockRequirements(new GuardedRollbackRequirement(
+                chargedRequirement,
+                snapshot,
+                sender,
+                warpStoneUse,
+                teleportContext));
 
         TeleportArrivalVerifier.Position before = positionOf(sender);
         boolean apiReportedSender;
@@ -90,6 +96,10 @@ final class WaystonesTeleportEvaluator {
             apiReportedSender = result.left()
                     .map(entities -> entities.stream().anyMatch(entity -> entity == sender))
                     .orElse(false);
+        } catch (TeleportRejectedException error) {
+            snapshot.restore();
+            WaystonesPlayer.LOGGER.debug("Rejected an unsafe player-destination teleport: {}", error.getMessage());
+            return TeleportOutcome.FAILED;
         } catch (RuntimeException | LinkageError error) {
             if (TeleportArrivalVerifier.hasMoved(before, positionOf(sender))) {
                 WaystonesPlayer.LOGGER.warn(
@@ -97,13 +107,22 @@ final class WaystonesTeleportEvaluator {
                         error);
                 return TeleportOutcome.SUCCESS;
             }
-            restoreAfterFailure(experienceSnapshot, error);
+            restoreAfterFailure(snapshot, error);
             throw error;
         }
 
-        if (!TeleportArrivalVerifier.succeeded(apiReportedSender, before, positionOf(sender))) {
-            experienceSnapshot.restore();
+        boolean confirmedMovement = TeleportArrivalVerifier.succeeded(
+                apiReportedSender,
+                before,
+                positionOf(sender));
+        if (!confirmedMovement) {
+            snapshot.restore();
             return TeleportOutcome.FAILED;
+        }
+        if (teleportContext.replacementAttempted()) {
+            WaystonesPlayer.LOGGER.error(
+                    "Waystones moved a player after an event attempted to replace locked requirements; "
+                            + "preserving the confirmed movement and consumed experience.");
         }
         return TeleportOutcome.SUCCESS;
     }
@@ -121,12 +140,26 @@ final class WaystonesTeleportEvaluator {
             if (configuredRule.isBlank()) {
                 continue;
             }
-            applyParsedModifiers(
-                    requirementsContext,
-                    RequirementModifierParser.parse(configuredRule),
-                    mode);
+            for (ConfiguredRequirementModifier<?, ?> modifier
+                    : ExperienceRequirementSafety.parseRequiredRule(configuredRule)) {
+                RequirementFunction<?, ?> function = modifier.requirement().modifier();
+                String requirementType = function.getRequirementType().toString();
+                String functionId = function.getId().toString();
+                ExperienceRequirementSafety.validateModifierIdentity(requirementType, functionId);
+                if (ExperienceRequirementRules.shouldApply(
+                        requirementType,
+                        functionId,
+                        function.isEnabled(),
+                        mode == PlayerTeleportExperienceMode.ALWAYS)) {
+                    int expected = ExperienceRequirementSafety.validateBeforeApply(requirementsContext, modifier);
+                    apply(requirementsContext, modifier);
+                    ExperienceRequirementSafety.validateAfterApply(requirementsContext, requirementType, expected);
+                }
+            }
         }
-        return requirementsContext.resolve();
+        WarpRequirement result = requirementsContext.resolve();
+        ExperienceRequirementSafety.validateRequirementTree(result);
+        return result;
     }
 
     @SuppressWarnings("deprecation")
@@ -140,38 +173,6 @@ final class WaystonesTeleportEvaluator {
             WarpRequirementsContextImpl context,
             ConfiguredRequirementModifier<T, P> modifier) {
         context.apply(modifier);
-    }
-
-    private static void applyParsedModifiers(
-            WarpRequirementsContextImpl context,
-            Object parsed,
-            PlayerTeleportExperienceMode mode) {
-        if (parsed instanceof Optional<?> optional) {
-            optional.ifPresent(candidate -> applyIfExperienceModifier(context, candidate, mode));
-            return;
-        }
-        if (parsed instanceof Iterable<?> candidates) {
-            for (Object candidate : candidates) {
-                applyIfExperienceModifier(context, candidate, mode);
-            }
-        }
-    }
-
-    private static void applyIfExperienceModifier(
-            WarpRequirementsContextImpl context,
-            Object candidate,
-            PlayerTeleportExperienceMode mode) {
-        if (!(candidate instanceof ConfiguredRequirementModifier<?, ?> modifier)) {
-            return;
-        }
-        RequirementFunction<?, ?> function = modifier.requirement().modifier();
-        if (ExperienceRequirementRules.shouldApply(
-                function.getRequirementType().toString(),
-                function.getId().toString(),
-                function.isEnabled(),
-                mode == PlayerTeleportExperienceMode.ALWAYS)) {
-            apply(context, modifier);
-        }
     }
 
     private static void markTransientWhenSupported(WaystoneImpl targetWaystone) {
@@ -237,11 +238,7 @@ final class WaystonesTeleportEvaluator {
         }
     }
 
-    private record ExperienceSnapshot(
-            ServerPlayer player,
-            float progress,
-            int level,
-            int total) {
+    private record ExperienceSnapshot(ServerPlayer player, float progress, int level, int total) {
         private static ExperienceSnapshot capture(ServerPlayer player) {
             return new ExperienceSnapshot(
                     player,
@@ -258,16 +255,21 @@ final class WaystonesTeleportEvaluator {
         }
     }
 
-    private record ExactRollbackRequirement(
+    private record GuardedRollbackRequirement(
             WarpRequirement delegate,
-            ExperienceSnapshot snapshot) implements WarpRequirement {
+            ExperienceSnapshot snapshot,
+            ServerPlayer sender,
+            WaystonesCompat.WarpStoneUse warpStoneUse,
+            LockedWaystoneTeleportContext teleportContext) implements WarpRequirement {
         @Override
         public boolean canAfford(Player player) {
+            validate(player);
             return delegate.canAfford(player);
         }
 
         @Override
         public void consume(Player player) {
+            validate(player);
             try {
                 delegate.consume(player);
             } catch (RuntimeException | Error error) {
@@ -276,10 +278,8 @@ final class WaystonesTeleportEvaluator {
             }
         }
 
-        // This overload intentionally compiles against early 1.21.x where it is not yet part of
-        // WarpRequirement. On 21.10.2+, JVM interface dispatch selects it and preserves the newer
-        // context-aware CombinedRequirement behavior without raising the minimum dependency.
         public void consume(WaystoneTeleportContext context, Player player) {
+            validate(player);
             try {
                 invokeContextRequirement(CONSUME_WITH_CONTEXT, delegate, context, player);
             } catch (RuntimeException | Error error) {
@@ -313,6 +313,27 @@ final class WaystonesTeleportEvaluator {
         @Override
         public boolean isEmpty() {
             return delegate.isEmpty();
+        }
+
+        private void validate(Player player) {
+            if (player != sender) {
+                throw new TeleportRejectedException("requirement evaluated for an unexpected player");
+            }
+            if (teleportContext.replacementAttempted()) {
+                throw new TeleportRejectedException("a Waystones event attempted to replace the locked requirements");
+            }
+            if (!TeleportRuntime.isWarpStoneUseBound(sender, warpStoneUse)) {
+                throw new TeleportRejectedException("the bound Warp Stone changed before teleport consumption");
+            }
+            if (!TeleportRuntime.hasAdjacentNonSuffocatingSpace(sender, teleportContext)) {
+                throw new TeleportRejectedException("the destination has no adjacent non-suffocating space");
+            }
+        }
+    }
+
+    private static final class TeleportRejectedException extends RuntimeException {
+        private TeleportRejectedException(String message) {
+            super(message);
         }
     }
 }

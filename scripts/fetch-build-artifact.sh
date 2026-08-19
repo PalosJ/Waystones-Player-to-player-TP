@@ -12,6 +12,22 @@ artifact_name=$3
 artifact_file=$4
 output_directory=$5
 
+case $branch in
+  main)
+    expected_workflow='Build'
+    ;;
+  neoforge/1.21.x)
+    expected_workflow='NeoForge 1.21.x Build'
+    ;;
+  fabric/1.21.x)
+    expected_workflow='Fabric 1.21.x Build'
+    ;;
+  *)
+    echo "Unsupported release branch $branch." >&2
+    exit 2
+    ;;
+esac
+
 if [[ -z ${GH_TOKEN:-} ]]; then
   echo "GH_TOKEN is required to resolve and download Build artifacts." >&2
   exit 2
@@ -45,8 +61,8 @@ run_conclusion=$(gh run view "$run_id" --json conclusion --jq '.conclusion')
 run_workflow=$(gh run view "$run_id" --json workflowName --jq '.workflowName')
 run_event=$(gh run view "$run_id" --json event --jq '.event')
 run_branch=$(gh run view "$run_id" --json headBranch --jq '.headBranch')
-if [[ $run_workflow != Build || $run_status != completed || $run_conclusion != success ]]; then
-  echo "Run $run_id is not a completed successful Build workflow run." >&2
+if [[ $run_workflow != "$expected_workflow" || $run_status != completed || $run_conclusion != success ]]; then
+  echo "Run $run_id is not a completed successful $expected_workflow workflow run." >&2
   exit 1
 fi
 if [[ $run_event != push && $run_event != workflow_dispatch ]]; then

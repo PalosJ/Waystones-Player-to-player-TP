@@ -5,8 +5,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.palosj.waystonesplayer.WaystonesPlayer;
 
+import net.blay09.mods.waystones.api.WaystoneTeleportContext;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -52,6 +56,48 @@ public final class WaystonesCompat {
             return Optional.of(new WarpStoneUse(stack, hand));
         }
         return Optional.empty();
+    }
+
+    public static boolean isWarpStoneUseBound(ServerPlayer player, WarpStoneUse use) {
+        return use != null
+                && isWarpStone(use.stack())
+                && player.getItemInHand(use.hand()) == use.stack();
+    }
+
+    public static Optional<ItemStack> resolveDurabilityTarget(ServerPlayer player, WarpStoneUse use) {
+        ItemStack current = player.getItemInHand(use.hand());
+        if (current == use.stack()
+                || isWarpStone(current) && ItemStack.isSameItemSameComponents(current, use.stack())) {
+            return Optional.of(current);
+        }
+
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            ItemStack candidate = player.getInventory().getItem(slot);
+            if (candidate == use.stack()) {
+                return Optional.of(candidate);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static boolean hasAdjacentNonSuffocatingSpace(
+            ServerPlayer player,
+            WaystoneTeleportContext context) {
+        ServerLevel targetLevel = player.level().getServer().getLevel(context.getTargetWaystone().getDimension());
+        if (targetLevel == null) {
+            return false;
+        }
+
+        BlockPos target = context.getTargetWaystone().getPos();
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            BlockPos body = target.relative(direction);
+            BlockPos head = body.above();
+            if (!targetLevel.getBlockState(body).isSuffocating(targetLevel, body)
+                    && !targetLevel.getBlockState(head).isSuffocating(targetLevel, head)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void logMenuCompatibilityFailure(AbstractContainerMenu menu) {
