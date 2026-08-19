@@ -120,7 +120,8 @@ def validate_target_properties(
         branch: str,
         targets: List[Dict[str, object]]) -> None:
     loader = "neoforge" if branch == "neoforge/1.21.x" else "fabric"
-    allowed_keys = {"targetId", "commonExcludes", f"{loader}Excludes", "adapterRoots"}
+    loader_excludes_key = "neoForgeExcludes" if loader == "neoforge" else "fabricExcludes"
+    allowed_keys = {"targetId", "commonExcludes", loader_excludes_key, "adapterRoots"}
     for target in targets:
         target_id = target["id"]
         path = root / "targets" / target_id / "target.properties"
@@ -154,7 +155,7 @@ def validate_target_properties(
 
         source_directories = {
             "commonExcludes": root / "common" / "src" / "main" / "java",
-            f"{loader}Excludes": root / loader / "src" / "main" / "java",
+            loader_excludes_key: root / loader / "src" / "main" / "java",
         }
         for key, source_directory in source_directories.items():
             values = comma_values(properties.get(key, ""))
