@@ -2,7 +2,7 @@ name: Full 1.21.x Runtime Smoke
 
 on:
   workflow_run:
-    workflows: [Build, NeoForge 1.21.x Build, Fabric 1.21.x Build]
+    workflows: [Build]
     branches:
       - main
       - neoforge/1.21.x
