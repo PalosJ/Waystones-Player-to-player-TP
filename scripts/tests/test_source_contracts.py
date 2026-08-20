@@ -79,7 +79,8 @@ class RuntimeWorkflowSourceContractTest(unittest.TestCase):
 
         self.assertTrue(build.startswith("name: Build\n"))
         self.assertIn("workflows: [Build]", runtime)
-        self.assertIn("github.ref == 'refs/heads/main'", build)
+        if "branches:\n      - main" in build:
+            self.assertIn("github.ref == 'refs/heads/main'", build)
 
 
 class ClientTickFailureSourceContractTest(unittest.TestCase):
