@@ -91,6 +91,13 @@ class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
                 self.assertIn("teleport/legacy-21.3", properties)
                 self.assertIn("teleport/context-no-hand-21.3-21.9", properties)
 
+        hand_context = source(f"targets/{loader}-1.21.10/target.properties")
+        self.assertNotIn(
+            "com/palosj/waystonesplayer/compat/LockedWaystoneTeleportContext.java",
+            hand_context,
+        )
+        self.assertNotIn("teleport/context-no-hand-21.3-21.9", hand_context)
+
 
 if __name__ == "__main__":
     unittest.main()
