@@ -13,6 +13,7 @@ readonly -a SHARED_PATHS=(
   "scripts/runtime-matrix.py"
   "scripts/runtime-smoke.py"
   "scripts/release-manifest.py"
+  "scripts/verify-release-manifest.py"
   "scripts/fetch-build-artifact.sh"
   "scripts/tests"
   "scripts/verify-target-matrix.py"

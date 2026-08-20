@@ -29,6 +29,10 @@ def parse_args() -> argparse.Namespace:
         default="build/release-manifest.json",
         help="Output path relative to the repository root (default: build/release-manifest.json)",
     )
+    parser.add_argument(
+        "--artifact-root",
+        help="Find every branch artifact by exact filename below this build/ directory.",
+    )
     return parser.parse_args()
 
 
@@ -55,7 +59,17 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def artifact_path(target: Dict[str, object]) -> Path:
+def artifact_path(target: Dict[str, object], artifact_root: Path | None = None) -> Path:
+    if artifact_root is not None:
+        matches = sorted(
+            path for path in artifact_root.rglob(str(target["artifactFile"])) if path.is_file()
+        )
+        if len(matches) != 1:
+            raise ValueError(
+                f"expected exactly one {target['artifactFile']} below {artifact_root}, "
+                f"found {len(matches)}"
+            )
+        return matches[0]
     if target["branch"] == "main":
         return ROOT / "neoforge" / "build" / "libs" / target["artifactFile"]
     return ROOT / "targets" / target["id"] / "build" / "libs" / target["artifactFile"]
@@ -132,8 +146,9 @@ def target_entry(
         branch: str,
         commit: str,
         mod_version: str,
-        icon_sha256: str) -> Dict[str, object]:
-    path = artifact_path(target)
+        icon_sha256: str,
+        artifact_root: Path | None = None) -> Dict[str, object]:
+    path = artifact_path(target, artifact_root)
     if not path.is_file():
         raise FileNotFoundError(f"missing minimum-built artifact: {path}")
     inspect_artifact(path, target, commit, mod_version, icon_sha256)
@@ -164,6 +179,18 @@ def resolve_output_path(requested: str) -> Path:
     return output
 
 
+def resolve_artifact_root(requested: str) -> Path:
+    artifact_root = (ROOT / requested).resolve()
+    build_root = (ROOT / "build").resolve()
+    try:
+        artifact_root.relative_to(build_root)
+    except ValueError as error:
+        raise ValueError("artifact root must stay under the ignored build/ directory") from error
+    if not artifact_root.is_dir():
+        raise ValueError(f"artifact root is not a directory: {artifact_root}")
+    return artifact_root
+
+
 def main() -> int:
     args = parse_args()
     branch = args.branch or checked_out_branch()
@@ -176,6 +203,7 @@ def main() -> int:
     commit = subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
+    artifact_root = resolve_artifact_root(args.artifact_root) if args.artifact_root else None
     manifest = {
         "schemaVersion": 2,
         "modVersion": matrix["modVersion"],
@@ -189,6 +217,7 @@ def main() -> int:
                 commit,
                 matrix["modVersion"],
                 matrix["iconSha256"],
+                artifact_root,
             )
             for target in targets
         ],

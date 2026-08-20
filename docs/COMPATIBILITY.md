@@ -182,7 +182,7 @@ python3 scripts/runtime-matrix.py \
   --fail-fast
 ```
 
-没有 `key` 套件的目标会自动跳过该 profile。显式二进制、SHA-256 和提交参数必须一起出现；artifact 模式必须使用 `--skip-build`。Linux CI 对客户端追加 `--xvfb`。GitHub Runtime workflow 仅接受同分支、精确 HEAD 的成功 Build artifact：手动触发必须给出 Build run ID，定时触发无法解析当前提交 artifact 时直接失败。这是启动、二进制链接、Mixin 和资源冒烟，不替代双客户端内的交互、费用与事件人工验收。
+没有 `key` 套件的目标会自动跳过该 profile。显式二进制、SHA-256 和提交参数必须一起出现；artifact 模式必须使用 `--skip-build`。Linux CI 对客户端追加 `--xvfb`。GitHub Build 会从本次 minimum artifacts 生成并上传 release manifest；Runtime 仅接受同分支、精确 HEAD 的成功 Build artifact，并要求 JAR与该 manifest 的文件名、目标、版本、minimum 栈、提交和 SHA-256 完全一致。手动触发必须给出 Build run ID，定时触发无法解析当前提交 artifact 时直接失败。这是启动、二进制链接、Mixin 和资源冒烟，不替代双客户端内的交互、费用与事件人工验收。
 
 ## 逐目标升级流程
 

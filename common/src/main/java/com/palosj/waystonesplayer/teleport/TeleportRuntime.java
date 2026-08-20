@@ -34,6 +34,10 @@ public final class TeleportRuntime {
         return LIVE.hasAdjacentNonSuffocatingSpace(sender, context);
     }
 
+    public static boolean isCurrentPositionNonSuffocating(ServerPlayer sender) {
+        return WaystonesCompat.isCurrentPositionNonSuffocating(sender);
+    }
+
     private static final class LiveBoundary implements TeleportRuntimeBoundary {
         @Override
         public int currentTick(ServerPlayer sender) {

@@ -31,6 +31,9 @@ class ClientDirectorySourceContractTest(unittest.TestCase):
         )
         self.assertNotIn("hashCode()", injector)
         self.assertIn("!previous.equals(current)", refresh)
+        self.assertIn("hasSamePlayersIgnoringOrder", refresh)
+        self.assertIn("cachedPlayerInfoById", injector)
+        self.assertIn("selfId.equals(cachedSelf)", injector)
         self.assertIn("REFRESH_INTERVAL_TICKS = 5", policy)
         self.assertIn("PANELS.detach(candidate)", injector)
         self.assertIn("resetDirectoryCache()", injector)
@@ -68,6 +71,26 @@ class RuntimeWorkflowSourceContractTest(unittest.TestCase):
         self.assertIn('run_branch != "$branch"', fetcher)
         self.assertIn('run_event != push && $run_event != workflow_dispatch', fetcher)
         self.assertIn("expected_workflow='Build'", fetcher)
+        self.assertIn("verify-release-manifest.py", fetcher)
+
+    def test_build_and_runtime_share_the_canonical_workflow_name(self) -> None:
+        build = source(".github/workflows/build.yml")
+        runtime = source(".github/workflows/runtime-smoke.yml")
+
+        self.assertTrue(build.startswith("name: Build\n"))
+        self.assertIn("workflows: [Build]", runtime)
+        self.assertIn("github.ref == 'refs/heads/main'", build)
+
+
+class ClientTickFailureSourceContractTest(unittest.TestCase):
+    def test_tick_failure_is_scoped_to_one_screen(self) -> None:
+        setup = source(
+            "common/src/main/java/com/palosj/waystonesplayer/client/WaystoneClientSetup.java"
+        )
+
+        self.assertIn("Screen tickInjectionDisabledScreen", setup)
+        self.assertNotIn("boolean tickInjectionDisabled", setup)
+        self.assertIn("live refresh is disabled for this screen", setup)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-name: Fabric 1.21.x Build
+name: Build
 
 on:
   push:
@@ -100,5 +100,36 @@ jobs:
         with:
           name: waystonesplayer-${{ matrix.target }}
           path: targets/${{ matrix.target }}/build/libs/waystonesplayer-${{ matrix.target }}-1.0.0.jar
+          if-no-files-found: error
+          retention-days: 14
+
+  provenance:
+    name: Minimum artifact provenance
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download minimum-built artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: waystonesplayer-fabric-*
+          path: build/runtime-artifacts
+          merge-multiple: true
+
+      - name: Generate and verify release manifest
+        run: >-
+          python3 scripts/release-manifest.py
+          --branch fabric/1.21.x
+          --artifact-root build/runtime-artifacts
+          --output build/release-manifest.json
+
+      - name: Upload release manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: waystonesplayer-release-manifest-fabric-1.21.x
+          path: build/release-manifest.json
           if-no-files-found: error
           retention-days: 14

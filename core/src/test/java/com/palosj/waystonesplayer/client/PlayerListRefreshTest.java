@@ -23,6 +23,22 @@ class PlayerListRefreshTest {
     }
 
     @Test
+    void stableDirectoryComparisonIgnoresConnectionOrderingButNotIdentityOrName() {
+        assertTrue(PlayerListRefresh.hasSamePlayersIgnoringOrder(
+                List.of(ALPHA, BRAVO),
+                List.of(BRAVO, ALPHA)));
+        assertFalse(PlayerListRefresh.hasSamePlayersIgnoringOrder(
+                List.of(ALPHA, BRAVO),
+                List.of(ALPHA, CHARLIE)));
+        assertFalse(PlayerListRefresh.hasSamePlayersIgnoringOrder(
+                List.of(player(1, "FB")),
+                List.of(player(1, "Ea"))));
+        assertFalse(PlayerListRefresh.hasSamePlayersIgnoringOrder(
+                List.of(ALPHA),
+                List.of(ALPHA, ALPHA)));
+    }
+
+    @Test
     void equalJavaNameHashesStillDetectAnExactRename() {
         assertEquals("FB".hashCode(), "Ea".hashCode());
         assertTrue(PlayerListRefresh.hasChanged(
@@ -56,6 +72,22 @@ class PlayerListRefreshTest {
     void focusSurvivesOnlyWhileThePlayerStillExists() {
         assertEquals(BRAVO.id(), PlayerListRefresh.restoreFocusedPlayer(BRAVO.id(), List.of(ALPHA, BRAVO)));
         assertNull(PlayerListRefresh.restoreFocusedPlayer(BRAVO.id(), List.of(ALPHA)));
+    }
+
+    @Test
+    void removedFocusFallsBackToTheNearestSurvivingIndex() {
+        assertEquals(CHARLIE.id(), PlayerListRefresh.restoreFocusedPlayer(
+                BRAVO.id(),
+                List.of(ALPHA, BRAVO, CHARLIE),
+                List.of(ALPHA, CHARLIE)));
+        assertEquals(ALPHA.id(), PlayerListRefresh.restoreFocusedPlayer(
+                CHARLIE.id(),
+                List.of(ALPHA, BRAVO, CHARLIE),
+                List.of(ALPHA)));
+        assertNull(PlayerListRefresh.restoreFocusedPlayer(
+                ALPHA.id(),
+                List.of(ALPHA),
+                List.of()));
     }
 
     private static PlayerDirectoryEntry player(long suffix, String name) {
