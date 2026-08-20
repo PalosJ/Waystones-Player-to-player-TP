@@ -31,6 +31,7 @@ class TargetPropertiesTest(unittest.TestCase):
         "loader/neoforge-runnable-21.3",
         "screen/legacy-1.21.3-1.21.10",
         "teleport/legacy-21.3",
+        "teleport/context-optional-hand-21.3-21.10",
     )
 
     def fixture(self, target_id: str = "neoforge-1.21.4", roots=None):
@@ -41,11 +42,17 @@ class TargetPropertiesTest(unittest.TestCase):
             java_root = root / "adapters" / adapter_root / "java"
             java_root.mkdir(parents=True)
             (java_root / "Adapter.java").write_text("class Adapter {}\n", encoding="utf-8")
+        common_context = (
+            root / "common" / "src" / "main" / "java" / "com" / "palosj"
+            / "waystonesplayer" / "compat" / "LockedWaystoneTeleportContext.java"
+        )
+        common_context.parent.mkdir(parents=True)
+        common_context.write_text("class LockedWaystoneTeleportContext {}\n", encoding="utf-8")
         properties = root / "targets" / self.TARGET["id"] / "target.properties"
         properties.parent.mkdir(parents=True)
         properties.write_text(
             f"targetId={target_id}\n"
-            "commonExcludes=\n"
+            "commonExcludes=com/palosj/waystonesplayer/compat/LockedWaystoneTeleportContext.java\n"
             "neoForgeExcludes=\n"
             f"adapterRoots={','.join(selected_roots)}\n",
             encoding="utf-8",
@@ -78,6 +85,17 @@ class TargetPropertiesTest(unittest.TestCase):
             adapter.unlink()
             with self.assertRaises(ValueError):
                 verify.validate_target_properties(root, "neoforge/1.21.x", [self.TARGET])
+
+    def test_rejects_obsolete_context_source_root(self):
+        wrong_roots = (
+            "loader/neoforge-runnable-21.3",
+            "screen/legacy-1.21.3-1.21.10",
+            "teleport/legacy-21.3",
+            "teleport/context-no-hand-21.3-21.9",
+        )
+        temporary, root = self.fixture(roots=wrong_roots)
+        with temporary, self.assertRaises(ValueError):
+            verify.validate_target_properties(root, "neoforge/1.21.x", [self.TARGET])
 
 
 if __name__ == "__main__":
