@@ -71,6 +71,24 @@ if [[ ! -f $binary_path ]]; then
   exit 1
 fi
 binary_sha256=$(sha256sum "$binary_path" | awk '{print $1}')
+target_id=${artifact_name#waystonesplayer-}
+branch_slug=${branch//\//-}
+manifest_artifact="waystonesplayer-release-manifest-$branch_slug"
+manifest_directory="$output_directory/provenance"
+mkdir -p "$manifest_directory"
+gh run download "$run_id" --name "$manifest_artifact" --dir "$manifest_directory"
+manifest_path="$manifest_directory/release-manifest.json"
+if [[ ! -f $manifest_path ]]; then
+  echo "Build artifact $manifest_artifact did not contain release-manifest.json." >&2
+  exit 1
+fi
+python3 scripts/verify-release-manifest.py \
+  --manifest "$manifest_path" \
+  --binary "$binary_path" \
+  --target "$target_id" \
+  --branch "$branch" \
+  --commit "$head_sha" \
+  --sha256 "$binary_sha256"
 
 if [[ -n ${GITHUB_OUTPUT:-} ]]; then
   {
@@ -78,8 +96,9 @@ if [[ -n ${GITHUB_OUTPUT:-} ]]; then
     echo "binary=$binary_path"
     echo "sha256=$binary_sha256"
     echo "commit=$head_sha"
+    echo "manifest=$manifest_path"
   } >> "$GITHUB_OUTPUT"
 else
-  printf 'run_id=%s\nbinary=%s\nsha256=%s\ncommit=%s\n' \
-    "$run_id" "$binary_path" "$binary_sha256" "$head_sha"
+  printf 'run_id=%s\nbinary=%s\nsha256=%s\ncommit=%s\nmanifest=%s\n' \
+    "$run_id" "$binary_path" "$binary_sha256" "$head_sha" "$manifest_path"
 fi

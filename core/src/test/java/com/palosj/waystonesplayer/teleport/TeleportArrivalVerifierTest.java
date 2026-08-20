@@ -54,6 +54,22 @@ class TeleportArrivalVerifierTest {
                 position("minecraft:the_nether", 0.5, 64.5, 0.5)));
     }
 
+    @Test
+    void validatesTheTargetBlockOrOneHorizontalNeighbour() {
+        var target = new TeleportArrivalVerifier.Target("minecraft:overworld", 10, 64, 10);
+
+        assertTrue(TeleportArrivalVerifier.matchesTargetOrHorizontalAdjacent(
+                position("minecraft:overworld", 10.5, 64.5, 10.5), target));
+        assertTrue(TeleportArrivalVerifier.matchesTargetOrHorizontalAdjacent(
+                position("minecraft:overworld", 11.5, 64.5, 10.5), target));
+        assertFalse(TeleportArrivalVerifier.matchesTargetOrHorizontalAdjacent(
+                position("minecraft:overworld", 12.5, 64.5, 10.5), target));
+        assertFalse(TeleportArrivalVerifier.matchesTargetOrHorizontalAdjacent(
+                position("minecraft:the_nether", 11.5, 64.5, 10.5), target));
+        assertFalse(TeleportArrivalVerifier.matchesTargetOrHorizontalAdjacent(
+                position("minecraft:overworld", Double.NaN, 64.5, 10.5), target));
+    }
+
     private static TeleportArrivalVerifier.Position position(String dimension, double x, double y, double z) {
         return new TeleportArrivalVerifier.Position(dimension, x, y, z);
     }

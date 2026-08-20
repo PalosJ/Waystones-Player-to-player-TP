@@ -11,7 +11,7 @@ permissions:
 jobs:
   branch-parity:
     name: Unified branch parity
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -94,5 +94,36 @@ jobs:
         with:
           name: waystonesplayer-neoforge-1.21.1
           path: neoforge/build/libs/waystonesplayer-neoforge-1.21.1-1.0.0.jar
+          if-no-files-found: error
+          retention-days: 14
+
+  provenance:
+    name: Minimum artifact provenance
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download minimum-built artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: waystonesplayer-neoforge-1.21.1
+          path: build/runtime-artifacts
+          merge-multiple: true
+
+      - name: Generate and verify release manifest
+        run: >-
+          python3 scripts/release-manifest.py
+          --branch main
+          --artifact-root build/runtime-artifacts
+          --output build/release-manifest.json
+
+      - name: Upload release manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: waystonesplayer-release-manifest-main
+          path: build/release-manifest.json
           if-no-files-found: error
           retention-days: 14

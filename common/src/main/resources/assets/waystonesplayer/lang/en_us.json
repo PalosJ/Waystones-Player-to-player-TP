@@ -10,5 +10,6 @@
   "message.waystonesplayer.compatibility_unavailable": "Waystones compatibility could not be verified, so the teleport was cancelled.",
   "message.waystonesplayer.teleport_failed": "Teleport failed, please try again later.",
   "message.waystonesplayer.post_teleport_item_changed": "Teleport succeeded, but the bound Warp Stone changed before durability could be applied.",
+  "message.waystonesplayer.post_teleport_destination_changed": "Teleport completed, but another mod changed the final destination or made the arrival unsafe.",
   "message.waystonesplayer.teleport_cooling_down": "Teleport requests are too frequent, please try again later."
 }
