@@ -24,8 +24,32 @@ public final class TeleportArrivalVerifier {
         return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ > MOVEMENT_EPSILON_SQUARED;
     }
 
+    public static boolean matchesTargetOrHorizontalAdjacent(Position actual, Target target) {
+        if (!actual.dimension().equals(target.dimension())
+                || !Double.isFinite(actual.x())
+                || !Double.isFinite(actual.y())
+                || !Double.isFinite(actual.z())) {
+            return false;
+        }
+
+        int actualX = (int) Math.floor(actual.x());
+        int actualY = (int) Math.floor(actual.y());
+        int actualZ = (int) Math.floor(actual.z());
+        if (actualY != target.y()) {
+            return false;
+        }
+        int horizontalDistance = Math.abs(actualX - target.x()) + Math.abs(actualZ - target.z());
+        return horizontalDistance <= 1;
+    }
+
     public record Position(String dimension, double x, double y, double z) {
         public Position {
+            Objects.requireNonNull(dimension, "dimension");
+        }
+    }
+
+    public record Target(String dimension, int x, int y, int z) {
+        public Target {
             Objects.requireNonNull(dimension, "dimension");
         }
     }

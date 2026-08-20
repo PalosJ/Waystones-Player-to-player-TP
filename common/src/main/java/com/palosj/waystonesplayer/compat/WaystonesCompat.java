@@ -109,6 +109,14 @@ public final class WaystonesCompat {
         return false;
     }
 
+    public static boolean isCurrentPositionNonSuffocating(ServerPlayer player) {
+        ServerLevel level = (ServerLevel) player.level();
+        BlockPos body = player.blockPosition();
+        BlockPos head = body.above();
+        return !level.getBlockState(body).isSuffocating(level, body)
+                && !level.getBlockState(head).isSuffocating(level, head);
+    }
+
     private static void logMenuCompatibilityFailure(AbstractContainerMenu menu, Throwable error) {
         if (!MENU_COMPAT_FAILURE_LOGGED.compareAndSet(false, true)) {
             return;

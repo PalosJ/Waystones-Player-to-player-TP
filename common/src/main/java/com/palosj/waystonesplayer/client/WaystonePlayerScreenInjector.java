@@ -2,7 +2,9 @@ package com.palosj.waystonesplayer.client;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,7 +41,9 @@ public final class WaystonePlayerScreenInjector {
     private static final PlayerPanelLifecycle<Screen, PlayerPanel> PANELS = new PlayerPanelLifecycle<>();
     private static Object cachedConnection;
     private static UUID cachedSelf;
+    private static List<PlayerDirectoryEntry> cachedDirectoryEntries = List.of();
     private static List<PlayerInfo> cachedOnlinePlayers = List.of();
+    private static Map<UUID, PlayerInfo> cachedPlayerInfoById = Map.of();
     private static boolean directoryCacheInitialized;
     private static long clientTick;
     private static long lastDirectoryRefreshTick;
@@ -158,6 +162,16 @@ public final class WaystonePlayerScreenInjector {
         UUID selfId = minecraft.player.getUUID();
         List<PlayerInfo> onlinePlayers = new ArrayList<>(connection.getListedOnlinePlayers());
         onlinePlayers.removeIf(info -> info.getProfile().getId().equals(selfId));
+        List<PlayerDirectoryEntry> directoryEntries = onlinePlayers.stream()
+                .map(info -> new PlayerDirectoryEntry(info.getProfile().getId(), info.getProfile().getName()))
+                .toList();
+        if (connection == cachedConnection
+                && selfId.equals(cachedSelf)
+                && PlayerListRefresh.hasSamePlayersIgnoringOrder(cachedDirectoryEntries, directoryEntries)
+                && onlinePlayers.stream().allMatch(info ->
+                        cachedPlayerInfoById.get(info.getProfile().getId()) == info)) {
+            return cachedOnlinePlayers;
+        }
         onlinePlayers.sort(Comparator
                 .comparing((PlayerInfo info) -> info.getProfile().getName(), String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(info -> info.getProfile().getName())
@@ -165,6 +179,12 @@ public final class WaystonePlayerScreenInjector {
         cachedConnection = connection;
         cachedSelf = selfId;
         cachedOnlinePlayers = List.copyOf(onlinePlayers);
+        cachedDirectoryEntries = cachedOnlinePlayers.stream()
+                .map(info -> new PlayerDirectoryEntry(info.getProfile().getId(), info.getProfile().getName()))
+                .toList();
+        Map<UUID, PlayerInfo> playerInfoById = new HashMap<>();
+        cachedOnlinePlayers.forEach(info -> playerInfoById.put(info.getProfile().getId(), info));
+        cachedPlayerInfoById = Map.copyOf(playerInfoById);
         directoryCacheInitialized = true;
         return cachedOnlinePlayers;
     }
@@ -172,7 +192,9 @@ public final class WaystonePlayerScreenInjector {
     private static void resetDirectoryCache() {
         cachedConnection = null;
         cachedSelf = null;
+        cachedDirectoryEntries = List.of();
         cachedOnlinePlayers = List.of();
+        cachedPlayerInfoById = Map.of();
         directoryCacheInitialized = false;
         lastDirectoryRefreshTick = clientTick;
     }

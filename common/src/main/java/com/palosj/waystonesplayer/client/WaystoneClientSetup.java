@@ -17,11 +17,11 @@ import net.minecraft.client.gui.screens.Screen;
 public final class WaystoneClientSetup {
     private static final String WAYSTONE_SELECTION_SCREEN = "WaystoneSelectionScreen";
     private static final AtomicBoolean INIT_FAILURE_LOGGED = new AtomicBoolean();
-    private static final AtomicBoolean TICK_FAILURE_LOGGED = new AtomicBoolean();
     private static Method initMethod;
     private static Method tickMethod;
     private static Method cleanupMethod;
-    private static boolean tickInjectionDisabled;
+    private static Screen tickInjectionDisabledScreen;
+    private static Screen tickFailureLoggedScreen;
 
     private WaystoneClientSetup() {
     }
@@ -33,10 +33,10 @@ public final class WaystoneClientSetup {
     }
 
     private static void onClientTick(Minecraft minecraft) {
-        if (tickInjectionDisabled) {
+        Screen screen = minecraft.screen;
+        if (screen == tickInjectionDisabledScreen) {
             return;
         }
-        Screen screen = minecraft.screen;
         if (!isWaystoneSelectionScreen(screen)) {
             return;
         }
@@ -44,10 +44,11 @@ public final class WaystoneClientSetup {
         try {
             injectorMethod(false).invoke(null, screen);
         } catch (ReflectiveOperationException | LinkageError | RuntimeException e) {
-            tickInjectionDisabled = true;
-            if (TICK_FAILURE_LOGGED.compareAndSet(false, true)) {
+            tickInjectionDisabledScreen = screen;
+            if (tickFailureLoggedScreen != screen) {
+                tickFailureLoggedScreen = screen;
                 WaystonesPlayer.LOGGER.error(
-                        "Failed to refresh Waystones player buttons; live refresh is disabled for this session.",
+                        "Failed to refresh Waystones player buttons; live refresh is disabled for this screen.",
                         e);
             }
         }
@@ -74,6 +75,12 @@ public final class WaystoneClientSetup {
             Screen current = minecraft.screen;
             if (isWaystoneSelectionScreen(current) && current != event.getNewScreen()) {
                 cleanupMethod().invoke(null, current);
+                if (tickInjectionDisabledScreen == current) {
+                    tickInjectionDisabledScreen = null;
+                }
+                if (tickFailureLoggedScreen == current) {
+                    tickFailureLoggedScreen = null;
+                }
             }
             if (isWaystoneSelectionScreen(event.getNewScreen())) {
                 return;

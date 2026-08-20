@@ -71,11 +71,12 @@ public final class PlayerTeleportService {
             return;
         }
 
-        if (result.orElseThrow() == TeleportOutcome.UNAFFORDABLE) {
+        TeleportOutcome outcome = result.orElseThrow();
+        if (outcome == TeleportOutcome.UNAFFORDABLE) {
             runtime.displayMessage(sender, "message.waystonesplayer.insufficient_experience");
             return;
         }
-        if (result.orElseThrow() == TeleportOutcome.FAILED) {
+        if (outcome == TeleportOutcome.FAILED) {
             runtime.displayMessage(sender, "message.waystonesplayer.teleport_failed");
             return;
         }
@@ -90,6 +91,9 @@ public final class PlayerTeleportService {
             WaystonesPlayer.LOGGER.error(
                     "The bound Warp Stone disappeared after a confirmed player teleport; no unrelated item was damaged.");
             runtime.displayMessage(sender, "message.waystonesplayer.post_teleport_item_changed");
+        }
+        if (outcome == TeleportOutcome.MOVED_INCOMPATIBLY) {
+            runtime.displayMessage(sender, "message.waystonesplayer.post_teleport_destination_changed");
         }
         runtime.closeContainer(sender);
     }

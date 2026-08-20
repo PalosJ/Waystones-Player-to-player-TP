@@ -81,6 +81,19 @@ class PlayerTeleportServiceTest {
     }
 
     @Test
+    void incompatibleConfirmedMovementStillSettlesDurabilityAndCloses() {
+        FakeRuntime runtime = new FakeRuntime();
+        runtime.outcome = Optional.of(TeleportOutcome.MOVED_INCOMPATIBLY);
+
+        execute(runtime);
+
+        assertEquals(1, runtime.resetFallDistanceCalls);
+        assertEquals(1, runtime.damageCalls);
+        assertEquals(1, runtime.closeCalls);
+        assertEquals(List.of("message.waystonesplayer.post_teleport_destination_changed"), runtime.messages);
+    }
+
+    @Test
     void repeatedPacketsAreRateLimitedBeforeRuntimeStateIsReadAgain() {
         FakeRuntime runtime = new FakeRuntime();
         RequestRateLimiter limiter = new RequestRateLimiter(10);
