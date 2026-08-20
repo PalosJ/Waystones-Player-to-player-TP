@@ -98,8 +98,11 @@ def expected_adapter_roots(target: Dict[str, object]) -> List[str]:
         raise ValueError(f"{target['id']}: unknown Balm family {balm_family!r}")
 
     teleport_family = families["teleport"]
-    if teleport_family in {"legacy-21.3-21.9", "context-hand-21.10"}:
-        expected.append("teleport/legacy-21.3")
+    if teleport_family in {"legacy-21.3-21.9", "context-optional-hand-21.10"}:
+        expected.extend([
+            "teleport/legacy-21.3",
+            "teleport/context-optional-hand-21.3-21.10",
+        ])
     elif teleport_family == "identifier-21.11":
         expected.append("teleport/identifier-1.21.11")
     elif teleport_family != "legacy-1.21.1":
@@ -152,6 +155,15 @@ def validate_target_properties(
         }
         require(actual_loader_roots == expected_loader_roots,
                 f"{target_id}: loader adapter roots do not match its Balm family")
+
+        teleport_family = target["families"]["teleport"]
+        common_excludes = comma_values(properties.get("commonExcludes", ""))
+        locked_context = "com/palosj/waystonesplayer/compat/LockedWaystoneTeleportContext.java"
+        if teleport_family in {"legacy-21.3-21.9", "context-optional-hand-21.10"}:
+            require(locked_context in common_excludes,
+                    f"{target_id}: optional-hand family must replace the common locked context")
+            require("teleport/context-no-hand-21.3-21.9" not in adapter_roots,
+                    f"{target_id}: obsolete no-hand context root is forbidden")
 
         source_directories = {
             "commonExcludes": root / "common" / "src" / "main" / "java",

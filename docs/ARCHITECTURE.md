@@ -135,11 +135,11 @@ flowchart LR
 | 范围 | Balm 初始化 | 屏幕输入/几何 | Waystones 传送上下文 |
 |---|---|---|---|
 | 1.21.1 | 旧 module API | legacy input + `leftPos` | 1.21.1 同步入口 |
-| 1.21.2/1.21.3 | Runnable API | legacy input | legacy context |
-| 1.21.4 | Runnable API | legacy input | legacy context |
-| 1.21.5–1.21.8 | 旧 module API | legacy input | legacy context |
-| 1.21.9 | 旧 module API | event input | legacy context |
-| 1.21.10 | 旧 module API | event input | hand/context-aware |
+| 1.21.2/1.21.3 | Runnable API | legacy input | optional-hand context（运行时无 hand） |
+| 1.21.4 | Runnable API | legacy input | optional-hand context（运行时无 hand） |
+| 1.21.5–1.21.8 | 旧 module API | legacy input | optional-hand context（运行时无/可选 modifier） |
+| 1.21.9 | 旧 module API | event input | optional-hand context（运行时无 hand） |
+| 1.21.10 | 旧 module API | event input | optional-hand context（21.10.2 起有 hand） |
 | 1.21.11 | 新 platform module API | Identifier/skin/分页几何 | Identifier family |
 
 适配族只能隔离真实签名断点。新增抽象必须至少消除已确认重复或隔离不稳定依赖；不为猜测的未来版本添加占位层。
