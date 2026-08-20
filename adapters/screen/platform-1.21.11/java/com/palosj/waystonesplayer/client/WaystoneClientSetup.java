@@ -1,7 +1,6 @@
 package com.palosj.waystonesplayer.client;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.palosj.waystonesplayer.WaystonesPlayer;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
@@ -14,12 +13,12 @@ import net.minecraft.client.gui.screens.Screen;
 
 public final class WaystoneClientSetup {
     private static final String WAYSTONE_SELECTION_SCREEN = "WaystoneSelectionScreen";
-    private static final AtomicBoolean FAILURE_LOGGED = new AtomicBoolean();
     private static Method initMethod;
     private static Method renderMethod;
     private static Method tickMethod;
     private static Method cleanupMethod;
-    private static boolean injectorUnavailable;
+    private static Screen injectorUnavailableScreen;
+    private static Screen failureLoggedScreen;
 
     private WaystoneClientSetup() {
     }
@@ -49,14 +48,15 @@ public final class WaystoneClientSetup {
     }
 
     private static void invoke(Action action, Screen screen) {
-        if (injectorUnavailable || !isWaystoneSelectionScreen(screen)) {
+        if (screen == injectorUnavailableScreen || !isWaystoneSelectionScreen(screen)) {
             return;
         }
         try {
             injectorMethod(action).invoke(null, screen);
         } catch (ReflectiveOperationException | LinkageError | RuntimeException error) {
-            injectorUnavailable = true;
-            if (FAILURE_LOGGED.compareAndSet(false, true)) {
+            injectorUnavailableScreen = screen;
+            if (failureLoggedScreen != screen) {
+                failureLoggedScreen = screen;
                 WaystonesPlayer.LOGGER.error("Failed to initialize or refresh Waystones player buttons", error);
             }
         }
@@ -68,6 +68,12 @@ public final class WaystoneClientSetup {
             Screen current = minecraft.screen;
             if (isWaystoneSelectionScreen(current) && current != screen) {
                 cleanupMethod().invoke(null, current);
+                if (injectorUnavailableScreen == current) {
+                    injectorUnavailableScreen = null;
+                }
+                if (failureLoggedScreen == current) {
+                    failureLoggedScreen = null;
+                }
             }
             if (isWaystoneSelectionScreen(screen)) {
                 return screen;

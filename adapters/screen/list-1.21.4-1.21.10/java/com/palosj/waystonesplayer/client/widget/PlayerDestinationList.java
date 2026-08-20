@@ -84,6 +84,11 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
 
         Map<UUID, PlayerEntry> previousEntries = new HashMap<>(entriesById);
         Map<UUID, PlayerEntry> currentEntries = new HashMap<>();
+        PlayerEntry focusedEntry = getFocused();
+        if (focusedEntry != null) {
+            focusedEntry.clearButtonFocus();
+        }
+        setFocused(null);
         clearEntries();
         for (PlayerInfo playerInfo : onlinePlayers) {
             UUID playerId = playerInfo.getProfile().getId();
@@ -103,7 +108,7 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
                 players,
                 previousScrollAmount,
                 ENTRY_HEIGHT));
-        UUID restoredFocus = PlayerListRefresh.restoreFocusedPlayer(previousFocus, players);
+        UUID restoredFocus = PlayerListRefresh.restoreFocusedPlayer(previousFocus, previous, players);
         if (restoredFocus != null) {
             for (PlayerEntry entry : children()) {
                 if (entry.playerId().equals(restoredFocus)) {
@@ -170,6 +175,10 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
         private void focusButton() {
             setFocused(playerButton);
             playerButton.setFocused(true);
+        }
+
+        private void clearButtonFocus() {
+            playerButton.setFocused(false);
         }
 
         @Override

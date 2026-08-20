@@ -10,20 +10,24 @@ import net.blay09.mods.waystones.api.Waystone;
 import net.blay09.mods.waystones.api.WaystoneTeleportContext;
 import net.blay09.mods.waystones.api.requirement.WarpRequirement;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Requirement-locking context for Waystones 21.3 through 21.9.
+ * Requirement-locking context for Waystones 21.3 through 21.10.
  *
- * <p>Those releases do not expose a warp-hand accessor, while modifier toggles
- * were added partway through the family. Optional methods therefore stay behind
- * reflection so one source remains valid across the real API range.</p>
+ * <p>Warp-hand accessors first appear in Waystones 21.10.2, while modifier
+ * toggles were added earlier. Optional methods therefore stay behind reflection
+ * so the minimum-built class remains valid across the real API range.</p>
  */
 final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
     private static final Method SET_TARGET_WAYSTONE = findMethod(
             "setTargetWaystone", Waystone.class);
+    private static final Method GET_WARP_HAND = findMethod("getWarpHand");
+    private static final Method SET_WARP_HAND = findMethod(
+            "setWarpHand", InteractionHand.class);
     private static final Method APPLIES_MODIFIERS = findMethod("appliesModifiers");
     private static final Method SET_APPLIES_MODIFIERS = findMethod(
             "setAppliesModifiers", boolean.class);
@@ -100,6 +104,20 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
     @Override
     public WaystoneTeleportContext setWarpItem(ItemStack warpItem) {
         delegate.setWarpItem(warpItem);
+        return this;
+    }
+
+    public InteractionHand getWarpHand() {
+        if (GET_WARP_HAND == null) {
+            return null;
+        }
+        return (InteractionHand) invokeOptional(GET_WARP_HAND);
+    }
+
+    public WaystoneTeleportContext setWarpHand(InteractionHand warpHand) {
+        if (SET_WARP_HAND != null) {
+            invokeOptional(SET_WARP_HAND, warpHand);
+        }
         return this;
     }
 
