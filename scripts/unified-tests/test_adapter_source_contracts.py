@@ -66,7 +66,7 @@ class UnifiedNetworkFamilySourceContractTest(unittest.TestCase):
 class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
     def test_legacy_family_does_not_link_newer_warp_hand_api(self) -> None:
         context_path = (
-            "adapters/teleport/legacy-21.3/java/com/palosj/waystonesplayer/compat/"
+            "adapters/teleport/context-no-hand-21.3-21.9/java/com/palosj/waystonesplayer/compat/"
             "LockedWaystoneTeleportContext.java"
         )
         context = source(context_path)
@@ -89,6 +89,7 @@ class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
                     properties,
                 )
                 self.assertIn("teleport/legacy-21.3", properties)
+                self.assertIn("teleport/context-no-hand-21.3-21.9", properties)
 
 
 if __name__ == "__main__":
