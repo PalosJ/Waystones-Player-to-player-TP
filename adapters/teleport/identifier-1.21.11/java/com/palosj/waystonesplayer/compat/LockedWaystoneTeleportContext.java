@@ -46,6 +46,10 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
         return delegate.getTargetWaystone();
     }
 
+    public WaystoneTeleportContext setTargetWaystone(Waystone targetWaystone) {
+        throw new IllegalStateException("This Waystones API does not support target redirection");
+    }
+
     @Override
     public List<Mob> getLeashedEntities() {
         return delegate.getLeashedEntities();

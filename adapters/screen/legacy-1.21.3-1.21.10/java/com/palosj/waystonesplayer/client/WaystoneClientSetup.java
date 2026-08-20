@@ -18,12 +18,12 @@ import net.minecraft.client.gui.screens.Screen;
 public final class WaystoneClientSetup {
     private static final String WAYSTONE_SELECTION_SCREEN = "WaystoneSelectionScreen";
     private static final AtomicBoolean INIT_FAILURE_LOGGED = new AtomicBoolean();
-    private static final AtomicBoolean REFRESH_FAILURE_LOGGED = new AtomicBoolean();
     private static Method initMethod;
     private static Method renderMethod;
     private static Method tickMethod;
     private static Method cleanupMethod;
-    private static boolean refreshDisabled;
+    private static Screen refreshDisabledScreen;
+    private static Screen refreshFailureLoggedScreen;
 
     private WaystoneClientSetup() {
     }
@@ -51,14 +51,14 @@ public final class WaystoneClientSetup {
     }
 
     private static void onScreenDraw(ScreenDrawEvent.Pre event) {
-        if (refreshDisabled || !isWaystoneSelectionScreen(event.getScreen())) {
+        if (event.getScreen() == refreshDisabledScreen || !isWaystoneSelectionScreen(event.getScreen())) {
             return;
         }
         invokeRefresh(Action.RENDER, event.getScreen());
     }
 
     private static void onClientTick(Minecraft minecraft) {
-        if (refreshDisabled || !isWaystoneSelectionScreen(minecraft.screen)) {
+        if (minecraft.screen == refreshDisabledScreen || !isWaystoneSelectionScreen(minecraft.screen)) {
             return;
         }
         invokeRefresh(Action.TICK, minecraft.screen);
@@ -68,8 +68,9 @@ public final class WaystoneClientSetup {
         try {
             injectorMethod(action).invoke(null, screen);
         } catch (ReflectiveOperationException | LinkageError | RuntimeException error) {
-            refreshDisabled = true;
-            if (REFRESH_FAILURE_LOGGED.compareAndSet(false, true)) {
+            refreshDisabledScreen = screen;
+            if (refreshFailureLoggedScreen != screen) {
+                refreshFailureLoggedScreen = screen;
                 WaystonesPlayer.LOGGER.error(
                         "Failed to synchronize Waystones player panel layout and live directory",
                         error);
@@ -83,6 +84,12 @@ public final class WaystoneClientSetup {
             Screen current = minecraft.screen;
             if (isWaystoneSelectionScreen(current) && current != event.getNewScreen()) {
                 cleanupMethod().invoke(null, current);
+                if (refreshDisabledScreen == current) {
+                    refreshDisabledScreen = null;
+                }
+                if (refreshFailureLoggedScreen == current) {
+                    refreshFailureLoggedScreen = null;
+                }
             }
             if (isWaystoneSelectionScreen(event.getNewScreen())) {
                 return;
