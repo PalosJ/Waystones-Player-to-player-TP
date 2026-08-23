@@ -1,0 +1,399 @@
+package com.palosj.waystonesplayer.client;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.WeakHashMap;
+
+import com.palosj.waystonesplayer.WaystonesPlayer;
+import com.palosj.waystonesplayer.client.widget.PlayerDestinationList;
+import com.palosj.waystonesplayer.compat.WaystonesCompat;
+import com.palosj.waystonesplayer.mixin.client.AbstractContainerScreenAccessor;
+import com.palosj.waystonesplayer.network.payload.RequestPlayerTeleportPayload;
+
+import net.blay09.mods.balm.Balm;
+import net.blay09.mods.balm.client.gui.screens.BalmScreenUtils;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.client.gui.narration.NarratedElementType;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
+
+public final class WaystonePlayerScreenInjector {
+    private static final PlayerPanelLifecycle<Screen, PlayerPanel> PANELS = new PlayerPanelLifecycle<>();
+    private static final Set<Screen> FAILED_SCREENS = Collections.newSetFromMap(new WeakHashMap<>());
+    private static Object cachedConnection;
+    private static UUID cachedSelf;
+    private static List<PlayerDirectoryEntry> cachedDirectoryEntries = List.of();
+    private static List<PlayerInfo> cachedOnlinePlayers = List.of();
+    private static Map<UUID, PlayerInfo> cachedPlayerInfoById = Map.of();
+    private static boolean directoryCacheInitialized;
+    private static long clientTick;
+    private static long lastDirectoryRefreshTick;
+
+    private static final int HEADER_HEIGHT = 64;
+    private static final int FOOTER_HEIGHT = 25;
+    private static final int TITLE_Y = 20;
+    private static final int EMPTY_STATE_Y_OFFSET = -20;
+    private static final int SCREEN_MARGIN = 4;
+    private static final int TARGET_PANEL_HEIGHT = 269;
+    private static final int EARLY_LAYOUT_HEIGHT = 200;
+    private static final int SEARCH_BOX_HEADER_OFFSET = HEADER_HEIGHT - 24;
+
+    private WaystonePlayerScreenInjector() {
+    }
+
+    public static void onScreenInit(Screen candidate) {
+        PANELS.detach(candidate);
+        FAILED_SCREENS.remove(candidate);
+        try {
+            if (!(candidate instanceof AbstractContainerScreen<?> screen)
+                    || !WaystonesCompat.isWarpStoneMenu(screen.getMenu())) {
+                return;
+            }
+
+            List<PlayerInfo> onlinePlayers = getOnlinePlayers();
+            if (onlinePlayers == null) {
+                return;
+            }
+            lastDirectoryRefreshTick = clientTick;
+
+            LayoutAnchor anchor = findLayoutAnchor(screen);
+            if (anchor == null) {
+                failScreen(candidate, "Waystones player panel was not added because no compatible 26.x layout anchor was found.", null);
+                return;
+            }
+
+            int panelHeight = PlayerPanelLayout.resolvePanelHeight(
+                    Math.max(anchor.height(), TARGET_PANEL_HEIGHT),
+                    screen.height,
+                    anchor.y(),
+                    SCREEN_MARGIN);
+            if (panelHeight < HEADER_HEIGHT + FOOTER_HEIGHT + PlayerDestinationList.ENTRY_HEIGHT) {
+                failScreen(candidate, "Waystones player panel was not added because the screen is too short for an interactive row.", null);
+                return;
+            }
+
+            PlayerPanelLayout layout = PlayerPanelLayout.resolve(screen.width, anchor.x(), anchor.width());
+            moveWaystonesLayout(screen, anchor, layout.waystonesX() - anchor.x());
+
+            PlayerPanel panel = new PlayerPanel(
+                    onlinePlayers,
+                    layout.panelX(),
+                    anchor.y(),
+                    layout.panelWidth(),
+                    panelHeight,
+                    layout.avatarOnly());
+            panel.attach(screen);
+            PANELS.attach(screen, panel);
+        } catch (RuntimeException error) {
+            PANELS.detach(candidate);
+            failScreen(candidate, "WaystonesPlayer GUI injection failed for the current screen.", error);
+        }
+    }
+
+    public static void onClientTick(Screen candidate) {
+        PlayerPanel panel = PANELS.get(candidate);
+        if (panel == null) {
+            return;
+        }
+
+        try {
+            clientTick++;
+            Object currentConnection = Minecraft.getInstance().getConnection();
+            boolean connectionChanged = currentConnection != cachedConnection;
+            if (PlayerDirectoryRefreshPolicy.shouldRefresh(
+                    directoryCacheInitialized,
+                    connectionChanged,
+                    clientTick,
+                    lastDirectoryRefreshTick)) {
+                List<PlayerInfo> onlinePlayers = getOnlinePlayers();
+                lastDirectoryRefreshTick = clientTick;
+                if (onlinePlayers != null) {
+                    panel.refresh(onlinePlayers);
+                }
+            }
+            panel.tick();
+        } catch (RuntimeException error) {
+            failScreen(candidate,
+                    "Waystones player list could not be refreshed; the last valid list will remain visible.",
+                    error);
+        }
+    }
+
+    public static void onScreenClosed(Screen candidate) {
+        PANELS.detach(candidate);
+        FAILED_SCREENS.remove(candidate);
+        if (PANELS.isEmpty()) {
+            resetDirectoryCache();
+        }
+    }
+
+    private static List<PlayerInfo> getOnlinePlayers() {
+        Minecraft minecraft = Minecraft.getInstance();
+        var connection = minecraft.getConnection();
+        if (connection == null || minecraft.player == null) {
+            resetDirectoryCache();
+            return null;
+        }
+
+        UUID selfId = minecraft.player.getUUID();
+        List<PlayerInfo> onlinePlayers = new ArrayList<>(connection.getListedOnlinePlayers());
+        onlinePlayers.removeIf(info -> info.getProfile().id().equals(selfId));
+        List<PlayerDirectoryEntry> directoryEntries = onlinePlayers.stream()
+                .map(info -> new PlayerDirectoryEntry(info.getProfile().id(), info.getProfile().name()))
+                .toList();
+        if (connection == cachedConnection
+                && selfId.equals(cachedSelf)
+                && PlayerListRefresh.hasSamePlayersIgnoringOrder(cachedDirectoryEntries, directoryEntries)
+                && onlinePlayers.stream().allMatch(info -> cachedPlayerInfoById.get(info.getProfile().id()) == info)) {
+            return cachedOnlinePlayers;
+        }
+
+        onlinePlayers.sort(Comparator
+                .comparing((PlayerInfo info) -> info.getProfile().name(), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(info -> info.getProfile().name())
+                .thenComparing(info -> info.getProfile().id()));
+        cachedConnection = connection;
+        cachedSelf = selfId;
+        cachedOnlinePlayers = List.copyOf(onlinePlayers);
+        cachedDirectoryEntries = cachedOnlinePlayers.stream()
+                .map(info -> new PlayerDirectoryEntry(info.getProfile().id(), info.getProfile().name()))
+                .toList();
+        Map<UUID, PlayerInfo> byId = new HashMap<>();
+        cachedOnlinePlayers.forEach(info -> byId.put(info.getProfile().id(), info));
+        cachedPlayerInfoById = Map.copyOf(byId);
+        directoryCacheInitialized = true;
+        return cachedOnlinePlayers;
+    }
+
+    private static void resetDirectoryCache() {
+        cachedConnection = null;
+        cachedSelf = null;
+        cachedDirectoryEntries = List.of();
+        cachedOnlinePlayers = List.of();
+        cachedPlayerInfoById = Map.of();
+        directoryCacheInitialized = false;
+        lastDirectoryRefreshTick = clientTick;
+    }
+
+    private static LayoutAnchor findLayoutAnchor(AbstractContainerScreen<?> screen) {
+        AbstractWidget waystoneList = null;
+        EditBox searchBox = null;
+        int maximumBottom = 0;
+        for (GuiEventListener listener : screen.children()) {
+            if (listener instanceof AbstractWidget widget) {
+                maximumBottom = Math.max(maximumBottom, widget.getBottom());
+                if (isClassOrSuperclassNamed(widget, "net.blay09.mods.waystones.client.gui.widget.AbstractWaystoneList")) {
+                    waystoneList = widget;
+                } else if (listener instanceof EditBox editBox) {
+                    searchBox = editBox;
+                }
+            }
+        }
+
+        if (waystoneList != null) {
+            return new LayoutAnchor(
+                    waystoneList.getX(),
+                    waystoneList.getY() - HEADER_HEIGHT,
+                    waystoneList.getWidth(),
+                    waystoneList.getHeight() + HEADER_HEIGHT + FOOTER_HEIGHT);
+        }
+        if (searchBox == null) {
+            return null;
+        }
+
+        AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
+        int guiTop = searchBox.getY() - SEARCH_BOX_HEADER_OFFSET;
+        int guiHeight = Math.max(EARLY_LAYOUT_HEIGHT, maximumBottom - guiTop + SCREEN_MARGIN);
+        return new LayoutAnchor(
+                accessor.waystonesplayer$getLeftPos(),
+                guiTop,
+                accessor.waystonesplayer$getImageWidth(),
+                guiHeight);
+    }
+
+    private static boolean isClassOrSuperclassNamed(Object value, String className) {
+        for (Class<?> type = value.getClass(); type != null; type = type.getSuperclass()) {
+            if (type.getName().equals(className)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void moveWaystonesLayout(AbstractContainerScreen<?> screen, LayoutAnchor anchor, int deltaX) {
+        if (deltaX == 0) {
+            return;
+        }
+
+        AbstractContainerScreenAccessor layout = (AbstractContainerScreenAccessor) screen;
+        layout.waystonesplayer$setLeftPos(layout.waystonesplayer$getLeftPos() + deltaX);
+
+        int minimumX = anchor.x() - PlayerPanelLayout.WAYSTONES_SIDE_BUTTON_LEFT_OFFSET;
+        int maximumX = anchor.x() + anchor.width() + PlayerPanelLayout.WAYSTONES_SIDE_BUTTON_LEFT_OFFSET;
+        int maximumY = anchor.y() + anchor.height();
+        for (GuiEventListener listener : screen.children()) {
+            if (listener instanceof AbstractWidget widget
+                    && (widget.getClass().getName().startsWith("net.blay09.mods.waystones.")
+                    || intersects(widget, minimumX, maximumX, anchor.y(), maximumY))) {
+                widget.setX(widget.getX() + deltaX);
+            }
+        }
+    }
+
+    private static boolean intersects(AbstractWidget widget, int minimumX, int maximumX, int minimumY, int maximumY) {
+        return widget.getRight() > minimumX
+                && widget.getX() < maximumX
+                && widget.getBottom() > minimumY
+                && widget.getY() < maximumY;
+    }
+
+    private static void failScreen(Screen screen, String message, RuntimeException error) {
+        if (!FAILED_SCREENS.add(screen)) {
+            return;
+        }
+        if (error == null) {
+            WaystonesPlayer.LOGGER.warn(message);
+        } else {
+            WaystonesPlayer.LOGGER.warn(message, error);
+        }
+    }
+
+    private record LayoutAnchor(int x, int y, int width, int height) {
+    }
+
+    private static final class PlayerPanel {
+        private final List<PlayerInfo> initialPlayers;
+        private final int x;
+        private final int y;
+        private final int width;
+        private final int height;
+        private final boolean avatarOnly;
+        private PlayerPanelLabels labels;
+        private PlayerDestinationList playerList;
+
+        private PlayerPanel(List<PlayerInfo> onlinePlayers, int x, int y, int width, int height,
+                            boolean avatarOnly) {
+            initialPlayers = onlinePlayers;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.avatarOnly = avatarOnly;
+        }
+
+        private void attach(Screen screen) {
+            labels = new PlayerPanelLabels(x, y, width, height, initialPlayers.size(), avatarOnly);
+            BalmScreenUtils.addRenderableWidget(screen, labels);
+
+            int listHeight = height - HEADER_HEIGHT - FOOTER_HEIGHT;
+            playerList = new PlayerDestinationList(
+                    x,
+                    y + HEADER_HEIGHT,
+                    width,
+                    listHeight,
+                    initialPlayers,
+                    avatarOnly,
+                    targetPlayerId -> Balm.networking().sendToServer(
+                            new RequestPlayerTeleportPayload(targetPlayerId)));
+            BalmScreenUtils.addRenderableWidget(screen, playerList);
+        }
+
+        private void refresh(List<PlayerInfo> currentPlayers) {
+            playerList.updatePlayers(currentPlayers);
+            labels.setPlayerCount(currentPlayers.size());
+        }
+
+        private void tick() {
+            playerList.tickVisibleEntries();
+        }
+    }
+
+    private static final class PlayerPanelLabels extends AbstractWidget {
+        private final boolean avatarOnly;
+        private final int panelHeight;
+        private final Component title = Component.translatable("gui.waystonesplayer.online_players");
+        private final Component emptyMessage = Component.translatable("gui.waystonesplayer.no_other_players")
+                .copy()
+                .withStyle(ChatFormatting.RED);
+        private boolean empty;
+        private int playerCount;
+
+        private PlayerPanelLabels(int x, int y, int width, int height, int playerCount, boolean avatarOnly) {
+            super(x, y, width, HEADER_HEIGHT, narrationMessage(playerCount));
+            this.avatarOnly = avatarOnly;
+            panelHeight = height;
+            active = false;
+            updateState(playerCount);
+        }
+
+        private void setPlayerCount(int count) {
+            if (playerCount != count) {
+                updateState(count);
+            }
+        }
+
+        private void updateState(int count) {
+            playerCount = count;
+            empty = count == 0;
+            setMessage(narrationMessage(count));
+            setTooltip(avatarOnly ? Tooltip.create(getMessage()) : null);
+        }
+
+        @Override
+        protected void extractWidgetRenderState(
+                GuiGraphicsExtractor graphics,
+                int mouseX,
+                int mouseY,
+                float partialTick) {
+            var font = Minecraft.getInstance().font;
+            Component heading = avatarOnly ? Component.literal(Integer.toString(playerCount)) : title;
+            graphics.centeredText(font, heading, getX() + width / 2, getY() + TITLE_Y, 0xFFFFFFFF);
+            if (empty && !avatarOnly) {
+                graphics.centeredText(
+                        font,
+                        emptyMessage,
+                        getX() + width / 2,
+                        getY() + panelHeight / 2 + EMPTY_STATE_Y_OFFSET,
+                        0xFFFFFFFF);
+            }
+            if (isFocused()) {
+                graphics.outline(getX() + 1, getY() + 1, width - 2, height - 2, 0xFFFFFFFF);
+            }
+        }
+
+        @Override
+        public NarratableEntry.NarrationPriority narrationPriority() {
+            return isFocused() ? NarratableEntry.NarrationPriority.FOCUSED : NarratableEntry.NarrationPriority.NONE;
+        }
+
+        @Override
+        protected void updateWidgetNarration(NarrationElementOutput output) {
+            output.add(NarratedElementType.TITLE, getMessage());
+        }
+
+        private static Component narrationMessage(int playerCount) {
+            if (playerCount == 0) {
+                return Component.translatable("narration.waystonesplayer.online_players.empty");
+            }
+            return Component.translatable("gui.waystonesplayer.online_players")
+                    .append(": ")
+                    .append(Integer.toString(playerCount));
+        }
+    }
+}

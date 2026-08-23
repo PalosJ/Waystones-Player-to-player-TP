@@ -61,11 +61,29 @@ public final class PlayerTeleportService {
             return;
         }
 
-        Optional<TeleportOutcome> result = runtime.tryTeleport(
-                sender,
-                target.player(),
-                warpStoneUse.orElseThrow(),
-                experienceMode);
+        WaystonesCompat.WarpStoneUse boundUse = warpStoneUse.orElseThrow();
+        try {
+            runtime.tryTeleport(sender, target.player(), boundUse, experienceMode)
+                    .whenComplete((result, error) -> runtime.executeOnServerThread(
+                            sender,
+                            () -> settleTeleport(sender, boundUse, result, error, runtime)));
+        } catch (RuntimeException | LinkageError error) {
+            WaystonesPlayer.LOGGER.warn("Waystones rejected a player-destination teleport before it started.", error);
+            runtime.displayMessage(sender, "message.waystonesplayer.compatibility_unavailable");
+        }
+    }
+
+    private static void settleTeleport(
+            ServerPlayer sender,
+            WaystonesCompat.WarpStoneUse warpStoneUse,
+            Optional<TeleportOutcome> result,
+            Throwable error,
+            TeleportRuntimeBoundary runtime) {
+        if (error != null) {
+            WaystonesPlayer.LOGGER.warn("Waystones player-destination teleport failed asynchronously.", error);
+            runtime.displayMessage(sender, "message.waystonesplayer.compatibility_unavailable");
+            return;
+        }
         if (result.isEmpty()) {
             runtime.displayMessage(sender, "message.waystonesplayer.compatibility_unavailable");
             return;
@@ -82,7 +100,7 @@ public final class PlayerTeleportService {
         }
 
         runtime.resetFallDistance(sender);
-        WaystonesCompat.WarpStoneUse successfulUse = warpStoneUse.orElseThrow();
+        WaystonesCompat.WarpStoneUse successfulUse = warpStoneUse;
         Optional<TeleportRuntimeBoundary.DurabilityTarget> durabilityTarget =
                 runtime.resolveDurabilityTarget(sender, successfulUse);
         if (durabilityTarget.isPresent()) {

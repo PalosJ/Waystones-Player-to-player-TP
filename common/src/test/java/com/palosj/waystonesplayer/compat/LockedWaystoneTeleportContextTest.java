@@ -1,70 +1,93 @@
 package com.palosj.waystonesplayer.compat;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Proxy;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import com.mojang.datafixers.util.Either;
 import org.junit.jupiter.api.Test;
 
 import net.blay09.mods.waystones.api.WaystoneTeleportContext;
-import net.blay09.mods.waystones.api.requirement.WarpRequirement;
-import net.blay09.mods.waystones.requirement.ExperiencePointsRequirement;
-import net.blay09.mods.waystones.requirement.NoRequirement;
+import net.minecraft.world.InteractionHand;
 
 class LockedWaystoneTeleportContextTest {
     @Test
-    void keepsTheLockedRequirementAndRecordsReplacementAttempts() {
-        AtomicReference<WarpRequirement> activeRequirement = new AtomicReference<>();
-        WaystoneTeleportContext delegate = delegate(activeRequirement);
-        LockedWaystoneTeleportContext context = new LockedWaystoneTeleportContext(delegate);
+    void keepsLockedRequirementsAndRejectsReplacement() {
+        LockedWaystoneTeleportContext context = new LockedWaystoneTeleportContext(delegate(new AtomicInteger()), () -> {
+        });
+        Either<List<Object>, List<Object>> locked = Either.left(List.of("locked"));
+        context.lock(ignored -> locked);
 
-        context.lockRequirements(NoRequirement.INSTANCE);
-        assertSame(NoRequirement.INSTANCE, context.getRequirements());
-        assertFalse(context.replacementAttempted());
+        assertSame(locked, context.getRequirements());
+        assertFalse(context.wasModified());
 
-        context.setRequirements(new ExperiencePointsRequirement(1));
-        assertSame(NoRequirement.INSTANCE, context.getRequirements());
-        assertTrue(context.replacementAttempted());
+        context.setRequirements(Either.left(List.of("replacement")));
+        assertTrue(context.wasModified());
+        assertThrows(TeleportRejectedException.class, context::requireUnmodified);
+        assertThrows(TeleportRejectedException.class, context::getRequirements);
     }
 
     @Test
-    void delegatesTargetRedirectionOnlyWhenTheRuntimeApiSupportsIt() {
-        AtomicReference<WarpRequirement> activeRequirement = new AtomicReference<>();
-        LockedWaystoneTeleportContext context = new LockedWaystoneTeleportContext(delegate(activeRequirement));
-        boolean apiSupportsRedirection = Arrays.stream(WaystoneTeleportContext.class.getMethods())
-                .anyMatch(method -> method.getName().equals("setTargetWaystone"));
+    void locksFeeSensitiveFieldsButAllowsObservableEventChanges() {
+        AtomicInteger additionalEntities = new AtomicInteger();
+        LockedWaystoneTeleportContext context = new LockedWaystoneTeleportContext(
+                delegate(additionalEntities),
+                () -> {
+                });
+        assertEquals(InteractionHand.MAIN_HAND, context.getWarpHand());
+        context.lock(ignored -> Either.left(List.of()));
 
-        if (apiSupportsRedirection) {
-            context.setTargetWaystone(null);
-        } else {
-            assertThrows(IllegalStateException.class, () -> context.setTargetWaystone(null));
-        }
+        context.addAdditionalEntity(null);
+        context.setPlaysSound(false);
+        context.setPlaysEffect(false);
+        assertEquals(1, additionalEntities.get());
+        assertFalse(context.wasModified());
+
+        context.setWarpHand(InteractionHand.OFF_HAND);
+        assertEquals(InteractionHand.MAIN_HAND, context.getWarpHand());
+        assertTrue(context.wasModified());
+        assertThrows(TeleportRejectedException.class, context::requireUnmodified);
     }
 
-    private static WaystoneTeleportContext delegate(AtomicReference<WarpRequirement> activeRequirement) {
+    @Test
+    void canOnlyBeLockedOnce() {
+        LockedWaystoneTeleportContext context = new LockedWaystoneTeleportContext(delegate(new AtomicInteger()), () -> {
+        });
+        context.lock(ignored -> Either.left(List.of()));
+        assertThrows(IllegalStateException.class, () -> context.lock(ignored -> Either.left(List.of())));
+    }
+
+    private static WaystoneTeleportContext delegate(AtomicInteger additionalEntities) {
         return (WaystoneTeleportContext) Proxy.newProxyInstance(
                 WaystoneTeleportContext.class.getClassLoader(),
                 new Class<?>[] { WaystoneTeleportContext.class },
-                (proxy, method, arguments) -> {
-                    if (method.getName().equals("setRequirements")) {
-                        activeRequirement.set((WarpRequirement) arguments[0]);
-                        return proxy;
+                (proxy, method, arguments) -> switch (method.getName()) {
+                    case "getWarpHand" -> InteractionHand.MAIN_HAND;
+                    case "getAdditionalEntities", "getLeashedEntities" -> List.of();
+                    case "getFlags" -> Set.of();
+                    case "getFromWaystone", "getVariable" -> Optional.empty();
+                    case "getRequirements" -> Either.left(List.of());
+                    case "addAdditionalEntity" -> {
+                        additionalEntities.incrementAndGet();
+                        yield proxy;
                     }
-                    if (method.getName().equals("getRequirements")) {
-                        return activeRequirement.get();
+                    default -> {
+                        if (method.getReturnType().isInstance(proxy)) {
+                            yield proxy;
+                        }
+                        if (method.getReturnType() == boolean.class) {
+                            yield true;
+                        }
+                        yield null;
                     }
-                    if (method.getReturnType().isInstance(proxy)) {
-                        return proxy;
-                    }
-                    if (method.getReturnType() == boolean.class) {
-                        return false;
-                    }
-                    return null;
                 });
     }
 }

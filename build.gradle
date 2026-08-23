@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom-remap' version '1.17.19' apply false
+    id 'net.fabricmc.fabric-loom' version '1.17.19' apply false
 }
 
 version = mod_version
@@ -301,6 +301,13 @@ subprojects {
     group = rootProject.group
 
     repositories {
+        maven {
+            name = 'FixedUpstreamBuilds'
+            url = rootProject.layout.buildDirectory.dir('upstream-maven')
+            content {
+                includeGroup 'net.blay09.mods'
+            }
+        }
         mavenCentral()
         maven {
             name = 'TwelveIterations'

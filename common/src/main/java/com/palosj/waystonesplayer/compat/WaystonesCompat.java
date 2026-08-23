@@ -9,7 +9,7 @@ import net.blay09.mods.waystones.api.WaystoneTeleportContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -19,8 +19,8 @@ import net.minecraft.world.item.ItemStack;
 
 public final class WaystonesCompat {
     private static final AtomicBoolean MENU_COMPAT_FAILURE_LOGGED = new AtomicBoolean();
-    public static final ResourceLocation WARP_STONE_ID = ResourceLocation.fromNamespaceAndPath("waystones", "warp_stone");
-    private static final ResourceLocation WARP_STONE_MENU_ID = ResourceLocation.fromNamespaceAndPath(
+    public static final Identifier WARP_STONE_ID = Identifier.fromNamespaceAndPath("waystones", "warp_stone");
+    private static final Identifier WARP_STONE_MENU_ID = Identifier.fromNamespaceAndPath(
             "waystones",
             "warp_stone_selection");
 

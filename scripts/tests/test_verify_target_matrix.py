@@ -112,6 +112,13 @@ class MatrixShapeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify.validate_matrix_shape(matrix)
 
+    def test_rejects_missing_embedded_shogi_api_contract(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        target = next(item for item in matrix["targets"] if item["id"] == "neoforge-26.2")
+        target["current"].pop("shogiApiEmbedded")
+        with self.assertRaises(ValueError):
+            verify.validate_matrix_shape(matrix)
+
 
 class TargetProperties26Test(unittest.TestCase):
     TARGET = {

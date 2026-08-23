@@ -285,6 +285,12 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
                 stack = target.get(stack_name)
                 require(isinstance(stack, dict) and all(stack.get(key) for key in ("waystones", "balm", "shogi")),
                         f"{target_id}: {stack_name} must declare Waystones, Balm and Shogi")
+                shogi_embeds_api = stack["shogi"] != "26.1.0.1"
+                require(stack.get("shogiApiEmbedded") is True if shogi_embeds_api
+                        else "shogiApiEmbedded" not in stack,
+                        f"{target_id}: {stack_name} must match the audited Shogi embedded API layout")
+                require("shogiApi" not in stack,
+                        f"{target_id}: {stack_name} must not resolve a separate or floating Shogi API")
 
             source = target.get("waystonesSource")
             if minecraft == ["26.1.1"]:

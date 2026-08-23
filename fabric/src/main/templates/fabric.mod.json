@@ -29,8 +29,9 @@
     "fabricloader": "${fabric_loader_version_range}",
     "fabric-api": "${fabric_api_version_range}",
     "minecraft": "${minecraft_version_range}",
-    "java": ">=21",
+    "java": "${java_version_range}",
     "waystones": "${waystones_version_range}",
-    "${balm_mod_id}": "${balm_version_range}"
+    "${balm_mod_id}": "${balm_version_range}",
+    "shogi": "${shogi_version_range}"
   }
 }

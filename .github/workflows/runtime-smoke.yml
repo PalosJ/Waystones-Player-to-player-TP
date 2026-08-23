@@ -1,15 +1,15 @@
-name: Fabric 1.21.x Runtime Smoke
+name: Fabric 26.x Runtime Smoke
 
 on:
   workflow_run:
     workflows: [Build]
     branches:
-      - fabric/1.21.x
+      - fabric/26.x
     types: [completed]
   workflow_dispatch:
     inputs:
       build_run_id:
-        description: Successful Fabric Build run ID for the exact unified branch commit
+        description: Successful Fabric 26.x Build run ID for the exact unified branch commit
         required: true
         type: string
   schedule:
@@ -30,7 +30,7 @@ jobs:
       github.event_name != 'workflow_run' ||
       (github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'fabric/1.21.x')
+      github.event.workflow_run.head_branch == 'fabric/26.x')
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
@@ -38,28 +38,22 @@ jobs:
       max-parallel: 2
       matrix:
         target:
-          - fabric-1.21.1
-          - fabric-1.21.2-1.21.3
-          - fabric-1.21.4
-          - fabric-1.21.5
-          - fabric-1.21.6
-          - fabric-1.21.7
-          - fabric-1.21.8
-          - fabric-1.21.9
-          - fabric-1.21.10
-          - fabric-1.21.11
+          - fabric-26.1
+          - fabric-26.1.1
+          - fabric-26.1.2
+          - fabric-26.2
 
     steps:
       - name: Checkout Fabric unified branch
         uses: actions/checkout@v7
         with:
-          ref: fabric/1.21.x
+          ref: fabric/26.x
           fetch-depth: 0
 
-      - name: Setup JDK 21
+      - name: Setup JDK 25
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: temurin
 
       - name: Setup Gradle
@@ -74,7 +68,7 @@ jobs:
           REQUESTED_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.build_run_id }}
         run: >-
           ./scripts/fetch-build-artifact.sh
-          fabric/1.21.x
+          fabric/26.x
           "$REQUESTED_RUN_ID"
           waystonesplayer-${{ matrix.target }}
           waystonesplayer-${{ matrix.target }}-1.0.0.jar
@@ -83,8 +77,15 @@ jobs:
       - name: Verify Xvfb and canonical parity
         run: |
           command -v xvfb-run
-          ./scripts/verify-branch-parity.sh branch
-          python3 scripts/verify-target-matrix.py --branch fabric/1.21.x
+          ./scripts/verify-branch-parity.sh branch-26
+          python3 scripts/verify-target-matrix.py --branch fabric/26.x
+
+      - name: Rebuild fixed Waystones 26.1.1 dependency
+        if: matrix.target == 'fabric-26.1.1'
+        run: >-
+          python3 scripts/prepare-waystones-source.py
+          --loader fabric
+          --expected-sha256 "${{ steps.artifact.outputs.upstream_waystones_sha256 }}"
 
       - name: Run unchanged minimum JAR in every audited stack
         run: >-
@@ -94,7 +95,7 @@ jobs:
           --binary "${{ steps.artifact.outputs.binary }}"
           --expected-sha256 "${{ steps.artifact.outputs.sha256 }}"
           --expected-commit "${{ steps.artifact.outputs.commit }}"
-          --profiles minimum key current
+          --profiles minimum current
           --sides server client
           --xvfb
           --fail-fast

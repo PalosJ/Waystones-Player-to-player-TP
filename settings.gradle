@@ -22,16 +22,10 @@ rootProject.name = 'waystonesplayer'
 include('core')
 
 def fabricTargets = [
-        'fabric-1.21.1',
-        'fabric-1.21.2-1.21.3',
-        'fabric-1.21.4',
-        'fabric-1.21.5',
-        'fabric-1.21.6',
-        'fabric-1.21.7',
-        'fabric-1.21.8',
-        'fabric-1.21.9',
-        'fabric-1.21.10',
-        'fabric-1.21.11',
+        'fabric-26.1',
+        'fabric-26.1.1',
+        'fabric-26.1.2',
+        'fabric-26.2',
 ]
 def requestedTasks = gradle.startParameter.taskNames
 def normalizedTasks = requestedTasks.collect { taskName ->

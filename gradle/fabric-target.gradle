@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom-remap'
+    id 'net.fabricmc.fabric-loom'
 }
 
 def matrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
@@ -7,7 +7,7 @@ def target = matrix.targets.find { it.id == project.name }
 def sourceCommit = providers.exec {
     commandLine 'git', 'rev-parse', 'HEAD'
 }.standardOutput.asText.map { it.trim() }
-if (target == null || target.loader != 'fabric' || target.branch != 'fabric/1.21.x') {
+if (target == null || target.loader != 'fabric' || target.branch != 'fabric/26.x') {
     throw new GradleException("Missing Fabric target matrix entry for ${project.path}.")
 }
 
@@ -185,32 +185,79 @@ loom {
     }
 }
 
+def embeddedShogiApi
+if (stack.shogiApiEmbedded) {
+    def shogiLoaderArtifact = configurations.detachedConfiguration(
+            dependencies.create("net.blay09.mods:shogi-fabric:${stack.shogi}"))
+    shogiLoaderArtifact.transitive = false
+    def extractedShogiApiFile = layout.buildDirectory.file(
+            "generated/shogi-api/${stack.shogi}/shogi-api-${stack.shogi}.jar")
+    def extractEmbeddedShogiApi = tasks.register('extractEmbeddedShogiApi') {
+        group = 'build setup'
+        description = "Extracts the API nested in the locked Shogi ${stack.shogi} loader JAR."
+        inputs.files(shogiLoaderArtifact)
+        outputs.file(extractedShogiApiFile)
+        doLast {
+            def loaderJars = shogiLoaderArtifact.files.findAll { it.name.endsWith('.jar') }
+            if (loaderJars.size() != 1) {
+                throw new GradleException(
+                        "Expected one locked Shogi loader JAR, found ${loaderJars*.name}.")
+            }
+            new java.util.zip.ZipFile(loaderJars.first()).withCloseable { zip ->
+                def apiEntries = java.util.Collections.list(zip.entries()).findAll { entry ->
+                    !entry.directory
+                            && (entry.name.startsWith('META-INF/jars/')
+                            || entry.name.startsWith('META-INF/jarjar/'))
+                            && entry.name.contains('shogi-api')
+                            && entry.name.endsWith('.jar')
+                }
+                if (apiEntries.size() != 1) {
+                    throw new GradleException(
+                            "Shogi ${stack.shogi} must contain exactly one nested shogi-api JAR, found ${apiEntries*.name}.")
+                }
+                File output = extractedShogiApiFile.get().asFile
+                output.parentFile.mkdirs()
+                zip.getInputStream(apiEntries.first()).withCloseable { input ->
+                    output.withOutputStream { stream -> input.transferTo(stream) }
+                }
+            }
+        }
+    }
+    embeddedShogiApi = files(extractedShogiApiFile)
+    embeddedShogiApi.builtBy(extractEmbeddedShogiApi)
+}
 dependencies {
     implementation project(':core')
 
     minecraft "com.mojang:minecraft:${target.compile.minecraft}"
-    mappings loom.officialMojangMappings()
 
-    modImplementation("net.fabricmc:fabric-loader:${stack.fabricLoader}") {
+    implementation("net.fabricmc:fabric-loader:${stack.fabricLoader}") {
         version { strictly(stack.fabricLoader as String) }
     }
-    modImplementation("net.fabricmc.fabric-api:fabric-api:${stack.fabricApi}") {
+    implementation("net.fabricmc.fabric-api:fabric-api:${stack.fabricApi}") {
         version { strictly(stack.fabricApi as String) }
     }
-    modImplementation("net.blay09.mods:balm-fabric:${stack.balm}") {
+    implementation("net.blay09.mods:balm-fabric:${stack.balm}") {
         version { strictly(stack.balm as String) }
-        // Balm already embeds the matching KumaAPI JAR. Some older published
-        // POMs use a broad [21.2,22) range that otherwise resolves a newer
-        // Minecraft line as a second, incompatible root mod.
         exclude group: 'net.blay09.mods', module: 'kuma-api-fabric'
         exclude group: 'curse.maven'
         exclude group: 'mysticdrew'
         exclude group: 'mezz.jei'
     }
-    modImplementation("net.blay09.mods:waystones-fabric:${stack.waystones}") {
+    implementation("net.blay09.mods:shogi-fabric:${stack.shogi}") {
+        version { strictly(stack.shogi as String) }
+        exclude group: 'net.blay09.mods', module: 'shogi-common'
+        exclude group: 'net.blay09.mods', module: 'shogi-api'
+        exclude group: 'curse.maven'
+        exclude group: 'mysticdrew'
+    }
+    implementation("net.blay09.mods:waystones-fabric:${stack.waystones}") {
         version { strictly(stack.waystones as String) }
         exclude group: 'net.blay09.mods', module: 'balm-fabric'
         exclude group: 'net.blay09.mods', module: 'kuma-api-fabric'
+        exclude group: 'net.blay09.mods', module: 'shogi-fabric'
+        exclude group: 'net.blay09.mods', module: 'shogi-common'
+        exclude group: 'net.blay09.mods', module: 'shogi-api'
         exclude group: 'curse.maven'
         exclude group: 'mysticdrew'
         exclude group: 'mezz.jei'
@@ -224,6 +271,14 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Later 26.x Shogi releases publish the public API only as jar-in-jar. Loom does
+    // not expose nested libraries on the compile classpath, so compile against the exact
+    // bytes embedded in the strictly locked Fabric loader JAR instead of a snapshot.
+    if (embeddedShogiApi != null) {
+        compileOnly embeddedShogiApi
+        testRuntimeOnly embeddedShogiApi
+    }
 }
 
 sourceSets.test {
@@ -231,21 +286,21 @@ sourceSets.test {
     runtimeClasspath += sourceSets.main.runtimeClasspath
 }
 
-def minecraftRange = target.minecraft.size() == 2
-        ? ">=${target.minecraft.first()} <1.21.4"
-        : "=${target.minecraft.first()}"
+def minecraftRange = "=${target.minecraft.first()}"
 def fabricLoaderRange = ">=${target.minimum.fabricLoader}"
 def fabricApiRange = ">=${target.minimum.fabricApi}"
-def boundedDependencyRange = { String version ->
-    def baseVersion = version.tokenize('+').first()
-    def parts = baseVersion.tokenize('.')*.toInteger()
-    if (parts.size() < 2) {
-        throw new GradleException("Cannot derive a bounded dependency range from ${version}.")
-    }
-    return ">=${baseVersion} <${parts[0]}.${parts[1] + 1}"
+def compatibilityUpper = [
+        '26.1'  : '26.1.1',
+        '26.1.1': '26.1.2',
+        '26.1.2': '26.2',
+        '26.2'  : '26.3',
+][target.compile.minecraft]
+if (compatibilityUpper == null) {
+    throw new GradleException("Missing 26.x compatibility upper bound for ${target.id}.")
 }
-def waystonesRange = boundedDependencyRange(target.minimum.waystones as String)
-def balmRange = boundedDependencyRange(target.minimum.balm as String)
+def waystonesRange = ">=${target.minimum.waystones} <${compatibilityUpper}"
+def balmRange = ">=${target.minimum.balm} <${compatibilityUpper}"
+def shogiRange = ">=${target.minimum.shogi} <${compatibilityUpper}"
 
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     def replaceProperties = [
@@ -261,6 +316,8 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
             waystones_version_range  : waystonesRange,
             balm_mod_id              : target.balmModId,
             balm_version_range       : balmRange,
+            shogi_version_range    : shogiRange,
+            java_version_range     : '>=25',
     ]
     inputs.properties replaceProperties
     expand replaceProperties
@@ -272,15 +329,37 @@ sourceSets.main.resources.srcDir generateModMetadata
 
 tasks.named('jar', Jar).configure {
     duplicatesStrategy = DuplicatesStrategy.FAIL
+    archiveFileName = target.artifactFile
     inputs.property('waystonesPlayerSourceCommit', sourceCommit)
-    manifest {
-        attributes(
+    def manifestAttributes = [
                 'Implementation-Title': mod_name,
                 'Implementation-Version': matrix.modVersion,
                 'WaystonesPlayer-Target': target.id,
                 'WaystonesPlayer-Build-Stack': stackName,
                 'WaystonesPlayer-Source-Commit': sourceCommit.get(),
-        )
+    ]
+    manifest {
+        attributes(manifestAttributes)
+    }
+    if (target.waystonesSource) {
+        doFirst {
+            File provenanceFile = rootProject.file(
+                    "build/upstream-provenance/waystones-fabric-${target.compile.minecraft}.json")
+            if (!provenanceFile.isFile()) {
+                throw new GradleException(
+                        "${target.id} requires scripts/prepare-waystones-source.py --loader fabric before its JAR is built.")
+            }
+            def provenance = new groovy.json.JsonSlurper().parse(provenanceFile)
+            if (provenance.sourceCommit != target.waystonesSource.commit
+                    || provenance.sourcePatchSha256 != target.waystonesSource.patchSha256) {
+                throw new GradleException("${target.id} upstream source provenance does not match targets.json.")
+            }
+            manifest.attributes([
+                    'WaystonesPlayer-Upstream-Waystones-Commit': provenance.sourceCommit,
+                    'WaystonesPlayer-Upstream-Waystones-Patch-SHA256': provenance.sourcePatchSha256,
+                    'WaystonesPlayer-Upstream-Waystones-JAR-SHA256': provenance.artifactSha256,
+            ])
+        }
     }
     from project(':core').sourceSets.main.output
     from(rootProject.file('LICENSE')) {
@@ -297,10 +376,7 @@ tasks.named('jar', Jar).configure {
     }
 }
 
-def releaseJar = tasks.named('remapJar')
-releaseJar.configure {
-    archiveFileName = target.artifactFile
-}
+def releaseJar = tasks.named('jar', Jar)
 
 def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
     group = 'verification'
@@ -376,6 +452,12 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 throw new GradleException(
                         'Release JAR manifest does not identify its target, dependency build stack, and source commit.')
             }
+            if (target.waystonesSource
+                    && (attributes.getValue('WaystonesPlayer-Upstream-Waystones-Commit') != target.waystonesSource.commit
+                    || attributes.getValue('WaystonesPlayer-Upstream-Waystones-Patch-SHA256') != target.waystonesSource.patchSha256
+                    || !(attributes.getValue('WaystonesPlayer-Upstream-Waystones-JAR-SHA256') ==~ /[0-9a-f]{64}/))) {
+                throw new GradleException('Release JAR is missing fixed Waystones source provenance.')
+            }
 
             def iconEntry = zip.getEntry('waystonesplayer.png')
             def icon = javax.imageio.ImageIO.read(zip.getInputStream(iconEntry))
@@ -438,9 +520,10 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                     fabricloader: fabricLoaderRange,
                     'fabric-api': fabricApiRange,
                     minecraft  : minecraftRange,
-                    java       : '>=21',
+                    java       : '>=25',
                     waystones  : waystonesRange,
                     (target.balmModId): balmRange,
+                    shogi      : shogiRange,
             ]
             if (parsedMetadata.depends != expectedDependencies) {
                 throw new GradleException(

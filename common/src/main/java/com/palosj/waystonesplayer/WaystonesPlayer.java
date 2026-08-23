@@ -3,7 +3,7 @@ package com.palosj.waystonesplayer;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public final class WaystonesPlayer {
     public static final String MODID = "waystonesplayer";
@@ -12,7 +12,7 @@ public final class WaystonesPlayer {
     private WaystonesPlayer() {
     }
 
-    public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MODID, path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(MODID, path);
     }
 }

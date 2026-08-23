@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.junit.jupiter.api.Test;
 
@@ -164,13 +166,18 @@ class PlayerTeleportServiceTest {
         }
 
         @Override
-        public Optional<TeleportOutcome> tryTeleport(
+        public CompletionStage<Optional<TeleportOutcome>> tryTeleport(
                 ServerPlayer sender,
                 ServerPlayer target,
                 WaystonesCompat.WarpStoneUse use,
                 PlayerTeleportExperienceMode experienceMode) {
             teleportCalls++;
-            return outcome;
+            return CompletableFuture.completedFuture(outcome);
+        }
+
+        @Override
+        public void executeOnServerThread(ServerPlayer sender, Runnable action) {
+            action.run();
         }
 
         @Override

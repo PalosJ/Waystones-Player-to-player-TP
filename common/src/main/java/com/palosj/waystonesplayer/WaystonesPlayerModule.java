@@ -6,10 +6,9 @@ import java.util.function.Supplier;
 import com.palosj.waystonesplayer.network.ModNetworking;
 import com.palosj.waystonesplayer.teleport.PlayerLifecycleHandler;
 
-import net.blay09.mods.balm.api.event.BalmEvents;
-import net.blay09.mods.balm.api.module.BalmModule;
-import net.blay09.mods.balm.api.network.BalmNetworking;
-import net.minecraft.resources.ResourceLocation;
+import net.blay09.mods.balm.network.BalmNetworking;
+import net.blay09.mods.balm.platform.module.BalmModule;
+import net.minecraft.resources.Identifier;
 
 public final class WaystonesPlayerModule implements BalmModule {
     private final Supplier<PlayerTeleportExperienceMode> experienceMode;
@@ -19,7 +18,7 @@ public final class WaystonesPlayerModule implements BalmModule {
     }
 
     @Override
-    public ResourceLocation getId() {
+    public Identifier getId() {
         return WaystonesPlayer.id("main");
     }
 
@@ -29,7 +28,7 @@ public final class WaystonesPlayerModule implements BalmModule {
     }
 
     @Override
-    public void registerEvents(BalmEvents events) {
-        PlayerLifecycleHandler.register(events);
+    public void initialize() {
+        PlayerLifecycleHandler.register();
     }
 }
