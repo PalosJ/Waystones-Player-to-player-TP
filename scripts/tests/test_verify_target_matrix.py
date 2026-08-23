@@ -119,6 +119,17 @@ class MatrixShapeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify.validate_matrix_shape(matrix)
 
+    def test_26_runtime_compatible_dependency_floors(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        targets = {item["id"]: item for item in matrix["targets"]}
+
+        self.assertEqual("26.1.0.4", targets["neoforge-26.1"]["minimum"]["waystones"])
+        self.assertEqual("26.1.0.1", targets["neoforge-26.1"]["current"]["shogi"])
+        self.assertEqual("26.1.1.8-beta", targets["neoforge-26.1.1"]["minimum"]["neoforge"])
+        self.assertEqual("26.1.2.0-beta", targets["neoforge-26.1.2"]["minimum"]["neoforge"])
+        self.assertEqual("26.1.0.1", targets["fabric-26.1"]["current"]["shogi"])
+        self.assertEqual("0.145.4+26.1.1", targets["fabric-26.1.1"]["minimum"]["fabricApi"])
+
 
 class TargetProperties26Test(unittest.TestCase):
     TARGET = {
