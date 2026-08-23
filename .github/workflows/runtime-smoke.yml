@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: neoforge-runtime-${{ github.ref }}
+  group: neoforge-runtime-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: false
 
 jobs:

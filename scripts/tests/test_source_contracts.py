@@ -82,6 +82,15 @@ class RuntimeWorkflowSourceContractTest(unittest.TestCase):
         if "branches:\n      - main" in build:
             self.assertIn("github.ref == 'refs/heads/main'", build)
 
+    def test_runtime_concurrency_is_scoped_to_the_triggering_build_branch(self) -> None:
+        workflow = source(".github/workflows/runtime-smoke.yml")
+        concurrency = workflow.split("concurrency:", 1)[1].split("jobs:", 1)[0]
+
+        self.assertIn(
+            "github.event.workflow_run.head_branch || github.ref",
+            concurrency,
+        )
+
 
 class ClientTickFailureSourceContractTest(unittest.TestCase):
     def test_tick_failure_is_scoped_to_one_screen(self) -> None:
