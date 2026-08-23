@@ -1,17 +1,17 @@
 plugins {
-    id 'net.fabricmc.fabric-loom-remap'
+    id 'net.fabricmc.fabric-loom'
 }
 
 def matrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
-def targetId = providers.gradleProperty('runtimeTarget').getOrElse('fabric-1.21.1')
+def targetId = providers.gradleProperty('runtimeTarget').getOrElse('fabric-26.1')
 def stackName = providers.gradleProperty('runtimeStack').getOrElse('minimum')
 if (!(stackName in ['minimum', 'key', 'current'])) {
     throw new GradleException("runtimeStack must be minimum, key, or current, got ${stackName}.")
 }
 
 def target = matrix.targets.find { it.id == targetId }
-if (target == null || target.loader != 'fabric' || target.branch != 'fabric/1.21.x') {
-    throw new GradleException("runtimeTarget must name a Fabric unified-branch target, got ${targetId}.")
+if (target == null || target.loader != 'fabric' || target.branch != 'fabric/26.x') {
+    throw new GradleException("runtimeTarget must name a Fabric 26.x target, got ${targetId}.")
 }
 
 def runtimeMinecraft = providers.gradleProperty('runtimeMinecraft')
@@ -62,27 +62,34 @@ loom {
 
 dependencies {
     minecraft "com.mojang:minecraft:${runtimeMinecraft}"
-    mappings loom.officialMojangMappings()
 
-    modImplementation("net.fabricmc:fabric-loader:${stack.fabricLoader}") {
+    implementation("net.fabricmc:fabric-loader:${stack.fabricLoader}") {
         version { strictly(stack.fabricLoader as String) }
     }
-    modRuntimeOnly("net.fabricmc.fabric-api:fabric-api:${stack.fabricApi}") {
+    implementation("net.fabricmc.fabric-api:fabric-api:${stack.fabricApi}") {
         version { strictly(stack.fabricApi as String) }
     }
-    modRuntimeOnly("net.blay09.mods:balm-fabric:${stack.balm}") {
+    implementation("net.blay09.mods:balm-fabric:${stack.balm}") {
         version { strictly(stack.balm as String) }
-        // The Balm JAR contains the KumaAPI build for its own Minecraft line;
-        // reject the overly broad external Maven range from older Balm POMs.
         exclude group: 'net.blay09.mods', module: 'kuma-api-fabric'
         exclude group: 'curse.maven'
         exclude group: 'mysticdrew'
         exclude group: 'mezz.jei'
     }
-    modRuntimeOnly("net.blay09.mods:waystones-fabric:${stack.waystones}") {
+    implementation("net.blay09.mods:shogi-fabric:${stack.shogi}") {
+        version { strictly(stack.shogi as String) }
+        exclude group: 'net.blay09.mods', module: 'shogi-common'
+        exclude group: 'net.blay09.mods', module: 'shogi-api'
+        exclude group: 'curse.maven'
+        exclude group: 'mysticdrew'
+    }
+    implementation("net.blay09.mods:waystones-fabric:${stack.waystones}") {
         version { strictly(stack.waystones as String) }
         exclude group: 'net.blay09.mods', module: 'balm-fabric'
         exclude group: 'net.blay09.mods', module: 'kuma-api-fabric'
+        exclude group: 'net.blay09.mods', module: 'shogi-fabric'
+        exclude group: 'net.blay09.mods', module: 'shogi-common'
+        exclude group: 'net.blay09.mods', module: 'shogi-api'
         exclude group: 'curse.maven'
         exclude group: 'mysticdrew'
         exclude group: 'mezz.jei'
@@ -93,7 +100,7 @@ dependencies {
         }
     }
     if (binaryFile.isFile()) {
-        modRuntimeOnly files(binaryFile)
+        implementation files(binaryFile)
     }
 }
 
