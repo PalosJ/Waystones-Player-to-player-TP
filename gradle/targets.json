@@ -301,7 +301,7 @@
       "artifactFile": "waystonesplayer-neoforge-26.1-1.0.0.jar",
       "minecraft": ["26.1"],
       "compile": {"minecraft": "26.1"},
-      "minimum": {"neoforge": "26.1.0.1-beta", "waystones": "26.1.0.4", "balm": "26.1.0.1", "shogi": "26.1.0.1"},
+      "minimum": {"neoforge": "26.1.0.19-beta", "waystones": "26.1.0.4", "balm": "26.1.0.6", "shogi": "26.1.0.1"},
       "current": {"neoforge": "26.1.0.19-beta", "waystones": "26.1.0.4", "balm": "26.1.0.6", "shogi": "26.1.0.1"},
       "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
     },
