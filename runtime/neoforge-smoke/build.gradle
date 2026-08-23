@@ -3,15 +3,15 @@ plugins {
 }
 
 def matrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
-def targetId = providers.gradleProperty('runtimeTarget').getOrElse('neoforge-1.21.2-1.21.3')
+def targetId = providers.gradleProperty('runtimeTarget').getOrElse('neoforge-26.1')
 def stackName = providers.gradleProperty('runtimeStack').getOrElse('minimum')
 if (!(stackName in ['minimum', 'key', 'current'])) {
     throw new GradleException("runtimeStack must be minimum, key, or current, got ${stackName}.")
 }
 
 def target = matrix.targets.find { it.id == targetId }
-if (target == null || target.loader != 'neoforge' || target.branch != 'neoforge/1.21.x') {
-    throw new GradleException("runtimeTarget must name a NeoForge unified-branch target, got ${targetId}.")
+if (target == null || target.loader != 'neoforge' || target.branch != 'neoforge/26.x') {
+    throw new GradleException("runtimeTarget must name a NeoForge 26.x target, got ${targetId}.")
 }
 
 def runtimeMinecraft = providers.gradleProperty('runtimeMinecraft')
@@ -74,11 +74,17 @@ dependencies {
     localRuntime("net.blay09.mods:balm-neoforge:${stack.balm}") {
         version { strictly(stack.balm as String) }
     }
+    localRuntime("net.blay09.mods:shogi-neoforge:${stack.shogi}") {
+        version { strictly(stack.shogi as String) }
+    }
 
     if (stack.waystonesCapability) {
         localRuntime("net.blay09.mods:waystones-neoforge:${stack.waystones}") {
             version { strictly(stack.waystones as String) }
             exclude group: 'net.blay09.mods', module: 'balm-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-common'
+            exclude group: 'net.blay09.mods', module: 'shogi-api'
             exclude group: 'curse.maven'
             exclude group: 'mysticdrew'
             capabilities {
@@ -89,6 +95,9 @@ dependencies {
         localRuntime("net.blay09.mods:waystones-neoforge:${stack.waystones}") {
             version { strictly(stack.waystones as String) }
             exclude group: 'net.blay09.mods', module: 'balm-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-common'
+            exclude group: 'net.blay09.mods', module: 'shogi-api'
             exclude group: 'curse.maven'
             exclude group: 'mysticdrew'
         }
