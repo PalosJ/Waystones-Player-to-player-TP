@@ -2,6 +2,7 @@ package com.palosj.waystonesplayer.teleport;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
@@ -69,12 +70,22 @@ public final class TeleportRuntime {
         }
 
         @Override
-        public Optional<TeleportOutcome> tryTeleport(
+        public CompletionStage<Optional<TeleportOutcome>> tryTeleport(
                 ServerPlayer sender,
                 ServerPlayer target,
                 WaystonesCompat.WarpStoneUse warpStoneUse,
                 PlayerTeleportExperienceMode experienceMode) {
             return WaystonesTeleportCompat.tryTeleport(sender, target, warpStoneUse, experienceMode);
+        }
+
+        @Override
+        public void executeOnServerThread(ServerPlayer sender, Runnable action) {
+            var server = sender.level().getServer();
+            if (server.isSameThread()) {
+                action.run();
+            } else {
+                server.execute(action);
+            }
         }
 
         @Override
@@ -104,7 +115,7 @@ public final class TeleportRuntime {
 
         @Override
         public void displayMessage(ServerPlayer sender, String translationKey) {
-            sender.displayClientMessage(
+            sender.sendSystemMessage(
                     Component.translatable(translationKey).copy().withStyle(ChatFormatting.RED),
                     false);
         }

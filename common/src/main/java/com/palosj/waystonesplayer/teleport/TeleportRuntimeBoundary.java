@@ -2,6 +2,7 @@ package com.palosj.waystonesplayer.teleport;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
@@ -21,11 +22,13 @@ interface TeleportRuntimeBoundary {
 
     Optional<TargetPlayer> resolveListedTarget(ServerPlayer sender, UUID targetPlayerId);
 
-    Optional<TeleportOutcome> tryTeleport(
+    CompletionStage<Optional<TeleportOutcome>> tryTeleport(
             ServerPlayer sender,
             ServerPlayer target,
             WaystonesCompat.WarpStoneUse warpStoneUse,
             PlayerTeleportExperienceMode experienceMode);
+
+    void executeOnServerThread(ServerPlayer sender, Runnable action);
 
     Optional<DurabilityTarget> resolveDurabilityTarget(
             ServerPlayer sender,

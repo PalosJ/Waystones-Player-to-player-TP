@@ -1,6 +1,8 @@
 package com.palosj.waystonesplayer.compat;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
@@ -15,20 +17,29 @@ public final class WaystonesTeleportCompat {
     private WaystonesTeleportCompat() {
     }
 
-    public static Optional<TeleportOutcome> tryTeleport(
+    public static CompletionStage<Optional<TeleportOutcome>> tryTeleport(
             ServerPlayer sender,
             ServerPlayer target,
             WaystonesCompat.WarpStoneUse warpStoneUse,
             PlayerTeleportExperienceMode mode) {
         try {
-            return Optional.of(WaystonesTeleportEvaluator.tryTeleport(sender, target, warpStoneUse, mode));
+            return WaystonesTeleportEvaluator.tryTeleport(sender, target, warpStoneUse, mode)
+                    .thenApply(Optional::of)
+                    .exceptionally(error -> {
+                        logCompatibilityFailure(error);
+                        return Optional.empty();
+                    });
         } catch (LinkageError | RuntimeException error) {
-            if (COMPAT_FAILURE_LOGGED.compareAndSet(false, true)) {
-                WaystonesPlayer.LOGGER.warn(
-                        "Waystones player-destination compatibility is unavailable; the teleport was rejected.",
-                        error);
-            }
-            return Optional.empty();
+            logCompatibilityFailure(error);
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+    }
+
+    private static void logCompatibilityFailure(Throwable error) {
+        if (COMPAT_FAILURE_LOGGED.compareAndSet(false, true)) {
+            WaystonesPlayer.LOGGER.warn(
+                    "Waystones player-destination compatibility is unavailable; the teleport was rejected.",
+                    error);
         }
     }
 }

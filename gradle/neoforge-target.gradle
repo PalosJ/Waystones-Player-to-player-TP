@@ -7,7 +7,7 @@ def target = matrix.targets.find { it.id == project.name }
 def sourceCommit = providers.exec {
     commandLine 'git', 'rev-parse', 'HEAD'
 }.standardOutput.asText.map { it.trim() }
-if (target == null || target.loader != 'neoforge' || target.branch != 'neoforge/1.21.x') {
+if (target == null || target.loader != 'neoforge' || target.branch != 'neoforge/26.x') {
     throw new GradleException("Missing NeoForge target matrix entry for ${project.path}.")
 }
 
@@ -202,6 +202,47 @@ configurations {
     testRuntimeOnly.extendsFrom localRuntime
 }
 
+def embeddedShogiApi
+if (stack.shogiApiEmbedded) {
+    def shogiLoaderArtifact = configurations.detachedConfiguration(
+            dependencies.create("net.blay09.mods:shogi-neoforge:${stack.shogi}"))
+    shogiLoaderArtifact.transitive = false
+    def extractedShogiApiFile = layout.buildDirectory.file(
+            "generated/shogi-api/${stack.shogi}/shogi-api-${stack.shogi}.jar")
+    def extractEmbeddedShogiApi = tasks.register('extractEmbeddedShogiApi') {
+        group = 'build setup'
+        description = "Extracts the API nested in the locked Shogi ${stack.shogi} loader JAR."
+        inputs.files(shogiLoaderArtifact)
+        outputs.file(extractedShogiApiFile)
+        doLast {
+            def loaderJars = shogiLoaderArtifact.files.findAll { it.name.endsWith('.jar') }
+            if (loaderJars.size() != 1) {
+                throw new GradleException(
+                        "Expected one locked Shogi loader JAR, found ${loaderJars*.name}.")
+            }
+            new java.util.zip.ZipFile(loaderJars.first()).withCloseable { zip ->
+                def apiEntries = java.util.Collections.list(zip.entries()).findAll { entry ->
+                    !entry.directory
+                            && entry.name.startsWith('META-INF/jarjar/')
+                            && entry.name.contains('shogi-api')
+                            && entry.name.endsWith('.jar')
+                }
+                if (apiEntries.size() != 1) {
+                    throw new GradleException(
+                            "Shogi ${stack.shogi} must contain exactly one nested shogi-api JAR, found ${apiEntries*.name}.")
+                }
+                File output = extractedShogiApiFile.get().asFile
+                output.parentFile.mkdirs()
+                zip.getInputStream(apiEntries.first()).withCloseable { input ->
+                    output.withOutputStream { stream -> input.transferTo(stream) }
+                }
+            }
+        }
+    }
+    embeddedShogiApi = files(extractedShogiApiFile)
+    embeddedShogiApi.builtBy(extractEmbeddedShogiApi)
+}
+
 dependencies {
     implementation project(':core')
 
@@ -216,10 +257,27 @@ dependencies {
         version { strictly(stack.balm as String) }
     }
 
+    compileOnly("net.blay09.mods:shogi-neoforge:${stack.shogi}") {
+        version { strictly(stack.shogi as String) }
+    }
+    localRuntime("net.blay09.mods:shogi-neoforge:${stack.shogi}") {
+        version { strictly(stack.shogi as String) }
+    }
+    // Later 26.x Shogi releases publish the public API only as jar-in-jar. ModDev does
+    // not expose nested libraries on the compile classpath, so compile against the exact
+    // bytes embedded in the strictly locked loader JAR instead of a floating snapshot.
+    if (embeddedShogiApi != null) {
+        compileOnly embeddedShogiApi
+        testRuntimeOnly embeddedShogiApi
+    }
+
     if (stack.waystonesCapability) {
         compileOnly("net.blay09.mods:waystones-neoforge:${stack.waystones}") {
             version { strictly(stack.waystones as String) }
             exclude group: 'net.blay09.mods', module: 'balm-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-common'
+            exclude group: 'net.blay09.mods', module: 'shogi-api'
             exclude group: 'curse.maven'
             exclude group: 'mysticdrew'
             capabilities {
@@ -229,6 +287,9 @@ dependencies {
         localRuntime("net.blay09.mods:waystones-neoforge:${stack.waystones}") {
             version { strictly(stack.waystones as String) }
             exclude group: 'net.blay09.mods', module: 'balm-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-common'
+            exclude group: 'net.blay09.mods', module: 'shogi-api'
             exclude group: 'curse.maven'
             exclude group: 'mysticdrew'
             capabilities {
@@ -239,12 +300,18 @@ dependencies {
         compileOnly("net.blay09.mods:waystones-neoforge:${stack.waystones}") {
             version { strictly(stack.waystones as String) }
             exclude group: 'net.blay09.mods', module: 'balm-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-common'
+            exclude group: 'net.blay09.mods', module: 'shogi-api'
             exclude group: 'curse.maven'
             exclude group: 'mysticdrew'
         }
         localRuntime("net.blay09.mods:waystones-neoforge:${stack.waystones}") {
             version { strictly(stack.waystones as String) }
             exclude group: 'net.blay09.mods', module: 'balm-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-neoforge'
+            exclude group: 'net.blay09.mods', module: 'shogi-common'
+            exclude group: 'net.blay09.mods', module: 'shogi-api'
             exclude group: 'curse.maven'
             exclude group: 'mysticdrew'
         }
@@ -256,18 +323,23 @@ sourceSets.test {
     runtimeClasspath += sourceSets.main.runtimeClasspath
 }
 
-def minecraftRange = target.minecraft.size() == 2
-        ? "[${target.minecraft.first()},1.21.4)"
-        : "[${target.minecraft.first()}]"
-def compileMinor = target.compile.minecraft.tokenize('.').last().toInteger()
+def minecraftRange = "[${target.minecraft.first()}]"
 def minimumNeoForge = target.runtimeStacks
         ? target.runtimeStacks.first().minimum.neoforge
         : target.minimum.neoforge
-def neoForgeRange = "[${minimumNeoForge},21.${compileMinor + 1})"
-def waystonesMinimum = target.minimum.waystones.tokenize('+').first()
-def balmMinimum = target.minimum.balm.tokenize('+').first()
-def waystonesRange = "[${waystonesMinimum},21.${compileMinor + 1})"
-def balmRange = "[${balmMinimum},21.${compileMinor + 1})"
+def compatibilityUpper = [
+        '26.1'  : '26.1.1',
+        '26.1.1': '26.1.2',
+        '26.1.2': '26.2',
+        '26.2'  : '26.3',
+][target.compile.minecraft]
+if (compatibilityUpper == null) {
+    throw new GradleException("Missing 26.x compatibility upper bound for ${target.id}.")
+}
+def neoForgeRange = "[${minimumNeoForge},${compatibilityUpper})"
+def waystonesRange = "[${target.minimum.waystones},${compatibilityUpper})"
+def balmRange = "[${target.minimum.balm},${compatibilityUpper})"
+def shogiRange = "[${target.minimum.shogi},${compatibilityUpper})"
 
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     def replaceProperties = [
@@ -285,6 +357,8 @@ def generateModMetadata = tasks.register('generateModMetadata', ProcessResources
             mod_description        : mod_description,
             waystones_version_range: waystonesRange,
             balm_version_range     : balmRange,
+            shogi_version_range    : shogiRange,
+            java_version_range     : '[25,)',
     ]
     inputs.properties replaceProperties
     expand replaceProperties
@@ -298,14 +372,35 @@ neoForge.ideSyncTask generateModMetadata
 tasks.named('jar', Jar).configure {
     duplicatesStrategy = DuplicatesStrategy.FAIL
     inputs.property('waystonesPlayerSourceCommit', sourceCommit)
-    manifest {
-        attributes(
+    def manifestAttributes = [
                 'Implementation-Title': mod_name,
                 'Implementation-Version': matrix.modVersion,
                 'WaystonesPlayer-Target': target.id,
                 'WaystonesPlayer-Build-Stack': stackName,
                 'WaystonesPlayer-Source-Commit': sourceCommit.get(),
-        )
+    ]
+    manifest {
+        attributes(manifestAttributes)
+    }
+    if (target.waystonesSource) {
+        doFirst {
+            File provenanceFile = rootProject.file(
+                    "build/upstream-provenance/waystones-neoforge-${target.compile.minecraft}.json")
+            if (!provenanceFile.isFile()) {
+                throw new GradleException(
+                        "${target.id} requires scripts/prepare-waystones-source.py --loader neoforge before its JAR is built.")
+            }
+            def provenance = new groovy.json.JsonSlurper().parse(provenanceFile)
+            if (provenance.sourceCommit != target.waystonesSource.commit
+                    || provenance.sourcePatchSha256 != target.waystonesSource.patchSha256) {
+                throw new GradleException("${target.id} upstream source provenance does not match targets.json.")
+            }
+            manifest.attributes([
+                    'WaystonesPlayer-Upstream-Waystones-Commit': provenance.sourceCommit,
+                    'WaystonesPlayer-Upstream-Waystones-Patch-SHA256': provenance.sourcePatchSha256,
+                    'WaystonesPlayer-Upstream-Waystones-JAR-SHA256': provenance.artifactSha256,
+            ])
+        }
     }
     from project(':core').sourceSets.main.output
     from(rootProject.file('LICENSE')) {
@@ -395,6 +490,12 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 throw new GradleException(
                         'Release JAR manifest does not identify its target, dependency build stack, and source commit.')
             }
+            if (target.waystonesSource
+                    && (attributes.getValue('WaystonesPlayer-Upstream-Waystones-Commit') != target.waystonesSource.commit
+                    || attributes.getValue('WaystonesPlayer-Upstream-Waystones-Patch-SHA256') != target.waystonesSource.patchSha256
+                    || !(attributes.getValue('WaystonesPlayer-Upstream-Waystones-JAR-SHA256') ==~ /[0-9a-f]{64}/))) {
+                throw new GradleException('Release JAR is missing fixed Waystones source provenance.')
+            }
 
             def iconEntry = zip.getEntry('waystonesplayer.png')
             def icon = javax.imageio.ImageIO.read(zip.getInputStream(iconEntry))
@@ -444,6 +545,8 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                     "versionRange=\"${neoForgeRange}\"",
                     "versionRange=\"${waystonesRange}\"",
                     "versionRange=\"${balmRange}\"",
+                    "versionRange=\"${shogiRange}\"",
+                    'features={java_version="[25,)"}',
             ].each { requiredMetadata ->
                 if (!metadata.contains(requiredMetadata)) {
                     throw new GradleException(

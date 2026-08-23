@@ -3,7 +3,7 @@ package com.palosj.waystonesplayer.neoforge;
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.WaystonesPlayer;
 
-import net.neoforged.fml.ModList;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
@@ -24,10 +24,8 @@ public final class NeoForgeConfig {
     private NeoForgeConfig() {
     }
 
-    public static void register() {
-        ModList.get().getModContainerById(WaystonesPlayer.MODID)
-                .orElseThrow(() -> new IllegalStateException("Missing Waystones Player mod container."))
-                .registerConfig(ModConfig.Type.SERVER, SPEC);
+    public static void register(ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.SERVER, SPEC);
     }
 
     public static PlayerTeleportExperienceMode experienceMode() {

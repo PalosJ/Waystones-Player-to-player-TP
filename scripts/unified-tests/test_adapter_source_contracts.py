@@ -9,13 +9,18 @@ def source(relative_path: str) -> str:
     return (REPO / relative_path).read_text(encoding="utf-8")
 
 
+def existing(relative_paths):
+    return [path for path in relative_paths if (REPO / path).is_file()]
+
+
 class UnifiedScreenFamilySourceContractTest(unittest.TestCase):
     def test_all_screen_families_cache_skins_reuse_rows_and_clean_up(self) -> None:
-        buttons = [
+        buttons = existing([
             "adapters/screen/player-skin-1.21.3-1.21.10/java/com/palosj/waystonesplayer/client/widget/PlayerTeleportButton.java",
             "adapters/screen/player-skin-1.21.9-1.21.10/java/com/palosj/waystonesplayer/client/widget/PlayerTeleportButton.java",
             "adapters/screen/player-skin-1.21.11/java/com/palosj/waystonesplayer/client/widget/PlayerTeleportButton.java",
-        ]
+            "adapters/screen/graphics-extractor-26/java/com/palosj/waystonesplayer/client/widget/PlayerTeleportButton.java",
+        ])
         for path in buttons:
             with self.subTest(path=path):
                 button = source(path)
@@ -24,10 +29,11 @@ class UnifiedScreenFamilySourceContractTest(unittest.TestCase):
                 self.assertIn("SkinRetryThrottle", button)
                 self.assertIn("public void tickSkin()", button)
 
-        lists = [
+        lists = existing([
             "adapters/screen/list-1.21.4-1.21.10/java/com/palosj/waystonesplayer/client/widget/PlayerDestinationList.java",
             "adapters/screen/list-1.21.9-1.21.11/java/com/palosj/waystonesplayer/client/widget/PlayerDestinationList.java",
-        ]
+            "adapters/screen/graphics-extractor-26/java/com/palosj/waystonesplayer/client/widget/PlayerDestinationList.java",
+        ])
         for path in lists:
             with self.subTest(path=path):
                 player_list = source(path)
@@ -39,10 +45,11 @@ class UnifiedScreenFamilySourceContractTest(unittest.TestCase):
                 self.assertIn("clearButtonFocus", player_list)
                 self.assertIn("setFocused(null)", player_list)
 
-        injectors = [
+        injectors = existing([
             "adapters/screen/legacy-1.21.3-1.21.10/java/com/palosj/waystonesplayer/client/WaystonePlayerScreenInjector.java",
             "adapters/screen/platform-1.21.11/java/com/palosj/waystonesplayer/client/WaystonePlayerScreenInjector.java",
-        ]
+            "adapters/screen/graphics-extractor-26/java/com/palosj/waystonesplayer/client/WaystonePlayerScreenInjector.java",
+        ])
         for path in injectors:
             with self.subTest(path=path):
                 injector = source(path)
@@ -54,10 +61,10 @@ class UnifiedScreenFamilySourceContractTest(unittest.TestCase):
                 self.assertIn("public static void onScreenClosed", injector)
                 self.assertIn("tickVisibleEntries", injector)
 
-        setups = [
+        setups = existing([
             "adapters/screen/legacy-1.21.3-1.21.10/java/com/palosj/waystonesplayer/client/WaystoneClientSetup.java",
             "adapters/screen/platform-1.21.11/java/com/palosj/waystonesplayer/client/WaystoneClientSetup.java",
-        ]
+        ])
         for path in setups:
             with self.subTest(path=path):
                 setup = source(path)
@@ -65,6 +72,16 @@ class UnifiedScreenFamilySourceContractTest(unittest.TestCase):
                 self.assertRegex(setup, r"private static Screen \w+(?:Disabled|Unavailable)Screen;")
                 self.assertRegex(setup, r"(?:Disabled|Unavailable)Screen = screen;")
                 self.assertRegex(setup, r"(?:Disabled|Unavailable)Screen = null;")
+
+        graphics_setup_path = (
+            "adapters/screen/graphics-extractor-26/java/com/palosj/waystonesplayer/client/WaystoneClientSetup.java"
+        )
+        if REPO.joinpath(graphics_setup_path).is_file():
+            setup = source(graphics_setup_path)
+            self.assertIn("activeWaystoneScreen", setup)
+            self.assertIn("onScreenClosed(activeWaystoneScreen)", setup)
+            self.assertNotIn("minecraft.screen", setup)
+            self.assertNotIn("minecraft.gui.screen()", setup)
 
 
 class UnifiedNetworkFamilySourceContractTest(unittest.TestCase):
@@ -111,8 +128,12 @@ class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
         target_suffixes = [
             "1.21.2-1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10"
         ]
+        found = 0
         for suffix in target_suffixes:
             path = f"targets/{loader}-{suffix}/target.properties"
+            if not REPO.joinpath(path).is_file():
+                continue
+            found += 1
             with self.subTest(path=path):
                 properties = source(path)
                 self.assertIn(
@@ -121,6 +142,34 @@ class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
                 )
                 self.assertIn("teleport/legacy-21.3", properties)
                 self.assertIn("teleport/context-optional-hand-21.3-21.10", properties)
+        if not list(REPO.glob(f"targets/{loader}-26*/target.properties")):
+            self.assertGreater(found, 0)
+
+    def test_26_targets_select_locked_shogi_and_graphics_extractor_families(self) -> None:
+        settings = source("settings.gradle")
+        loader = "fabric" if "fabricTargets" in settings else "neoforge"
+        target_files = sorted(REPO.glob(f"targets/{loader}-26*/target.properties"))
+        if not target_files:
+            return
+        self.assertEqual(4, len(target_files))
+        for target_file in target_files:
+            properties = target_file.read_text(encoding="utf-8")
+            with self.subTest(path=str(target_file.relative_to(REPO))):
+                self.assertIn(
+                    "com/palosj/waystonesplayer/compat/LockedWaystoneTeleportContext.java",
+                    properties,
+                )
+                self.assertIn("teleport/shogi-26", properties)
+                self.assertIn("screen/graphics-extractor-26", properties)
+                self.assertIn(f"loader/{loader}-load-context-26", properties)
+
+        context = source(
+            "adapters/teleport/shogi-26/java/com/palosj/waystonesplayer/compat/LockedWaystoneTeleportContext.java"
+        )
+        self.assertIn("requireUnmodified", context)
+        self.assertIn("requirementReplacementAttempted", context)
+        self.assertIn("feeContextMutationAttempted", context)
+        self.assertIn("executorOverrideAttempted", context)
 
 
 if __name__ == "__main__":

@@ -301,6 +301,13 @@ subprojects {
     group = rootProject.group
 
     repositories {
+        maven {
+            name = 'FixedUpstreamBuilds'
+            url = rootProject.layout.buildDirectory.dir('upstream-maven')
+            content {
+                includeGroup 'net.blay09.mods'
+            }
+        }
         mavenCentral()
         maven {
             name = 'TwelveIterations'

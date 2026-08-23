@@ -2,7 +2,6 @@ package com.palosj.waystonesplayer.teleport;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
 public final class DurabilityCompat {
@@ -10,6 +9,6 @@ public final class DurabilityCompat {
     }
 
     public static void hurtAndBreak(ItemStack stack, ServerPlayer player, InteractionHand hand) {
-        stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+        stack.hurtAndBreak(1, player, hand);
     }
 }

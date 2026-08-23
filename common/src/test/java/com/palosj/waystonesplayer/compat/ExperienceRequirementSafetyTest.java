@@ -1,151 +1,77 @@
 package com.palosj.waystonesplayer.compat;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.lang.reflect.Proxy;
-import java.util.List;
-import java.util.Optional;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import net.blay09.mods.waystones.requirement.CombinedRequirement;
-import net.blay09.mods.waystones.requirement.ExperienceLevelRequirement;
-import net.blay09.mods.waystones.requirement.ExperiencePointsRequirement;
-import net.blay09.mods.waystones.requirement.NoRequirement;
-import net.blay09.mods.waystones.requirement.RequirementRegistry;
-import net.blay09.mods.waystones.api.requirement.WarpRequirement;
+import net.minecraft.resources.Identifier;
 
 class ExperienceRequirementSafetyTest {
     @Test
-    void rejectsRulesThatParseToNoModifiers() {
-        assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.parseRequiredRule("not a valid requirement"));
-        assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.normalizeParsedRule("empty optional", Optional.empty()));
-        assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.normalizeParsedRule("empty iterable", List.of()));
-        assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.normalizeParsedRule("unknown optional", Optional.of("unknown")));
-        assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.normalizeParsedRule("unknown shape", "unknown"));
+    void acceptsZeroBoundaryAndOfficialDefaultArithmetic() {
+        assertDoesNotThrow(() -> ShogiExperienceRuleSafety.validateNumericLiterals(
+                "$xp_points_cost = if(condition = is_interdimensional, then = 27, else = $distance * 0.01)"));
+        assertDoesNotThrow(() -> ShogiExperienceRuleSafety.validateNumericLiterals(
+                "source(is_warp_plate()), target(is_global()) -> $xp_points_cost = 0"));
+        assertDoesNotThrow(() -> ShogiExperienceRuleSafety.validateNumericLiterals(
+                "$xp_points_cost = clamp($xp_points_cost, 0, 2147483647)"));
     }
 
     @Test
-    void rejectsUnsafeModifierParameters() {
-        assertThrows(IllegalArgumentException.class, () -> ExperienceRequirementSafety.expectedCost(
-                "waystones:experience_points",
-                "waystones:add_xp_cost",
-                0,
-                new RequirementRegistry.IntParameter(-1),
-                0));
-        assertThrows(IllegalArgumentException.class, () -> ExperienceRequirementSafety.expectedCost(
-                "waystones:experience_levels",
-                "waystones:multiply_level_cost",
-                1,
-                new RequirementRegistry.FloatParameter(Float.NaN),
-                0));
-        assertThrows(IllegalArgumentException.class, () -> ExperienceRequirementSafety.expectedCost(
-                "waystones:experience_levels",
-                "other:multiply_level_cost",
-                1,
-                new RequirementRegistry.FloatParameter(1),
-                0));
-        assertThrows(IllegalArgumentException.class, () -> ExperienceRequirementSafety.expectedCost(
-                "waystones:experience_levels",
-                "waystones:scaled_add_level_cost",
-                1,
-                new RequirementRegistry.VariableScaledParameter(
-                        new RequirementRegistry.WaystonesIdParameter(null),
-                        new RequirementRegistry.FloatParameter(-1)),
-                2));
-        assertThrows(IllegalArgumentException.class, () -> ExperienceRequirementSafety.expectedCost(
-                "waystones:experience_points",
-                "waystones:multiply_xp_cost",
-                1,
-                new RequirementRegistry.FloatParameter(Float.POSITIVE_INFINITY),
-                0));
-        assertThrows(IllegalArgumentException.class, () -> ExperienceRequirementSafety.expectedCost(
-                "waystones:experience_points",
-                "waystones:scaled_multiply_xp_cost",
-                Integer.MAX_VALUE,
-                new RequirementRegistry.VariableScaledParameter(
-                        new RequirementRegistry.WaystonesIdParameter(null),
-                        new RequirementRegistry.FloatParameter(2)),
-                2));
+    void rejectsNegativeNonFiniteOverflowAndSubtractionInputs() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ShogiExperienceRuleSafety.validateNumericLiterals("$xp_points_cost = -1"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ShogiExperienceRuleSafety.validateNumericLiterals("$xp_points_cost = NaN"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ShogiExperienceRuleSafety.validateNumericLiterals("$xp_points_cost = Infinity"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ShogiExperienceRuleSafety.validateNumericLiterals("$xp_points_cost = 2147483648"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ShogiExperienceRuleSafety.validateNumericLiterals("$xp_points_cost = $distance - 1"));
     }
 
     @Test
-    void rejectsUnknownExperienceModifierEvenBeforeItCanBeApplied() {
+    void ignoresUnsafeWordsInsideQuotedNamesButStillRejectsNumericPayloads() {
+        assertDoesNotThrow(() -> ShogiExperienceRuleSafety.validateNumericLiterals(
+                "name_equals(\"Infinity-NaN\") -> $xp_points_cost = 0"));
         assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.validateModifierIdentity(
-                        "waystones:experience_points", "example:free_xp"));
-        assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.validateModifierIdentity(
-                        "waystones:experience_levels", "waystones:unknown_level_cost"));
-        assertDoesNotThrow(() -> ExperienceRequirementSafety.validateModifierIdentity(
-                "waystones:item", "example:custom_item_cost"));
+                () -> ShogiExperienceRuleSafety.validateNumericLiterals(
+                        "name_equals(\"safe\") -> $xp_points_cost = -0.01"));
     }
 
     @Test
-    void computesCheckedBuiltInModifierResults() {
-        assertEquals(7, ExperienceRequirementSafety.expectedCost(
-                "waystones:experience_points",
-                "waystones:add_xp_cost",
-                2,
-                new RequirementRegistry.IntParameter(5),
-                0));
-        assertEquals(12, ExperienceRequirementSafety.expectedCost(
-                "waystones:experience_levels",
-                "waystones:scaled_add_level_cost",
-                2,
-                new RequirementRegistry.VariableScaledParameter(
-                        new RequirementRegistry.WaystonesIdParameter(null),
-                        new RequirementRegistry.FloatParameter(2)),
-                5));
+    void classifiesOnlyKnownExperiencePureAndExcludedEffects() {
+        Identifier points = id("shogi", "xp_points_cost");
+        Identifier levels = id("shogi", "xp_level_cost");
+        assertTrue(ShogiExperienceRuleSafety.isExperienceEffect(points));
+        assertTrue(ShogiExperienceRuleSafety.isExperienceEffect(levels));
+        assertFalse(ShogiExperienceRuleSafety.isExcludedCostEffect(points));
+        assertTrue(ShogiExperienceRuleSafety.isExcludedCostEffect(id("shogi", "damage_item")));
+        assertTrue(ShogiExperienceRuleSafety.isKnownPureEffect(id("waystones", "is_warp_stone")));
+        assertFalse(ShogiExperienceRuleSafety.isKnownPureEffect(id("example", "free_teleport")));
     }
 
     @Test
-    void validatesOnlyKnownNonNegativeRequirementTrees() {
-        assertDoesNotThrow(() -> ExperienceRequirementSafety.validateRequirementTree(NoRequirement.INSTANCE));
-        assertDoesNotThrow(() -> ExperienceRequirementSafety.validateRequirementTree(
-                new CombinedRequirement(List.of(
-                        new ExperiencePointsRequirement(3),
-                        new ExperienceLevelRequirement(2)))));
-
-        ExperiencePointsRequirement negative = new ExperiencePointsRequirement(0);
-        negative.setPoints(-1);
+    void acceptsOnlyMonotonicNonNegativeIntegerAggregates() {
+        assertDoesNotThrow(() -> LockedShogiExecutor.requireCost(0, "zero"));
+        assertDoesNotThrow(() -> LockedShogiExecutor.requireCost(Integer.MAX_VALUE, "maximum"));
+        assertDoesNotThrow(() -> LockedShogiExecutor.validateAggregateProgress(5, 5));
+        assertDoesNotThrow(() -> LockedShogiExecutor.validateAggregateProgress(5, 6));
         assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.validateRequirementTree(negative));
-
+                () -> LockedShogiExecutor.requireCost(-1, "negative"));
         assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.validateRequirementTree(null));
+                () -> LockedShogiExecutor.requireCost(Double.NaN, "nan"));
         assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.validateRequirementTree(new CombinedRequirement(List.of())));
+                () -> LockedShogiExecutor.requireCost(Double.POSITIVE_INFINITY, "infinity"));
         assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.validateRequirementTree(new CombinedRequirement(List.of(
-                        new ExperiencePointsRequirement(1),
-                        new ExperiencePointsRequirement(2)))));
-
-        WarpRequirement unknown = (WarpRequirement) Proxy.newProxyInstance(
-                WarpRequirement.class.getClassLoader(),
-                new Class<?>[] { WarpRequirement.class },
-                (proxy, method, arguments) -> defaultValue(method.getReturnType()));
-        assertThrows(IllegalArgumentException.class,
-                () -> ExperienceRequirementSafety.validateRequirementTree(unknown));
+                () -> LockedShogiExecutor.validateAggregateProgress(Integer.MAX_VALUE, Integer.MIN_VALUE));
     }
 
-    private static Object defaultValue(Class<?> type) {
-        if (!type.isPrimitive()) {
-            return null;
-        }
-        if (type == boolean.class) {
-            return false;
-        }
-        if (type == char.class) {
-            return '\0';
-        }
-        return 0;
+    private static Identifier id(String namespace, String path) {
+        return Identifier.fromNamespaceAndPath(namespace, path);
     }
 }

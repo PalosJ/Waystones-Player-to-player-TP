@@ -13,6 +13,7 @@ credits="${mod_credits}"
 description='''
 ${mod_description}
 '''
+features={java_version="${java_version_range}"}
 
 [[mixins]]
 config="waystonesplayer.mixins.json"
@@ -42,5 +43,12 @@ config="waystonesplayer.mixins.json"
     modId="balm"
     type="required"
     versionRange="${balm_version_range}"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="shogi"
+    type="required"
+    versionRange="${shogi_version_range}"
     ordering="AFTER"
     side="BOTH"

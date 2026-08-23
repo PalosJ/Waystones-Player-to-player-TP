@@ -7,7 +7,7 @@ import com.palosj.waystonesplayer.WaystonesPlayer;
 import com.palosj.waystonesplayer.network.payload.RequestPlayerTeleportPayload;
 import com.palosj.waystonesplayer.teleport.PlayerTeleportService;
 
-import net.blay09.mods.balm.api.network.BalmNetworking;
+import net.blay09.mods.balm.network.BalmNetworking;
 
 public final class ModNetworking {
     private static final String NETWORK_VERSION = "1";

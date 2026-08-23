@@ -302,7 +302,7 @@
       "minecraft": ["26.1"],
       "compile": {"minecraft": "26.1"},
       "minimum": {"neoforge": "26.1.0.1-beta", "waystones": "26.1.0.1", "balm": "26.1.0.1", "shogi": "26.1.0.1"},
-      "current": {"neoforge": "26.1.0.19-beta", "waystones": "26.1.0.4", "balm": "26.1.0.6", "shogi": "26.1.0.4"},
+      "current": {"neoforge": "26.1.0.19-beta", "waystones": "26.1.0.4", "balm": "26.1.0.6", "shogi": "26.1.0.4", "shogiApiEmbedded": true},
       "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
     },
     {
@@ -314,7 +314,7 @@
       "minecraft": ["26.1.1"],
       "compile": {"minecraft": "26.1.1"},
       "minimum": {"neoforge": "26.1.1.1-beta", "waystones": "26.1.1.0", "balm": "26.1.1.1", "shogi": "26.1.0.1"},
-      "current": {"neoforge": "26.1.1.15-beta", "waystones": "26.1.1.0", "balm": "26.1.1.2", "shogi": "26.1.0.4"},
+      "current": {"neoforge": "26.1.1.15-beta", "waystones": "26.1.1.0", "balm": "26.1.1.2", "shogi": "26.1.0.4", "shogiApiEmbedded": true},
       "waystonesSource": {
         "repository": "https://github.com/TwelveIterations/Waystones.git",
         "commit": "795bb9ac93e73a0df8e5678ba6746dfbf8b055a3",
@@ -333,7 +333,7 @@
       "minecraft": ["26.1.2"],
       "compile": {"minecraft": "26.1.2"},
       "minimum": {"neoforge": "26.1.1.15-beta", "waystones": "26.1.2.1", "balm": "26.1.1.2", "shogi": "26.1.0.1"},
-      "current": {"neoforge": "26.1.2.97", "waystones": "26.1.2.14", "balm": "26.1.2.12", "shogi": "26.1.2.8"},
+      "current": {"neoforge": "26.1.2.97", "waystones": "26.1.2.14", "balm": "26.1.2.12", "shogi": "26.1.2.8", "shogiApiEmbedded": true},
       "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
     },
     {
@@ -344,8 +344,8 @@
       "artifactFile": "waystonesplayer-neoforge-26.2-1.0.0.jar",
       "minecraft": ["26.2"],
       "compile": {"minecraft": "26.2"},
-      "minimum": {"neoforge": "26.2.0.0-beta", "waystones": "26.2.0.1", "balm": "26.2.0.1", "shogi": "26.2.0.1"},
-      "current": {"neoforge": "26.2.0.66", "waystones": "26.2.0.9", "balm": "26.2.0.6", "shogi": "26.2.0.5"},
+      "minimum": {"neoforge": "26.2.0.0-beta", "waystones": "26.2.0.1", "balm": "26.2.0.1", "shogi": "26.2.0.1", "shogiApiEmbedded": true},
+      "current": {"neoforge": "26.2.0.66", "waystones": "26.2.0.9", "balm": "26.2.0.6", "shogi": "26.2.0.5", "shogiApiEmbedded": true},
       "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
     },
     {
@@ -358,7 +358,7 @@
       "compile": {"minecraft": "26.1"},
       "balmModId": "balm",
       "minimum": {"fabricLoader": "0.18.4", "fabricApi": "0.144.0+26.1", "waystones": "26.1.0.1", "balm": "26.1.0.1", "shogi": "26.1.0.1"},
-      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.145.1+26.1", "waystones": "26.1.0.4", "balm": "26.1.0.6", "shogi": "26.1.0.4"},
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.145.1+26.1", "waystones": "26.1.0.4", "balm": "26.1.0.6", "shogi": "26.1.0.4", "shogiApiEmbedded": true},
       "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
     },
     {
@@ -371,7 +371,7 @@
       "compile": {"minecraft": "26.1.1"},
       "balmModId": "balm",
       "minimum": {"fabricLoader": "0.18.6", "fabricApi": "0.145.3+26.1.1", "waystones": "26.1.1.0", "balm": "26.1.1.1", "shogi": "26.1.0.1"},
-      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.145.4+26.1.1", "waystones": "26.1.1.0", "balm": "26.1.1.2", "shogi": "26.1.0.4"},
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.145.4+26.1.1", "waystones": "26.1.1.0", "balm": "26.1.1.2", "shogi": "26.1.0.4", "shogiApiEmbedded": true},
       "waystonesSource": {
         "repository": "https://github.com/TwelveIterations/Waystones.git",
         "commit": "795bb9ac93e73a0df8e5678ba6746dfbf8b055a3",
@@ -391,7 +391,7 @@
       "compile": {"minecraft": "26.1.2"},
       "balmModId": "balm",
       "minimum": {"fabricLoader": "0.19.1", "fabricApi": "0.145.4+26.1.2", "waystones": "26.1.2.1", "balm": "26.1.1.2", "shogi": "26.1.0.1"},
-      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.155.2+26.1.2", "waystones": "26.1.2.14", "balm": "26.1.2.12", "shogi": "26.1.2.8"},
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.155.2+26.1.2", "waystones": "26.1.2.14", "balm": "26.1.2.12", "shogi": "26.1.2.8", "shogiApiEmbedded": true},
       "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
     },
     {
@@ -403,8 +403,8 @@
       "minecraft": ["26.2"],
       "compile": {"minecraft": "26.2"},
       "balmModId": "balm",
-      "minimum": {"fabricLoader": "0.19.3", "fabricApi": "0.152.1+26.2", "waystones": "26.2.0.1", "balm": "26.2.0.1", "shogi": "26.2.0.1"},
-      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.158.0+26.2", "waystones": "26.2.0.9", "balm": "26.2.0.6", "shogi": "26.2.0.5"},
+      "minimum": {"fabricLoader": "0.19.3", "fabricApi": "0.152.1+26.2", "waystones": "26.2.0.1", "balm": "26.2.0.1", "shogi": "26.2.0.1", "shogiApiEmbedded": true},
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.158.0+26.2", "waystones": "26.2.0.9", "balm": "26.2.0.6", "shogi": "26.2.0.5", "shogiApiEmbedded": true},
       "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
     }
   ]
