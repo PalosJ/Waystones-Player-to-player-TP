@@ -51,7 +51,12 @@ def load_target(target_id: str) -> Dict[str, object]:
     target = next((entry for entry in matrix["targets"] if entry["id"] == target_id), None)
     if target is None:
         raise ValueError(f"Unknown target ID: {target_id}")
-    if target["branch"] not in ("main", f"{target['loader']}/1.21.x"):
+    allowed_branches = {
+        "main",
+        f"{target['loader']}/1.21.x",
+        f"{target['loader']}/26.x",
+    }
+    if target["branch"] not in allowed_branches:
         raise ValueError(f"Unexpected branch mapping for {target_id}: {target['branch']}")
     return target
 

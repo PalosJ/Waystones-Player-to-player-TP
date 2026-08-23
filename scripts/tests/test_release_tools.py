@@ -23,6 +23,7 @@ def load_script(name: str):
 
 
 release_manifest = load_script("release-manifest.py")
+runtime_matrix = load_script("runtime-matrix.py")
 runtime_smoke = load_script("runtime-smoke.py")
 verify_release_manifest = load_script("verify-release-manifest.py")
 prepare_waystones_source = load_script("prepare-waystones-source.py")
@@ -112,6 +113,19 @@ class FixedWaystonesSourceTest(unittest.TestCase):
                 upstream_sha,
                 attributes["WaystonesPlayer-Upstream-Waystones-JAR-SHA256"],
             )
+
+
+class RuntimeMatrixBranchTest(unittest.TestCase):
+    def test_26_x_targets_use_supported_unified_branches(self):
+        self.assertEqual(
+            "neoforge/26.x",
+            runtime_matrix.load_target("neoforge-26.1")["branch"],
+        )
+        self.assertEqual(
+            "fabric/26.x",
+            runtime_matrix.load_target("fabric-26.2")["branch"],
+        )
+
 
 class BinaryEvidenceTest(unittest.TestCase):
     TARGET = {
