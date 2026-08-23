@@ -82,13 +82,15 @@ if [[ ! -f $manifest_path ]]; then
   echo "Build artifact $manifest_artifact did not contain release-manifest.json." >&2
   exit 1
 fi
-python3 scripts/verify-release-manifest.py \
+verification_output=$(python3 scripts/verify-release-manifest.py \
   --manifest "$manifest_path" \
   --binary "$binary_path" \
   --target "$target_id" \
   --branch "$branch" \
   --commit "$head_sha" \
-  --sha256 "$binary_sha256"
+  --sha256 "$binary_sha256")
+printf '%s\n' "$verification_output"
+upstream_waystones_sha256=$(printf '%s\n' "$verification_output" | sed -n 's/^UPSTREAM-WAYSTONES-SHA256=//p')
 
 if [[ -n ${GITHUB_OUTPUT:-} ]]; then
   {
@@ -97,8 +99,9 @@ if [[ -n ${GITHUB_OUTPUT:-} ]]; then
     echo "sha256=$binary_sha256"
     echo "commit=$head_sha"
     echo "manifest=$manifest_path"
+    echo "upstream_waystones_sha256=$upstream_waystones_sha256"
   } >> "$GITHUB_OUTPUT"
 else
-  printf 'run_id=%s\nbinary=%s\nsha256=%s\ncommit=%s\nmanifest=%s\n' \
-    "$run_id" "$binary_path" "$binary_sha256" "$head_sha" "$manifest_path"
+  printf 'run_id=%s\nbinary=%s\nsha256=%s\ncommit=%s\nmanifest=%s\nupstream_waystones_sha256=%s\n' \
+    "$run_id" "$binary_path" "$binary_sha256" "$head_sha" "$manifest_path" "$upstream_waystones_sha256"
 fi

@@ -67,7 +67,7 @@ def verifyCorePurity = tasks.register('verifyCorePurity') {
 
 def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
     group = 'verification'
-    description = 'Validates the canonical 1.21.x release and dependency matrix.'
+    description = 'Validates the canonical 1.21.x and 26.x release/dependency matrix.'
     inputs.file(targetMatrixFile)
 
     doLast {
@@ -80,11 +80,21 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
 
         require(matrix.schemaVersion == 1, 'schemaVersion must be 1.')
         require(matrix.modVersion == mod_version, "modVersion must remain ${mod_version}.")
-        require(matrix.buildTools.java == 21
-                && matrix.buildTools.gradle == '9.2.1'
-                && matrix.buildTools.fabricGradle == '9.5.1'
-                && matrix.buildTools.modDevGradle == '2.0.143'
-                && matrix.buildTools.loom == '1.17.19',
+        def tools121 = matrix.buildTools['1.21']
+        def tools26 = matrix.buildTools['26']
+        require(tools121.java == 21
+                && tools121.neoforgeGradle == '9.2.1'
+                && tools121.fabricGradle == '9.5.1'
+                && tools121.modDevGradle == '2.0.143'
+                && tools121.loom == '1.17.19'
+                && tools26.java == 25
+                && tools26.neoforgeGradle == '9.2.1'
+                && tools26.fabricGradle == '9.5.1'
+                && tools26.modDevGradle == '2.0.143'
+                && tools26.loom == '1.17.19'
+                && tools26.sourceGradle == '9.3.1'
+                && tools26.sourceLoom == '1.14-20251223.202653-9'
+                && tools26.sourceShogiApi == '26.1.0.1-20260324.181500-45',
                 'build-tool versions must match the audited release toolchain.')
         def iconFile = file('common/src/main/resources/waystonesplayer.png')
         def iconSha256 = java.security.MessageDigest.getInstance('SHA-256')
@@ -93,8 +103,8 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
                 .toString()
         require(matrix.iconSha256 == iconSha256,
                 'the existing project icon must remain byte-for-byte unchanged.')
-        require(matrix.targets instanceof List && matrix.targets.size() == 20,
-                'exactly 20 release artifacts are required.')
+        require(matrix.targets instanceof List && matrix.targets.size() == 28,
+                'exactly 28 release artifacts are required.')
 
         def targets = matrix.targets
         require(targets*.id.toSet().size() == targets.size(), 'target IDs must be unique.')
@@ -104,14 +114,26 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
                 'neoforge/1.21.x must contain nine targets.')
         require(targets.count { it.branch == 'fabric/1.21.x' } == 10,
                 'fabric/1.21.x must contain ten targets.')
+        require(targets.count { it.branch == 'neoforge/26.x' } == 4,
+                'neoforge/26.x must contain four targets.')
+        require(targets.count { it.branch == 'fabric/26.x' } == 4,
+                'fabric/26.x must contain four targets.')
 
         def expectedVersions = (1..11).collect { "1.21.${it}" } as Set
         ['neoforge', 'fabric'].each { loader ->
-            def actualVersions = targets.findAll { it.loader == loader }
+            def actualVersions = targets.findAll { it.loader == loader && it.branch.endsWith('/1.21.x') || (loader == 'neoforge' && it.branch == 'main') }
                     .collectMany { it.minecraft as List }
                     .toSet()
             require(actualVersions == expectedVersions,
                     "${loader} must cover every Minecraft release from 1.21.1 through 1.21.11 exactly once.")
+        }
+        def expected26Versions = ['26.1', '26.1.1', '26.1.2', '26.2'] as Set
+        ['neoforge', 'fabric'].each { loader ->
+            def actualVersions = targets.findAll { it.loader == loader && it.branch == "${loader}/26.x" }
+                    .collectMany { it.minecraft as List }
+                    .toSet()
+            require(actualVersions == expected26Versions,
+                    "${loader}/26.x must cover 26.1, 26.1.1, 26.1.2 and 26.2 exactly once.")
         }
 
         def sharedIds = ['neoforge-1.21.2-1.21.3', 'fabric-1.21.2-1.21.3'] as Set
@@ -179,10 +201,39 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
             if (target.key) {
                 dependencyVersions.addAll([target.key.waystones, target.key.balm])
             }
+            if (target.branch.endsWith('/26.x')) {
+                require(target.minimum.shogi && target.current.shogi,
+                        "${target.id} must declare minimum and current Shogi versions.")
+                dependencyVersions.addAll([target.minimum.shogi, target.current.shogi])
+            } else {
+                require(!target.minimum.containsKey('shogi') && !target.current.containsKey('shogi'),
+                        "${target.id} must not declare a 26.x-only Shogi stack.")
+            }
             require(dependencyVersions.every { !it.contains('SNAPSHOT') },
                     "${target.id} runtime stacks must use immutable release dependencies.")
             require(target.families.balm && target.families.screen && target.families.teleport,
                     "${target.id} must name each source adapter family.")
+            if (target.branch.endsWith('/26.x')) {
+                require(target.families == [
+                        balm: 'load-context-26',
+                        screen: 'graphics-extractor-26',
+                        teleport: 'shogi-26',
+                ], "${target.id} must use the audited 26.x adapter families.")
+                def sourceExpected = target.minecraft == ['26.1.1']
+                require(sourceExpected == target.containsKey('waystonesSource'),
+                        "${target.id} has an invalid fixed-source declaration.")
+                if (sourceExpected) {
+                    require(target.waystonesSource.repository == 'https://github.com/TwelveIterations/Waystones.git'
+                            && target.waystonesSource.commit == '795bb9ac93e73a0df8e5678ba6746dfbf8b055a3'
+                            && target.waystonesSource.version == '26.1.1.0'
+                            && target.waystonesSource.patch == 'scripts/upstream/waystones-26.1.1.patch'
+                            && target.waystonesSource.patchSha256 == '77707c33069f6f1def1b4262b6961b1851ab97915019138039f9c2ce587a42bd',
+                            "${target.id} fixed Waystones source identity changed.")
+                }
+            } else {
+                require(!target.containsKey('waystonesSource'),
+                        "${target.id} must not declare a 26.1.1 source build.")
+            }
             if (expectedKeyStacks.containsKey(target.id)) {
                 require(target.key == expectedKeyStacks[target.id],
                         "${target.id} must keep its audited key runtime stack.")
@@ -280,7 +331,7 @@ subprojects {
     }
 
     java {
-        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(java_version))
     }
 
     tasks.withType(JavaCompile).configureEach {

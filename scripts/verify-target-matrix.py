@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,12 @@ from typing import Dict, List
 
 ROOT = Path(__file__).resolve().parents[1]
 MATRIX_PATH = ROOT / "gradle" / "targets.json"
+BRANCH_LOADERS = {
+    "neoforge/1.21.x": "neoforge",
+    "fabric/1.21.x": "fabric",
+    "neoforge/26.x": "neoforge",
+    "fabric/26.x": "fabric",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -94,6 +101,8 @@ def expected_adapter_roots(target: Dict[str, object]) -> List[str]:
             "balm/platform-1.21.11",
             f"loader/{loader}-platform-1.21.11",
         ])
+    elif balm_family == "load-context-26":
+        expected.append(f"loader/{loader}-load-context-26")
     elif balm_family != "legacy-module":
         raise ValueError(f"{target['id']}: unknown Balm family {balm_family!r}")
 
@@ -105,6 +114,8 @@ def expected_adapter_roots(target: Dict[str, object]) -> List[str]:
         ])
     elif teleport_family == "identifier-21.11":
         expected.append("teleport/identifier-1.21.11")
+    elif teleport_family == "shogi-26":
+        expected.append("teleport/shogi-26")
     elif teleport_family != "legacy-1.21.1":
         raise ValueError(f"{target['id']}: unknown teleport family {teleport_family!r}")
 
@@ -113,6 +124,8 @@ def expected_adapter_roots(target: Dict[str, object]) -> List[str]:
         expected.append("screen/legacy-1.21.3-1.21.10")
     elif screen_family == "identifier-skin":
         expected.append("screen/platform-1.21.11")
+    elif screen_family == "graphics-extractor-26":
+        expected.append("screen/graphics-extractor-26")
     elif screen_family not in {"legacy-input", "event-input"}:
         raise ValueError(f"{target['id']}: unknown screen family {screen_family!r}")
     return expected
@@ -122,7 +135,8 @@ def validate_target_properties(
         root: Path,
         branch: str,
         targets: List[Dict[str, object]]) -> None:
-    loader = "neoforge" if branch == "neoforge/1.21.x" else "fabric"
+    loader = BRANCH_LOADERS.get(branch)
+    require(loader is not None, f"unsupported target-properties branch {branch!r}")
     loader_excludes_key = "neoForgeExcludes" if loader == "neoforge" else "fabricExcludes"
     allowed_keys = {"targetId", "commonExcludes", loader_excludes_key, "adapterRoots"}
     for target in targets:
@@ -197,6 +211,31 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
         and re.fullmatch(r"[0-9a-f]{64}", matrix["iconSha256"]) is not None,
         "targets.json iconSha256 must be a lowercase SHA-256 digest",
     )
+    build_tools = matrix.get("buildTools")
+    require(isinstance(build_tools, dict), "targets.json must contain buildTools")
+    require(
+        build_tools.get("1.21") == {
+            "java": 21,
+            "neoforgeGradle": "9.2.1",
+            "fabricGradle": "9.5.1",
+            "modDevGradle": "2.0.143",
+            "loom": "1.17.19",
+        },
+        "targets.json 1.21 build tool profile changed",
+    )
+    require(
+        build_tools.get("26") == {
+            "java": 25,
+            "neoforgeGradle": "9.2.1",
+            "fabricGradle": "9.5.1",
+            "modDevGradle": "2.0.143",
+            "loom": "1.17.19",
+            "sourceGradle": "9.3.1",
+            "sourceLoom": "1.14-20251223.202653-9",
+            "sourceShogiApi": "26.1.0.1-20260324.181500-45",
+        },
+        "targets.json 26 build tool profile changed",
+    )
 
     for target in targets:
         target_id = target.get("id")
@@ -208,7 +247,7 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
         release_version = target.get("releaseVersion")
         artifact_file = target.get("artifactFile")
 
-        require(branch in {"main", "neoforge/1.21.x", "fabric/1.21.x"},
+        require(branch in {"main", *BRANCH_LOADERS},
                 f"{target_id}: unsupported branch {branch!r}")
         require(loader in {"neoforge", "fabric"}, f"{target_id}: unsupported loader {loader!r}")
         require(isinstance(minecraft, list) and minecraft, f"{target_id}: minecraft must be a non-empty list")
@@ -230,8 +269,38 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
         elif branch == "neoforge/1.21.x":
             require(loader == "neoforge" and "1.21.1" not in minecraft,
                     f"{target_id}: NeoForge unified branch cannot contain 1.21.1")
-        else:
+        elif branch == "fabric/1.21.x":
             require(loader == "fabric", f"{target_id}: Fabric unified branch must use Fabric loader")
+        else:
+            require(loader == BRANCH_LOADERS[branch],
+                    f"{target_id}: 26.x branch loader mismatch")
+            require(minecraft[0].startswith("26."),
+                    f"{target_id}: 26.x branch must contain a 26.x target")
+            require(target.get("families") == {
+                "balm": "load-context-26",
+                "screen": "graphics-extractor-26",
+                "teleport": "shogi-26",
+            }, f"{target_id}: invalid 26.x adapter family")
+            for stack_name in ("minimum", "current"):
+                stack = target.get(stack_name)
+                require(isinstance(stack, dict) and all(stack.get(key) for key in ("waystones", "balm", "shogi")),
+                        f"{target_id}: {stack_name} must declare Waystones, Balm and Shogi")
+
+            source = target.get("waystonesSource")
+            if minecraft == ["26.1.1"]:
+                require(source == {
+                    "repository": "https://github.com/TwelveIterations/Waystones.git",
+                    "commit": "795bb9ac93e73a0df8e5678ba6746dfbf8b055a3",
+                    "version": "26.1.1.0",
+                    "patch": "scripts/upstream/waystones-26.1.1.patch",
+                    "patchSha256": "77707c33069f6f1def1b4262b6961b1851ab97915019138039f9c2ce587a42bd",
+                }, f"{target_id}: invalid fixed Waystones source")
+                patch_path = ROOT / source["patch"]
+                require(patch_path.is_file(), f"{target_id}: fixed Waystones patch is missing")
+                require(hashlib.sha256(patch_path.read_bytes()).hexdigest() == source["patchSha256"],
+                        f"{target_id}: fixed Waystones patch SHA-256 mismatch")
+            else:
+                require(source is None, f"{target_id}: only 26.1.1 may use a source-built Waystones")
 
         runtime_stacks = target.get("runtimeStacks")
         if len(minecraft) == 2:
@@ -271,6 +340,12 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
         sorted([f"1.21.{minor}" for minor in range(1, 12)], key=minecraft_sort_key),
         "Fabric unified matrix must cover Minecraft 1.21.1 through 1.21.11 exactly",
     )
+    expected_26 = ["26.1", "26.1.1", "26.1.2", "26.2"]
+    for branch in ("neoforge/26.x", "fabric/26.x"):
+        actual = [version for target in targets if target.get("branch") == branch
+                  for version in target.get("minecraft", [])]
+        require(actual == expected_26,
+                f"{branch} matrix must cover 26.1, 26.1.1, 26.1.2 and 26.2 exactly")
 
 
 def main() -> int:
@@ -288,14 +363,24 @@ def main() -> int:
     runtime_blocks = workflow_target_blocks(runtime_workflow)
 
     if branch == "main":
-        neo = [target["id"] for target in matrix["targets"] if target["loader"] == "neoforge" and target["branch"] != "main"]
-        fabric = [target["id"] for target in matrix["targets"] if target["loader"] == "fabric"]
-        if len(runtime_blocks) != 2:
-            raise ValueError("main runtime workflow must contain NeoForge and Fabric target lists")
-        require_equal("main runtime NeoForge targets", runtime_blocks[0], neo)
-        require_equal("main runtime Fabric targets", runtime_blocks[1], fabric)
+        runtime_branches = (
+            "neoforge/1.21.x",
+            "fabric/1.21.x",
+            "neoforge/26.x",
+            "fabric/26.x",
+        )
+        expected_blocks = [
+            [target["id"] for target in matrix["targets"] if target["branch"] == runtime_branch]
+            for runtime_branch in runtime_branches
+        ]
+        if len(runtime_blocks) != len(expected_blocks):
+            raise ValueError("main runtime workflow must contain all four unified target lists")
+        for runtime_branch, actual, expected_block in zip(runtime_branches, runtime_blocks, expected_blocks):
+            require_equal(f"main runtime {runtime_branch} targets", actual, expected_block)
     else:
-        loader = "neoforge" if branch == "neoforge/1.21.x" else "fabric"
+        loader = BRANCH_LOADERS.get(branch)
+        if loader is None:
+            raise ValueError(f"unsupported branch {branch!r}")
         variable = "neoForgeTargets" if loader == "neoforge" else "fabricTargets"
         settings = (ROOT / "settings.gradle").read_text(encoding="utf-8")
         require_equal("settings.gradle targets", settings_targets(settings, variable), expected)

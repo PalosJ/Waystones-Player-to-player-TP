@@ -1,0 +1,31 @@
+diff --git a/gradle/libs.versions.toml b/gradle/libs.versions.toml
+index 6b5dec8b..8037ab48 100644
+--- a/gradle/libs.versions.toml
++++ b/gradle/libs.versions.toml
+@@ -1,3 +1,3 @@
+ [versions]
+-balm = "26.1.1.1-SNAPSHOT"
++balm = "26.1.1.1"
+ minecraft = "26.1.1"
+@@ -8,5 +8,6 @@ fabricApi = "0.145.3+26.1.1"
+ fabricLoader = "0.18.6"
+-journeyMapApi = "2.0.0-26.1-SNAPSHOT"
+-unbreakables = "26.1.0.1-SNAPSHOT"
+-shogi = "26.1.0.1-SNAPSHOT"
++journeyMapApi = "2.0.0-26.1"
++unbreakables = "26.1.0.1"
++shogi = "26.1.0.1"
++shogiApi = "26.1.0.1-20260324.181500-45"
+ 
+@@ -24,3 +25,3 @@ fabricApi = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabr
+ fabricLoader = { module = "net.fabricmc:fabric-loader", version.ref = "fabricLoader" }
+-shogiApi = { module = "net.blay09.mods:shogi-api", version.ref = "shogi" }
++shogiApi = { module = "net.blay09.mods:shogi-api", version.ref = "shogiApi" }
+ shogiCommon = { module = "net.blay09.mods:shogi-common", version.ref = "shogi" }
+@@ -38,4 +39,4 @@ mixin = { module = "org.spongepowered:mixin", version = "0.8.7" }
+ [plugins]
+-fabricLoom = { id = "net.fabricmc.fabric-loom", version = "1.14-SNAPSHOT" }
+-modDevGradle = { id = "net.neoforged.moddev", version = "2.0.141" }
++fabricLoom = { id = "net.fabricmc.fabric-loom", version = "1.14-20251223.202653-9" }
++modDevGradle = { id = "net.neoforged.moddev", version = "2.0.143" }
+ forgeGradle = { id = "net.minecraftforge.gradle", version = "[6.0.25,6.2)" }

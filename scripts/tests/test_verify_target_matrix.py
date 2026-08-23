@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -95,7 +96,77 @@ class TargetPropertiesTest(unittest.TestCase):
         )
         temporary, root = self.fixture(roots=wrong_roots)
         with temporary, self.assertRaises(ValueError):
-            verify.validate_target_properties(root, "neoforge/1.21.x", [self.TARGET])
+                verify.validate_target_properties(root, "neoforge/1.21.x", [self.TARGET])
+
+
+class MatrixShapeTest(unittest.TestCase):
+    def test_repository_matrix_covers_all_28_targets(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        verify.validate_matrix_shape(matrix)
+        self.assertEqual(28, len(matrix["targets"]))
+
+    def test_rejects_wrong_26_source_commit(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        target = next(item for item in matrix["targets"] if item["id"] == "fabric-26.1.1")
+        target["waystonesSource"]["commit"] = "0" * 40
+        with self.assertRaises(ValueError):
+            verify.validate_matrix_shape(matrix)
+
+
+class TargetProperties26Test(unittest.TestCase):
+    TARGET = {
+        "id": "fabric-26.1",
+        "branch": "fabric/26.x",
+        "loader": "fabric",
+        "minecraft": ["26.1"],
+        "families": {
+            "balm": "load-context-26",
+            "screen": "graphics-extractor-26",
+            "teleport": "shogi-26",
+        },
+    }
+    ROOTS = (
+        "loader/fabric-load-context-26",
+        "screen/graphics-extractor-26",
+        "teleport/shogi-26",
+    )
+
+    def fixture(self, roots=None):
+        temporary = tempfile.TemporaryDirectory()
+        root = Path(temporary.name)
+        selected_roots = roots if roots is not None else self.ROOTS
+        for adapter_root in selected_roots:
+            java_root = root / "adapters" / adapter_root / "java"
+            java_root.mkdir(parents=True)
+            (java_root / "Adapter.java").write_text("class Adapter {}\n", encoding="utf-8")
+        common_root = root / "common" / "src" / "main" / "java"
+        fabric_root = root / "fabric" / "src" / "main" / "java"
+        common_root.mkdir(parents=True)
+        fabric_root.mkdir(parents=True)
+        properties = root / "targets" / self.TARGET["id"] / "target.properties"
+        properties.parent.mkdir(parents=True)
+        properties.write_text(
+            f"targetId={self.TARGET['id']}\n"
+            "commonExcludes=\n"
+            "fabricExcludes=\n"
+            f"adapterRoots={','.join(selected_roots)}\n",
+            encoding="utf-8",
+        )
+        return temporary, root
+
+    def test_accepts_26_families(self):
+        temporary, root = self.fixture()
+        with temporary:
+            verify.validate_target_properties(root, "fabric/26.x", [self.TARGET])
+
+    def test_rejects_legacy_root_in_26_family(self):
+        temporary, root = self.fixture(roots=(
+            "loader/fabric-load-context-26",
+            "screen/legacy-1.21.3-1.21.10",
+            "teleport/shogi-26",
+        ))
+        with temporary, self.assertRaises(ValueError):
+            verify.validate_target_properties(root, "fabric/26.x", [self.TARGET])
 
 
 if __name__ == "__main__":

@@ -1,14 +1,26 @@
 {
   "schemaVersion": 1,
-  "snapshotDate": "2026-08-20",
+  "snapshotDate": "2026-08-24",
   "modVersion": "1.0.0",
   "iconSha256": "ab4c610217d94f4d19d39b92b698f0ee5c57e46fc4c5bd654ab7923a49d4736d",
   "buildTools": {
-    "java": 21,
-    "gradle": "9.2.1",
-    "fabricGradle": "9.5.1",
-    "modDevGradle": "2.0.143",
-    "loom": "1.17.19"
+    "1.21": {
+      "java": 21,
+      "neoforgeGradle": "9.2.1",
+      "fabricGradle": "9.5.1",
+      "modDevGradle": "2.0.143",
+      "loom": "1.17.19"
+    },
+    "26": {
+      "java": 25,
+      "neoforgeGradle": "9.2.1",
+      "fabricGradle": "9.5.1",
+      "modDevGradle": "2.0.143",
+      "loom": "1.17.19",
+      "sourceGradle": "9.3.1",
+      "sourceLoom": "1.14-20251223.202653-9",
+      "sourceShogiApi": "26.1.0.1-20260324.181500-45"
+    }
   },
   "targets": [
     {
@@ -280,6 +292,120 @@
       "keyReason": "Waystones 21.11.4 is the audited intermediate patch before the current 21.11.9 line; Fabric API 0.141.6 is required because Balm 21.11.3 invokes the model-loading API.",
       "current": {"fabricLoader": "0.19.3", "fabricApi": "0.141.6+1.21.11", "waystones": "21.11.9", "balm": "21.11.9.1"},
       "families": {"balm": "platform-module", "screen": "identifier-skin", "teleport": "identifier-21.11"}
+    },
+    {
+      "id": "neoforge-26.1",
+      "branch": "neoforge/26.x",
+      "loader": "neoforge",
+      "releaseVersion": "1.0.0",
+      "artifactFile": "waystonesplayer-neoforge-26.1-1.0.0.jar",
+      "minecraft": ["26.1"],
+      "compile": {"minecraft": "26.1"},
+      "minimum": {"neoforge": "26.1.0.1-beta", "waystones": "26.1.0.1", "balm": "26.1.0.1", "shogi": "26.1.0.1"},
+      "current": {"neoforge": "26.1.0.19-beta", "waystones": "26.1.0.4", "balm": "26.1.0.6", "shogi": "26.1.0.4"},
+      "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
+    },
+    {
+      "id": "neoforge-26.1.1",
+      "branch": "neoforge/26.x",
+      "loader": "neoforge",
+      "releaseVersion": "1.0.0",
+      "artifactFile": "waystonesplayer-neoforge-26.1.1-1.0.0.jar",
+      "minecraft": ["26.1.1"],
+      "compile": {"minecraft": "26.1.1"},
+      "minimum": {"neoforge": "26.1.1.1-beta", "waystones": "26.1.1.0", "balm": "26.1.1.1", "shogi": "26.1.0.1"},
+      "current": {"neoforge": "26.1.1.15-beta", "waystones": "26.1.1.0", "balm": "26.1.1.2", "shogi": "26.1.0.4"},
+      "waystonesSource": {
+        "repository": "https://github.com/TwelveIterations/Waystones.git",
+        "commit": "795bb9ac93e73a0df8e5678ba6746dfbf8b055a3",
+        "version": "26.1.1.0",
+        "patch": "scripts/upstream/waystones-26.1.1.patch",
+        "patchSha256": "77707c33069f6f1def1b4262b6961b1851ab97915019138039f9c2ce587a42bd"
+      },
+      "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
+    },
+    {
+      "id": "neoforge-26.1.2",
+      "branch": "neoforge/26.x",
+      "loader": "neoforge",
+      "releaseVersion": "1.0.0",
+      "artifactFile": "waystonesplayer-neoforge-26.1.2-1.0.0.jar",
+      "minecraft": ["26.1.2"],
+      "compile": {"minecraft": "26.1.2"},
+      "minimum": {"neoforge": "26.1.1.15-beta", "waystones": "26.1.2.1", "balm": "26.1.1.2", "shogi": "26.1.0.1"},
+      "current": {"neoforge": "26.1.2.97", "waystones": "26.1.2.14", "balm": "26.1.2.12", "shogi": "26.1.2.8"},
+      "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
+    },
+    {
+      "id": "neoforge-26.2",
+      "branch": "neoforge/26.x",
+      "loader": "neoforge",
+      "releaseVersion": "1.0.0",
+      "artifactFile": "waystonesplayer-neoforge-26.2-1.0.0.jar",
+      "minecraft": ["26.2"],
+      "compile": {"minecraft": "26.2"},
+      "minimum": {"neoforge": "26.2.0.0-beta", "waystones": "26.2.0.1", "balm": "26.2.0.1", "shogi": "26.2.0.1"},
+      "current": {"neoforge": "26.2.0.66", "waystones": "26.2.0.9", "balm": "26.2.0.6", "shogi": "26.2.0.5"},
+      "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
+    },
+    {
+      "id": "fabric-26.1",
+      "branch": "fabric/26.x",
+      "loader": "fabric",
+      "releaseVersion": "1.0.0",
+      "artifactFile": "waystonesplayer-fabric-26.1-1.0.0.jar",
+      "minecraft": ["26.1"],
+      "compile": {"minecraft": "26.1"},
+      "balmModId": "balm",
+      "minimum": {"fabricLoader": "0.18.4", "fabricApi": "0.144.0+26.1", "waystones": "26.1.0.1", "balm": "26.1.0.1", "shogi": "26.1.0.1"},
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.145.1+26.1", "waystones": "26.1.0.4", "balm": "26.1.0.6", "shogi": "26.1.0.4"},
+      "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
+    },
+    {
+      "id": "fabric-26.1.1",
+      "branch": "fabric/26.x",
+      "loader": "fabric",
+      "releaseVersion": "1.0.0",
+      "artifactFile": "waystonesplayer-fabric-26.1.1-1.0.0.jar",
+      "minecraft": ["26.1.1"],
+      "compile": {"minecraft": "26.1.1"},
+      "balmModId": "balm",
+      "minimum": {"fabricLoader": "0.18.6", "fabricApi": "0.145.3+26.1.1", "waystones": "26.1.1.0", "balm": "26.1.1.1", "shogi": "26.1.0.1"},
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.145.4+26.1.1", "waystones": "26.1.1.0", "balm": "26.1.1.2", "shogi": "26.1.0.4"},
+      "waystonesSource": {
+        "repository": "https://github.com/TwelveIterations/Waystones.git",
+        "commit": "795bb9ac93e73a0df8e5678ba6746dfbf8b055a3",
+        "version": "26.1.1.0",
+        "patch": "scripts/upstream/waystones-26.1.1.patch",
+        "patchSha256": "77707c33069f6f1def1b4262b6961b1851ab97915019138039f9c2ce587a42bd"
+      },
+      "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
+    },
+    {
+      "id": "fabric-26.1.2",
+      "branch": "fabric/26.x",
+      "loader": "fabric",
+      "releaseVersion": "1.0.0",
+      "artifactFile": "waystonesplayer-fabric-26.1.2-1.0.0.jar",
+      "minecraft": ["26.1.2"],
+      "compile": {"minecraft": "26.1.2"},
+      "balmModId": "balm",
+      "minimum": {"fabricLoader": "0.19.1", "fabricApi": "0.145.4+26.1.2", "waystones": "26.1.2.1", "balm": "26.1.1.2", "shogi": "26.1.0.1"},
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.155.2+26.1.2", "waystones": "26.1.2.14", "balm": "26.1.2.12", "shogi": "26.1.2.8"},
+      "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
+    },
+    {
+      "id": "fabric-26.2",
+      "branch": "fabric/26.x",
+      "loader": "fabric",
+      "releaseVersion": "1.0.0",
+      "artifactFile": "waystonesplayer-fabric-26.2-1.0.0.jar",
+      "minecraft": ["26.2"],
+      "compile": {"minecraft": "26.2"},
+      "balmModId": "balm",
+      "minimum": {"fabricLoader": "0.19.3", "fabricApi": "0.152.1+26.2", "waystones": "26.2.0.1", "balm": "26.2.0.1", "shogi": "26.2.0.1"},
+      "current": {"fabricLoader": "0.19.3", "fabricApi": "0.158.0+26.2", "waystones": "26.2.0.9", "balm": "26.2.0.6", "shogi": "26.2.0.5"},
+      "families": {"balm": "load-context-26", "screen": "graphics-extractor-26", "teleport": "shogi-26"}
     }
   ]
 }
