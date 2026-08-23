@@ -25,6 +25,7 @@ def load_script(name: str):
 release_manifest = load_script("release-manifest.py")
 runtime_smoke = load_script("runtime-smoke.py")
 verify_release_manifest = load_script("verify-release-manifest.py")
+prepare_waystones_source = load_script("prepare-waystones-source.py")
 
 
 class ReleaseManifestPathTest(unittest.TestCase):
@@ -56,6 +57,61 @@ class ReleaseManifestPathTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 release_manifest.artifact_path(target, root)
 
+
+class FixedWaystonesSourceTest(unittest.TestCase):
+    def test_generated_paths_stay_under_build(self):
+        self.assertEqual(
+            (ROOT / "build" / "upstream-maven").resolve(),
+            prepare_waystones_source.build_path("build/upstream-maven"),
+        )
+        with self.assertRaises(ValueError):
+            prepare_waystones_source.build_path("../upstream-maven")
+
+    def test_patched_catalog_has_immutable_build_inputs(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        expected = prepare_waystones_source.expected_catalog(matrix)
+        self.assertNotIn("SNAPSHOT", " ".join(expected.values()))
+        self.assertEqual("26.1.0.1-20260324.181500-45", expected["shogiApi"])
+
+    def test_fixed_source_patch_matches_matrix_sha(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        target = prepare_waystones_source.target_for(matrix, "neoforge")
+        source = prepare_waystones_source.verify_source_identity(target)
+        self.assertEqual("795bb9ac93e73a0df8e5678ba6746dfbf8b055a3", source["commit"])
+
+    def test_source_built_release_jar_requires_upstream_manifest_provenance(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        target = prepare_waystones_source.target_for(matrix, "neoforge")
+        commit = "a" * 40
+        icon = b"approved-icon"
+        upstream_sha = "b" * 64
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / target["artifactFile"]
+            manifest = (
+                "Manifest-Version: 1.0\r\n"
+                "Implementation-Version: 1.0.0\r\n"
+                f"WaystonesPlayer-Target: {target['id']}\r\n"
+                "WaystonesPlayer-Build-Stack: minimum\r\n"
+                f"WaystonesPlayer-Source-Commit: {commit}\r\n"
+                f"WaystonesPlayer-Upstream-Waystones-Commit: {target['waystonesSource']['commit']}\r\n"
+                "WaystonesPlayer-Upstream-Waystones-Patch-SHA256: "
+                f"{target['waystonesSource']['patchSha256']}\r\n"
+                f"WaystonesPlayer-Upstream-Waystones-JAR-SHA256: {upstream_sha}\r\n\r\n"
+            )
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("META-INF/MANIFEST.MF", manifest)
+                archive.writestr("waystonesplayer.png", icon)
+                archive.writestr("waystonesplayer.mixins.json", "{}")
+                archive.writestr("waystonesplayer.network.json", "{}")
+                archive.writestr("assets/waystonesplayer/lang/en_us.json", "{}")
+                archive.writestr("assets/waystonesplayer/lang/zh_cn.json", "{}")
+            attributes = release_manifest.inspect_artifact(
+                path, target, commit, "1.0.0", hashlib.sha256(icon).hexdigest()
+            )
+            self.assertEqual(
+                upstream_sha,
+                attributes["WaystonesPlayer-Upstream-Waystones-JAR-SHA256"],
+            )
 
 class BinaryEvidenceTest(unittest.TestCase):
     TARGET = {
