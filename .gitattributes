@@ -14,5 +14,6 @@ gradlew text eol=lf
 *.yml text eol=lf
 *.jar binary
 *.png binary
+*.patch text eol=lf -whitespace
 src/generated/**/.cache/* text eol=lf
 src/generated/**/*.json text eol=lf

@@ -1,6 +1,6 @@
 # 发布与交付检查清单
 
-本清单适用于 `main`、`neoforge/1.21.x` 和 `fabric/1.21.x`。完成标记必须有命令输出、运行日志、JAR内容或远端状态作为证据。
+本清单适用于 `main`、两条 `1.21.x` 统一分支和两条 `26.x` 统一分支。完成标记必须有命令输出、运行日志、JAR内容或远端状态作为证据。
 
 ## 1. 范围与版本
 
@@ -12,6 +12,7 @@
 - [ ] `python3 -m unittest discover -s scripts/tests -v` 通过，包含 target.properties family/source root 与 artifact provenance 负向测试。
 - [ ] 所有 `mod_version`、加载器元数据、文件名、changelog 和平台版本均为 `1.0.0`。
 - [ ] 原 `common/src/main/resources/waystonesplayer.png` 字节未改变。
+- [ ] 1.21.x 使用 Java 21，26.x 使用 Java 25；26.x 元数据把 Waystones、Balm、Shogi 都声明为强制依赖。
 
 ## 2. 静态与源码边界
 
@@ -35,6 +36,7 @@
 - [ ] warning 已审查，未忽略 Mixin target/refmap、弃用 API 或元数据问题。
 - [ ] 上传候选保留最低套件生成的 JAR；当前套件 JAR不覆盖它。
 - [ ] JAR 清单的 `WaystonesPlayer-Target`、`WaystonesPlayer-Build-Stack` 与 `WaystonesPlayer-Source-Commit` 分别匹配目标、`minimum` 和精确源码提交；运行器拒绝 current、提交不明或身份不明的二进制。
+- [ ] 26.1.1 从固定官方提交和 SHA 锁定补丁重建；Build/Runtime 上游 JAR SHA 一致，清单记录上游提交、补丁 SHA、闭包和 JAR SHA。
 
 ## 4. 同一发行 JAR运行
 
@@ -94,8 +96,8 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 
 ## 8. 平台文件
 
-- [ ] Modrinth：客户端 Required、服务端 Required、正确游戏版本/Loader、Waystones/Balm Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它。
-- [ ] CurseForge：英文描述、正确 Game Version/Mod Loader、Waystones/Balm Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它，Release 类型。
+- [ ] Modrinth：客户端 Required、服务端 Required、正确游戏版本/Loader、Waystones/Balm Required；26.x 另有 Shogi Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它。
+- [ ] CurseForge：英文描述、正确 Game Version/Mod Loader、Waystones/Balm Required；26.x 另有 Shogi Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它，Release 类型。
 - [ ] Custom License 链接/文本与根 LICENSE 一致，不标成开源许可证。
 - [ ] beta NeoForge 文件在 changelog 明确披露。
 - [ ] 1.21.2/1.21.3 共用文件同时勾选两版；其他文件只勾选一版。
@@ -113,10 +115,10 @@ python3 scripts/release-manifest.py --output build/release-manifest.json
 ## 9. GitHub 与分支收尾
 
 - [ ] 审查完整 diff、暂存清单、敏感信息和大文件；不提交 JAR、缓存、日志或本地运行文件。
-- [ ] 先提交 canonical `main`，再按已确认基线移植两条统一分支。
+- [ ] 先提交 canonical `main`，再按已确认基线移植两条 1.21.x 和两条 26.x 统一分支。
 - [ ] core、完整 common、目标矩阵、运行脚本、文档、许可证与既有图标和统一分支记录的 canonical 提交逐文件一致。
 - [ ] 普通推送，不强推，不创建 PR、标签、GitHub Release，也不代为上传平台。
 - [ ] 本地 HEAD、`origin/<branch>` 和 GitHub 远端提交一致。
-- [ ] 三条分支 GitHub Actions 全绿，main/统一分支共享漂移门禁通过。
+- [ ] 五条分支 GitHub Actions 全绿，main/统一分支共享漂移门禁通过；两条 26.x 的 common 与非加载器适配源一致。
 - [ ] 仅在新统一分支远端可验证且 CI 全绿后，删除本地/远端 `fabric/1.21.1` 与 `neoforge/1.21.11`。
 - [ ] 最终切回 clean `main`，刷新仓库外的交付 JAR、SHA-256、changelog 和检查结果。

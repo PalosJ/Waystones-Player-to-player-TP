@@ -5,9 +5,9 @@ readonly MODE="${1:-}"
 shift || true
 
 readonly BASELINE_FILE="gradle/canonical-main.properties"
-readonly -a SHARED_PATHS=(
+readonly -a GLOBAL_PATHS=(
   "core"
-  "common"
+  "common/src/main/resources/waystonesplayer.png"
   "gradle/targets.json"
   "scripts/verify-branch-parity.sh"
   "scripts/runtime-matrix.py"
@@ -24,6 +24,10 @@ readonly -a SHARED_PATHS=(
   "TEMPLATE_LICENSE.txt"
   "THIRD_PARTY_NOTICES.md"
 )
+readonly -a LEGACY_SHARED_PATHS=(
+  "${GLOBAL_PATHS[@]}"
+  "common"
+)
 readonly -a UNIFIED_ADAPTER_PATHS=(
   "adapters/balm"
   "adapters/client-balm"
@@ -33,6 +37,10 @@ readonly -a UNIFIED_ADAPTER_PATHS=(
   "adapters/profile"
   "adapters/screen"
   "adapters/teleport"
+)
+readonly -a SERIES_26_PATHS=(
+  "common"
+  "${UNIFIED_ADAPTER_PATHS[@]}"
 )
 
 fail() {
@@ -54,9 +62,10 @@ verify_baseline_commit() {
 }
 
 verify_branch_against_baseline() {
-  local baseline="$1"
-  local branch_ref="$2"
-  git diff --quiet "$baseline" "$branch_ref" -- "${SHARED_PATHS[@]}" \
+    local baseline="$1"
+    local branch_ref="$2"
+  shift 2
+  git diff --quiet "$baseline" "$branch_ref" -- "$@" \
     || fail "${branch_ref} shared files differ from recorded canonical commit ${baseline}"
 }
 
@@ -68,35 +77,81 @@ verify_unified_adapters() {
     || fail "unified adapter source families differ between ${left} and ${right}"
 }
 
+verify_series_26() {
+  [[ "$#" -eq 2 ]] || fail "series26 mode requires exactly two 26.x branch refs"
+  local left="$1"
+  local right="$2"
+  git diff --quiet "$left" "$right" -- "${SERIES_26_PATHS[@]}" \
+    || fail "26.x common or non-loader adapters differ between ${left} and ${right}"
+}
+
+verify_main_refs() {
+  local profile="$1"
+  shift
+  local -a selected_paths
+  if [[ "$profile" == "legacy" ]]; then
+    selected_paths=("${LEGACY_SHARED_PATHS[@]}")
+  elif [[ "$profile" == "global" ]]; then
+    selected_paths=("${GLOBAL_PATHS[@]}")
+  else
+    fail "unknown parity profile ${profile}"
+  fi
+  [[ "$#" -gt 0 ]] || fail "main parity mode requires at least one branch ref"
+  for branch_ref in "$@"; do
+    baseline_text="$(git show "${branch_ref}:${BASELINE_FILE}" 2>/dev/null)" \
+      || fail "${branch_ref} does not contain ${BASELINE_FILE}"
+    baseline="$(read_baseline_from_text "$baseline_text")"
+    verify_baseline_commit "$baseline"
+    git merge-base --is-ancestor "$baseline" HEAD \
+      || fail "${baseline} is not an ancestor of canonical main HEAD"
+    git diff --quiet "$baseline" HEAD -- "${selected_paths[@]}" \
+      || fail "canonical main shared files changed after ${branch_ref} recorded ${baseline}"
+    verify_branch_against_baseline "$baseline" "$branch_ref" "${selected_paths[@]}"
+    echo "Verified shared parity for ${branch_ref} at canonical ${baseline}."
+  done
+}
+
+verify_current_branch() {
+  local profile="$1"
+  local -a selected_paths
+  if [[ "$profile" == "legacy" ]]; then
+    selected_paths=("${LEGACY_SHARED_PATHS[@]}")
+  elif [[ "$profile" == "global" ]]; then
+    selected_paths=("${GLOBAL_PATHS[@]}")
+  else
+    fail "unknown parity profile ${profile}"
+  fi
+  [[ -f "$BASELINE_FILE" ]] || fail "missing ${BASELINE_FILE}"
+  baseline="$(read_baseline_from_text "$(sed -n '1,20p' "$BASELINE_FILE")")"
+  verify_baseline_commit "$baseline"
+  verify_branch_against_baseline "$baseline" HEAD "${selected_paths[@]}"
+  echo "Verified current branch shared parity at canonical ${baseline}."
+}
+
 case "$MODE" in
   main)
-    [[ "$#" -gt 0 ]] || fail "main mode requires at least one unified branch ref"
-    for branch_ref in "$@"; do
-      baseline_text="$(git show "${branch_ref}:${BASELINE_FILE}" 2>/dev/null)" \
-        || fail "${branch_ref} does not contain ${BASELINE_FILE}"
-      baseline="$(read_baseline_from_text "$baseline_text")"
-      verify_baseline_commit "$baseline"
-      git merge-base --is-ancestor "$baseline" HEAD \
-        || fail "${baseline} is not an ancestor of canonical main HEAD"
-      git diff --quiet "$baseline" HEAD -- "${SHARED_PATHS[@]}" \
-        || fail "canonical main shared files changed after ${branch_ref} recorded ${baseline}"
-      verify_branch_against_baseline "$baseline" "$branch_ref"
-      echo "Verified shared parity for ${branch_ref} at canonical ${baseline}."
-    done
+    verify_main_refs legacy "$@"
+    ;;
+  main-26)
+    verify_main_refs global "$@"
     ;;
   branch)
     [[ "$#" -eq 0 ]] || fail "branch mode accepts no branch refs"
-    [[ -f "$BASELINE_FILE" ]] || fail "missing ${BASELINE_FILE}"
-    baseline="$(read_baseline_from_text "$(sed -n '1,20p' "$BASELINE_FILE")")"
-    verify_baseline_commit "$baseline"
-    verify_branch_against_baseline "$baseline" HEAD
-    echo "Verified current branch shared parity at canonical ${baseline}."
+    verify_current_branch legacy
+    ;;
+  branch-26)
+    [[ "$#" -eq 0 ]] || fail "branch-26 mode accepts no branch refs"
+    verify_current_branch global
     ;;
   adapters)
     verify_unified_adapters "$@"
     echo "Verified adapter parity for $1 and $2."
     ;;
+  series26)
+    verify_series_26 "$@"
+    echo "Verified 26.x common/adapter parity for $1 and $2."
+    ;;
   *)
-    fail "usage: $0 <main <branch-ref>... | branch | adapters <neo-ref> <fabric-ref>>"
+    fail "usage: $0 <main|main-26 <branch-ref>... | branch|branch-26 | adapters|series26 <neo-ref> <fabric-ref>>"
     ;;
 esac

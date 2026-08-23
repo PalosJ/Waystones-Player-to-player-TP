@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 from typing import Dict
 
 
@@ -54,6 +55,26 @@ def verify(
         raise ValueError(
             f"downloaded binary SHA-256 mismatch: {actual_sha256} != {expected_sha256}"
         )
+    source = entry.get("waystonesSource")
+    if target.endswith("-26.1.1"):
+        if not isinstance(source, dict):
+            raise ValueError(f"release manifest {target} has no fixed Waystones source provenance")
+        source_expected = {
+            "commit": "795bb9ac93e73a0df8e5678ba6746dfbf8b055a3",
+            "version": "26.1.1.0",
+            "patch": "scripts/upstream/waystones-26.1.1.patch",
+            "patchSha256": "77707c33069f6f1def1b4262b6961b1851ab97915019138039f9c2ce587a42bd",
+        }
+        for key, expected in source_expected.items():
+            if source.get(key) != expected:
+                raise ValueError(
+                    f"release manifest {target} Waystones source {key} mismatch: "
+                    f"{source.get(key)!r} != {expected!r}"
+                )
+        if re.fullmatch(r"[0-9a-f]{64}", str(source.get("artifactSha256", ""))) is None:
+            raise ValueError(f"release manifest {target} has no valid upstream Waystones artifact SHA-256")
+    elif source is not None:
+        raise ValueError(f"release manifest {target} has unexpected fixed Waystones source provenance")
     return entry
 
 
@@ -70,7 +91,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    verify(
+    entry = verify(
         args.manifest,
         args.binary,
         args.target,
@@ -79,6 +100,9 @@ def main() -> int:
         args.sha256,
     )
     print(f"Verified {args.binary.name} against {args.manifest}")
+    source = entry.get("waystonesSource")
+    if isinstance(source, dict):
+        print(f"UPSTREAM-WAYSTONES-SHA256={source['artifactSha256']}")
     return 0
 
 

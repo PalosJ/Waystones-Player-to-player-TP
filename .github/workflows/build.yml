@@ -25,12 +25,20 @@ jobs:
           git fetch --no-tags origin
           refs/heads/neoforge/1.21.x:refs/remotes/origin/neoforge/1.21.x
           refs/heads/fabric/1.21.x:refs/remotes/origin/fabric/1.21.x
+          refs/heads/neoforge/26.x:refs/remotes/origin/neoforge/26.x
+          refs/heads/fabric/26.x:refs/remotes/origin/fabric/26.x
 
       - name: Verify shared semantic parity
         run: >-
           ./scripts/verify-branch-parity.sh main
           origin/neoforge/1.21.x
           origin/fabric/1.21.x
+
+      - name: Verify global 26.x parity
+        run: >-
+          ./scripts/verify-branch-parity.sh main-26
+          origin/neoforge/26.x
+          origin/fabric/26.x
 
       - name: Verify target matrix references
         run: python3 scripts/verify-target-matrix.py --branch main
@@ -40,6 +48,12 @@ jobs:
           ./scripts/verify-branch-parity.sh adapters
           origin/neoforge/1.21.x
           origin/fabric/1.21.x
+
+      - name: Verify 26.x common and adapter parity
+        run: >-
+          ./scripts/verify-branch-parity.sh series26
+          origin/neoforge/26.x
+          origin/fabric/26.x
 
   build:
     name: NeoForge 1.21.1 (${{ matrix.stack }})

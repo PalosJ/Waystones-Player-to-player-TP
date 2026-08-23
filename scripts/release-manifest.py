@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 from typing import Dict, List, Set
 import zipfile
@@ -94,7 +95,7 @@ def inspect_artifact(
         target: Dict[str, object],
         commit: str,
         mod_version: str,
-        icon_sha256: str) -> None:
+        icon_sha256: str) -> Dict[str, str]:
     required_entries: Set[str] = {
         "META-INF/MANIFEST.MF",
         "waystonesplayer.png",
@@ -139,6 +140,29 @@ def inspect_artifact(
         icon_bytes = archive.read("waystonesplayer.png")
         if hashlib.sha256(icon_bytes).hexdigest() != icon_sha256:
             raise ValueError(f"{path.name}: approved icon SHA-256 mismatch")
+        source = target.get("waystonesSource")
+        source_keys = {
+            "WaystonesPlayer-Upstream-Waystones-Commit",
+            "WaystonesPlayer-Upstream-Waystones-Patch-SHA256",
+            "WaystonesPlayer-Upstream-Waystones-JAR-SHA256",
+        }
+        if source:
+            source_expected = {
+                "WaystonesPlayer-Upstream-Waystones-Commit": source["commit"],
+                "WaystonesPlayer-Upstream-Waystones-Patch-SHA256": source["patchSha256"],
+            }
+            for key, expected_value in source_expected.items():
+                if attributes.get(key) != expected_value:
+                    raise ValueError(
+                        f"{path.name}: manifest {key} mismatch: "
+                        f"{attributes.get(key)!r} != {expected_value!r}"
+                    )
+            upstream_sha = attributes.get("WaystonesPlayer-Upstream-Waystones-JAR-SHA256", "")
+            if re.fullmatch(r"[0-9a-f]{64}", upstream_sha) is None:
+                raise ValueError(f"{path.name}: manifest has no valid upstream Waystones JAR SHA-256")
+        elif any(key in attributes for key in source_keys):
+            raise ValueError(f"{path.name}: unexpected fixed-source Waystones provenance")
+        return attributes
 
 
 def target_entry(
@@ -151,8 +175,8 @@ def target_entry(
     path = artifact_path(target, artifact_root)
     if not path.is_file():
         raise FileNotFoundError(f"missing minimum-built artifact: {path}")
-    inspect_artifact(path, target, commit, mod_version, icon_sha256)
-    return {
+    attributes = inspect_artifact(path, target, commit, mod_version, icon_sha256)
+    entry = {
         "artifactFile": target["artifactFile"],
         "size": path.stat().st_size,
         "sha256": sha256(path),
@@ -167,6 +191,12 @@ def target_entry(
         "runtimeStacks": target.get("runtimeStacks", []),
         "commit": commit,
     }
+    if target.get("waystonesSource"):
+        entry["waystonesSource"] = {
+            **target["waystonesSource"],
+            "artifactSha256": attributes["WaystonesPlayer-Upstream-Waystones-JAR-SHA256"],
+        }
+    return entry
 
 
 def resolve_output_path(requested: str) -> Path:

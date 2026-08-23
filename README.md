@@ -22,15 +22,17 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 
 ### 安装与支持范围
 
-Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端，并使用与 Minecraft 小版本及加载器匹配的三个 JAR；Fabric 目标还需要对应版本的 Fabric API，NeoForge 目标不需要 Fabric API。Java 版本为 21，模组版本始终为 `1.0.0`。
+Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端，并使用与 Minecraft 小版本及加载器匹配的 JAR；26.x 目标还必须安装对应版本的 Shogi。Fabric 目标另需对应 Fabric API，NeoForge 目标不需要 Fabric API。1.21.x 使用 Java 21，26.x 使用 Java 25；模组版本始终为 `1.0.0`。
 
 | 分支 | 加载器 | Minecraft | 可上传 JAR |
 |---|---|---|---:|
 | `main` | NeoForge | 1.21.1 | 1 |
 | `neoforge/1.21.x` | NeoForge | 1.21.2–1.21.11 | 9 |
 | `fabric/1.21.x` | Fabric | 1.21.1–1.21.11 | 10 |
+| `neoforge/26.x` | NeoForge | 26.1、26.1.1、26.1.2、26.2 | 4 |
+| `fabric/26.x` | Fabric | 26.1、26.1.1、26.1.2、26.2 | 4 |
 
-1.21.2 与 1.21.3 在每个加载器共用一份经两版分别验收的 JAR；除此之外，不要跨 Minecraft 小版本混用文件。NeoForge 1.21.2、1.21.6、1.21.7 与 1.21.9 的官方可用运行栈包含 beta NeoForge，发布资料会如实标注。Forge 不在支持范围内。
+1.21.2 与 1.21.3 在每个加载器共用一份经两版分别验收的 JAR；26.x 的四个游戏版本始终独立编译、独立发布，不跨补丁版本复用二进制。部分 NeoForge 运行栈使用官方 beta，发布资料会如实标注。Forge 不在支持范围内。
 
 机器可读的全部最低/当前依赖与精确文件名位于 [gradle/targets.json](gradle/targets.json)，人类可读说明见 [COMPATIBILITY.md](docs/COMPATIBILITY.md)。
 
@@ -62,7 +64,7 @@ Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端
 
 本模组没有遥测、广告、分析服务或外部数据上传。玩家选择只向当前连接的 Minecraft 服务端发送目标 UUID。
 
-原创代码为 All Rights Reserved；[LICENSE](LICENSE) 另行允许最终用户从授权渠道下载、安装并运行官方未修改 JAR。修改、镜像、再分发、打包进整合包或商业使用仍需书面许可。项目不打包 Waystones/Balm 的代码或 JAR。
+原创代码为 All Rights Reserved；[LICENSE](LICENSE) 另行允许最终用户从授权渠道下载、安装并运行官方未修改 JAR。修改、镜像、再分发、打包进整合包或商业使用仍需书面许可。项目不打包 Waystones、Balm 或 Shogi 的代码或 JAR。
 
 现有项目图标保持不变。其 Warp Stone 与玩家头像素材的来源、修改和适用条款见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。Waystones Player 不是 Twelve Iterations 官方项目，也不是 Minecraft 官方产品，未经 Mojang 或 Microsoft 批准或关联。
 
@@ -78,7 +80,7 @@ Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端
 JAVA_HOME=/path/to/jdk-21 ./gradlew clean test build --no-build-cache
 ```
 
-主线产物为 `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-1.0.0.jar`。构建会检查模块边界、20 产物矩阵、Mixin/网络契约、许可证、原图标以及未捆绑上游依赖。设计与维护细节见 [ARCHITECTURE.md](docs/ARCHITECTURE.md)、[COMPATIBILITY.md](docs/COMPATIBILITY.md) 和 [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)。
+主线产物为 `neoforge/build/libs/waystonesplayer-neoforge-1.21.1-1.0.0.jar`。构建会检查模块边界、28 产物矩阵、Mixin/网络契约、许可证、原图标以及未捆绑上游依赖。26.x 分支使用 JDK 25；26.1.1 的缺失 Waystones 二进制由固定官方提交在忽略的 `build/` 下重建，既不提交也不嵌入。设计与维护细节见 [ARCHITECTURE.md](docs/ARCHITECTURE.md)、[COMPATIBILITY.md](docs/COMPATIBILITY.md) 和 [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)。
 
 ---
 
@@ -102,15 +104,17 @@ Adjacent non-suffocating placement is not an absolute safety guarantee: it does 
 
 ### Installation and supported targets
 
-Install matching Waystones Player, Waystones, and Balm JARs on both client and server; Fabric targets also require the matching Fabric API, while NeoForge targets do not. Java 21 is required, and every project artifact remains version `1.0.0`.
+Install matching Waystones Player, Waystones, and Balm JARs on both client and server. The 26.x targets also require matching Shogi; Fabric targets require the matching Fabric API. The 1.21.x line uses Java 21 and the 26.x line uses Java 25. Every project artifact remains version `1.0.0`.
 
 | Branch | Loader | Minecraft | Uploadable JARs |
 |---|---|---|---:|
 | `main` | NeoForge | 1.21.1 | 1 |
 | `neoforge/1.21.x` | NeoForge | 1.21.2–1.21.11 | 9 |
 | `fabric/1.21.x` | Fabric | 1.21.1–1.21.11 | 10 |
+| `neoforge/26.x` | NeoForge | 26.1, 26.1.1, 26.1.2, 26.2 | 4 |
+| `fabric/26.x` | Fabric | 26.1, 26.1.1, 26.1.2, 26.2 | 4 |
 
-Minecraft 1.21.2 and 1.21.3 share one separately runtime-tested JAR per loader. Every other file is restricted to one Minecraft minor release. Some supported NeoForge lines use official beta loader builds; this is disclosed in their file metadata. Forge is not supported.
+Minecraft 1.21.2 and 1.21.3 share one separately runtime-tested JAR per loader. Every 26.x patch target is compiled and published independently. Some supported NeoForge stacks use official beta builds; this is disclosed in their file metadata. Forge is not supported.
 
 The exact minimum/current dependency suites and canonical filenames are in [gradle/targets.json](gradle/targets.json).
 
@@ -126,7 +130,7 @@ The mod has no telemetry, advertising, analytics, or external uploads. It sends 
 
 Original code is All Rights Reserved. [LICENSE](LICENSE) grants end users limited permission to download, install, and run an official unmodified JAR; modification, redistribution, modpack bundling, and commercial use still require written permission. The existing icon is unchanged; asset attribution and separate terms are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-`main` uses `core + common + neoforge`. The pure-Java core is loader- and Minecraft-free; common is recompiled for each target and cannot import loader APIs; target modules contain only loader/version bridges and packaging. Run `./gradlew clean test build --no-build-cache` with JDK 21.
+`main` uses `core + common + neoforge`. The pure-Java core is loader- and Minecraft-free; common is recompiled for each target and cannot import loader APIs; target modules contain only loader/version bridges and packaging. Use JDK 21 for 1.21.x and JDK 25 for 26.x.
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md), [COMPATIBILITY.md](docs/COMPATIBILITY.md), and [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for architecture, dependency, and release evidence.
 
