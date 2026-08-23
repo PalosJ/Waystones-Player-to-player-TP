@@ -123,7 +123,9 @@ class MatrixShapeTest(unittest.TestCase):
         matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
         targets = {item["id"]: item for item in matrix["targets"]}
 
+        self.assertEqual("26.1.0.19-beta", targets["neoforge-26.1"]["minimum"]["neoforge"])
         self.assertEqual("26.1.0.4", targets["neoforge-26.1"]["minimum"]["waystones"])
+        self.assertEqual("26.1.0.6", targets["neoforge-26.1"]["minimum"]["balm"])
         self.assertEqual("26.1.0.1", targets["neoforge-26.1"]["current"]["shogi"])
         self.assertEqual("26.1.1.8-beta", targets["neoforge-26.1.1"]["minimum"]["neoforge"])
         self.assertEqual("26.1.2.0-beta", targets["neoforge-26.1.2"]["minimum"]["neoforge"])
