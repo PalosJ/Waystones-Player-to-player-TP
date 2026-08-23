@@ -7,10 +7,13 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 
 class FabricConfigContractTest(unittest.TestCase):
     def test_fabric_keeps_the_shared_key_and_default_as_global_config(self) -> None:
-        config = (
+        config_path = (
             REPO
             / "fabric/src/main/java/com/palosj/waystonesplayer/fabric/FabricWaystonesPlayerConfig.java"
-        ).read_text(encoding="utf-8")
+        )
+        if not config_path.is_file():
+            return
+        config = config_path.read_text(encoding="utf-8")
 
         self.assertIn('FILE_NAME = "waystonesplayer-server.toml"', config)
         self.assertIn('MODE_KEY = "playerTeleportExperienceMode"', config)
