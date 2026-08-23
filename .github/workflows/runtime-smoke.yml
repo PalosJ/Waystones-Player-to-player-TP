@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: fabric-runtime-${{ github.ref }}
+  group: fabric-runtime-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: false
 
 jobs:
