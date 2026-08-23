@@ -15,7 +15,9 @@
 
 Waystones 26.1.1 没有公开正式加载器 JAR。本项目只从官方提交 `795bb9ac93e73a0df8e5678ba6746dfbf8b055a3` 构建 `26.1.1.0`，并用仓库内 SHA 锁定补丁把 Balm、Shogi、Unbreakables、JourneyMap API、Loom 和 ModDev 输入固定到正式版或不可变时间戳。生成的上游 JAR只位于忽略的 `build/`，不提交、不嵌入、不作为本项目发行物；Build/Runtime 独立重建并要求 SHA-256 一致。
 
-Waystones 26.x 的传送上下文继承 Shogi 事务模型。适配层必须使用 `tryTeleportAsync`、公共 `Waystone` 接口和锁定的 Shogi context；所有完成回调回到服务端主线程。任何规则解析失败、未知效果、非有限/负数/溢出、执行器或费用敏感字段替换都在消费与移动前关闭失败。内建 XP 点数/等级保留，其他费用不应用于玩家目的地；Shogi 的物品损坏效果被抑制，实际移动确认后仍由本模组原生结算一次 Warp Stone 耐久。
+Shogi `26.1.0.4` 及后续正式加载器 JAR把公共 API作为 jar-in-jar 提供，但部分 26.1 线 Maven API坐标只有浮动快照。构建因此只从矩阵严格锁定的 Shogi 加载器 JAR确定性提取其内嵌 API用于编译和测试；真实运行继续由同一加载器 JAR提供相同字节，禁止单独解析 Shogi API快照。
+
+Waystones 26.x 的传送上下文继承 Shogi 事务模型。适配层优先使用可用版本的 `tryTeleportAsync`；固定的早期 26.1.1 API只有同步入口，因此把其结果包装进相同的内部异步接口。两种路径都只使用公共 `Waystone` 接口和锁定的 Shogi context，且所有完成回调回到服务端主线程。任何规则解析失败、未知效果、非有限/负数/溢出、执行器或费用敏感字段替换都在消费与移动前关闭失败。内建 XP 点数/等级保留，其他费用不应用于玩家目的地；Shogi 的物品损坏效果被抑制，实际移动确认后仍由本模组原生结算一次 Warp Stone 耐久。
 
 ## 支持定义
 
