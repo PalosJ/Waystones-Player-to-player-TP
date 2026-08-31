@@ -10,10 +10,10 @@
 | Slug | `waystonesplayer` |
 | Client side | Required |
 | Server side | Required |
-| Project license | Custom；链接仓库根 `LICENSE` |
+| Project license | MIT |
 | Required dependencies | Waystones、Balm；Fabric 文件另需 Fabric API |
 | Unsupported loader | Forge |
-| Version number | 所有文件均为 `1.0.0` |
+| Version number | 所有文件均为 `1.0.1` |
 
 每个上传文件：
 
@@ -79,7 +79,7 @@ NeoForge keeps SERVER configuration and per-world override semantics. Fabric use
 
 ## License and attribution
 
-Original code is All Rights Reserved. The custom [LICENSE](https://github.com/PalosJ/waystonesplayer/blob/main/LICENSE) grants limited end-user permission to download, install, and run an official unmodified JAR. Modification, redistribution, mirroring, modpack bundling, and commercial use require written permission.
+Original code is open source under the [MIT License](https://github.com/PalosJ/waystonesplayer/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the terms documented below.
 
 The existing project icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by [Joe Williamson (JoeCreates)](https://opengameart.org/content/roguelikerpg-items) under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Additional player imagery and complete terms are documented in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/waystonesplayer/blob/main/THIRD_PARTY_NOTICES.md).
 
@@ -115,6 +115,6 @@ Waystones Player 会把当前连接中可列出的其他玩家加入 [Waystones�
 - Java 21。
 - 不支持 Forge。
 
-原创代码为 All Rights Reserved；自定义许可证只允许最终用户下载、安装并运行官方未修改 JAR。修改、镜像、再分发、整合包收录或商业使用需要书面许可。现有图标保持不变，完整素材署名和条款见项目的 `THIRD_PARTY_NOTICES.md`。
+原创代码依据 MIT License 开源；在保留版权与许可声明的条件下允许使用、修改、再分发和商业使用。现有图标中的第三方素材不属于 MIT 授权范围，完整署名和条款见项目的 `THIRD_PARTY_NOTICES.md`。
 
 本项目是未经 Twelve Iterations 背书的非官方 Waystones 附属，也不是 Minecraft 官方产品。

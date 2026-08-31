@@ -10,7 +10,7 @@ Use the exact artifact filename, game versions, loader, and dependency suite fro
 | Summary | Adds a live online-player directory to the Waystones Warp Stone menu. |
 | Main category | Addons |
 | Client / server | Required on both |
-| License | Custom License; use the repository `LICENSE` text/URL |
+| License | MIT License |
 | Required relations | Waystones, Balm；Fabric files also require Fabric API |
 | Unsupported loader | Forge |
 
@@ -46,7 +46,7 @@ NeoForge supports its SERVER config and per-world overrides. Fabric uses the sam
 
 There is no telemetry, advertising, analytics, or external upload. The only add-on payload contains the UUID selected from the current Minecraft server's listed-player data.
 
-Original code is All Rights Reserved. The custom [license](https://github.com/PalosJ/waystonesplayer/blob/main/LICENSE) grants limited end-user permission to download, install, and run an official unmodified JAR. Modification, redistribution, mirroring, modpack bundling, and commercial use require written permission.
+Original code is open source under the [MIT License](https://github.com/PalosJ/waystonesplayer/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the separately documented terms.
 
 The existing icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by Joe Williamson (JoeCreates), CC BY-SA 3.0. Complete attribution and the separate terms for player imagery are in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/waystonesplayer/blob/main/THIRD_PARTY_NOTICES.md).
 
@@ -58,11 +58,11 @@ NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR 
 
 For every JAR:
 
-- Display name: `Waystones Player 1.0.0 – <Loader> <Minecraft target>`.
+- Display name: `Waystones Player 1.0.1 – <Loader> <Minecraft target>`.
 - Release type: Release.
 - Game version(s): exactly the target's `minecraft` array.
 - Mod loader: exactly one of NeoForge or Fabric.
 - Required dependencies: Waystones and Balm; Fabric files also require Fabric API.
-- Changelog: use [CHANGELOG-1.0.0.md](CHANGELOG-1.0.0.md), plus the target dependency block generated from the matrix.
+- Changelog: use [CHANGELOG-1.0.1.md](CHANGELOG-1.0.1.md), plus the target dependency block generated from the matrix.
 - Verify the local SHA-256 before selecting the file.
 - Never upload sources, development JARs, caches, dependency JARs, or a JAR rebuilt against the current stack in place of the minimum-built release binary.

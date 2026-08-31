@@ -107,7 +107,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: waystonesplayer-neoforge-1.21.1
-          path: neoforge/build/libs/waystonesplayer-neoforge-1.21.1-1.0.0.jar
+          path: neoforge/build/libs/waystonesplayer-neoforge-1.21.1-1.0.1.jar
           if-no-files-found: error
           retention-days: 14
 
