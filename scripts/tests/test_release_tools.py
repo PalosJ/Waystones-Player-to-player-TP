@@ -42,7 +42,7 @@ class ReleaseManifestPathTest(unittest.TestCase):
             release_manifest.resolve_output_path("docs/release-manifest.json")
 
     def test_artifact_root_requires_one_exact_filename(self):
-        target = {"artifactFile": "waystonesplayer-test-1.0.0.jar"}
+        target = {"artifactFile": "waystonesplayer-test-1.0.1.jar"}
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             with self.assertRaises(ValueError):
@@ -90,7 +90,7 @@ class FixedWaystonesSourceTest(unittest.TestCase):
             path = Path(temporary) / target["artifactFile"]
             manifest = (
                 "Manifest-Version: 1.0\r\n"
-                "Implementation-Version: 1.0.0\r\n"
+                "Implementation-Version: 1.0.1\r\n"
                 f"WaystonesPlayer-Target: {target['id']}\r\n"
                 "WaystonesPlayer-Build-Stack: minimum\r\n"
                 f"WaystonesPlayer-Source-Commit: {commit}\r\n"
@@ -107,7 +107,7 @@ class FixedWaystonesSourceTest(unittest.TestCase):
                 archive.writestr("assets/waystonesplayer/lang/en_us.json", "{}")
                 archive.writestr("assets/waystonesplayer/lang/zh_cn.json", "{}")
             attributes = release_manifest.inspect_artifact(
-                path, target, commit, "1.0.0", hashlib.sha256(icon).hexdigest()
+                path, target, commit, "1.0.1", hashlib.sha256(icon).hexdigest()
             )
             self.assertEqual(
                 upstream_sha,
@@ -130,16 +130,16 @@ class RuntimeMatrixBranchTest(unittest.TestCase):
 class BinaryEvidenceTest(unittest.TestCase):
     TARGET = {
         "id": "neoforge-1.21.1",
-        "artifactFile": "waystonesplayer-neoforge-1.21.1-1.0.0.jar",
+        "artifactFile": "waystonesplayer-neoforge-1.21.1-1.0.1.jar",
     }
-    MATRIX = {"modVersion": "1.0.0"}
+    MATRIX = {"modVersion": "1.0.1"}
     COMMIT = "a" * 40
 
     def create_binary(self, directory: Path, commit: str | None = None) -> Path:
         path = directory / self.TARGET["artifactFile"]
         manifest = (
             "Manifest-Version: 1.0\r\n"
-            "Implementation-Version: 1.0.0\r\n"
+            "Implementation-Version: 1.0.1\r\n"
             "WaystonesPlayer-Target: neoforge-1.21.1\r\n"
             "WaystonesPlayer-Build-Stack: minimum\r\n"
             f"WaystonesPlayer-Source-Commit: {commit or self.COMMIT}\r\n\r\n"
@@ -186,7 +186,7 @@ class BinaryEvidenceTest(unittest.TestCase):
                 archive.writestr(
                     "META-INF/MANIFEST.MF",
                     "Manifest-Version: 1.0\r\n"
-                    "Implementation-Version: 1.0.0\r\n"
+                    "Implementation-Version: 1.0.1\r\n"
                     "WaystonesPlayer-Target: neoforge-1.21.1\r\n"
                     "WaystonesPlayer-Build-Stack: minimum\r\n\r\n",
                 )
@@ -202,7 +202,7 @@ class BinaryEvidenceTest(unittest.TestCase):
             manifest_path.write_text(
                 json.dumps({
                     "schemaVersion": 2,
-                    "modVersion": "1.0.0",
+                    "modVersion": "1.0.1",
                     "branch": "main",
                     "commit": self.COMMIT,
                     "artifacts": [{
@@ -210,7 +210,7 @@ class BinaryEvidenceTest(unittest.TestCase):
                         "branch": "main",
                         "buildStack": "minimum",
                         "commit": self.COMMIT,
-                        "releaseVersion": "1.0.0",
+                        "releaseVersion": "1.0.1",
                         "sha256": digest,
                         "target": self.TARGET["id"],
                     }],

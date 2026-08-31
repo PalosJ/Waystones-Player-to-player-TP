@@ -196,7 +196,7 @@ def validate_target_properties(
 def validate_matrix_shape(matrix: Dict[str, object]) -> None:
     """Reject structurally ambiguous targets before Gradle expands any metadata."""
     version = matrix.get("modVersion")
-    require(version == "1.0.0", f"targets.json must keep modVersion=1.0.0, got {version!r}")
+    require(version == "1.0.1", f"targets.json must keep modVersion=1.0.1, got {version!r}")
 
     targets = matrix.get("targets")
     require(isinstance(targets, list) and targets, "targets.json must contain a non-empty targets list")
