@@ -27,7 +27,7 @@ def verify(
         commit: str,
         expected_sha256: str) -> Dict[str, object]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("schemaVersion") != 2 or manifest.get("modVersion") != "1.0.0":
+    if manifest.get("schemaVersion") != 2 or manifest.get("modVersion") != "1.0.1":
         raise ValueError("release manifest has an unsupported schema or mod version")
     if manifest.get("branch") != branch or manifest.get("commit") != commit:
         raise ValueError("release manifest branch or commit does not match the Build run")
@@ -42,7 +42,7 @@ def verify(
         "branch": branch,
         "buildStack": "minimum",
         "commit": commit,
-        "releaseVersion": "1.0.0",
+        "releaseVersion": "1.0.1",
         "sha256": expected_sha256,
         "target": target,
     }

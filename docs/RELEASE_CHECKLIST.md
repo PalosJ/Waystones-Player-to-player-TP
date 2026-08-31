@@ -10,7 +10,7 @@
 - [ ] `gradle/targets.json` 通过 JSON 解析和 `verifyTargetMatrix`。
 - [ ] `python3 scripts/verify-target-matrix.py` 通过，settings 与 Build/Runtime workflow 的 target 列表和中央矩阵一致。
 - [ ] `python3 -m unittest discover -s scripts/tests -v` 通过，包含 target.properties family/source root 与 artifact provenance 负向测试。
-- [ ] 所有 `mod_version`、加载器元数据、文件名、changelog 和平台版本均为 `1.0.0`。
+- [ ] 所有 `mod_version`、加载器元数据、文件名、changelog 和平台版本均为 `1.0.1`。
 - [ ] 原 `common/src/main/resources/waystonesplayer.png` 字节未改变。
 - [ ] 1.21.x 使用 Java 21，26.x 使用 Java 25；26.x 元数据把 Waystones、Balm、Shogi 都声明为强制依赖。
 
@@ -98,7 +98,7 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 
 - [ ] Modrinth：客户端 Required、服务端 Required、正确游戏版本/Loader、Waystones/Balm Required；26.x 另有 Shogi Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它。
 - [ ] CurseForge：英文描述、正确 Game Version/Mod Loader、Waystones/Balm Required；26.x 另有 Shogi Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它，Release 类型。
-- [ ] Custom License 链接/文本与根 LICENSE 一致，不标成开源许可证。
+- [ ] Modrinth 与 CurseForge 均选择 MIT；平台链接/文本与根 LICENSE 一致，第三方图标条款继续单独披露。
 - [ ] beta NeoForge 文件在 changelog 明确披露。
 - [ ] 1.21.2/1.21.3 共用文件同时勾选两版；其他文件只勾选一版。
 - [ ] 页面包含非官方声明、既有图标署名和“相邻非窒息不是绝对安全”说明。

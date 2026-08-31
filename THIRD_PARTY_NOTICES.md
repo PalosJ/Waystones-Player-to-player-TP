@@ -1,8 +1,10 @@
 # Third-Party Notices
 
 These notices apply to the project icon at
-`common/src/main/resources/waystonesplayer.png`. They do not change the
-All Rights Reserved license of Waystones Player's original source code.
+`common/src/main/resources/waystonesplayer.png`. Waystones Player's original
+source code is licensed under the repository MIT License, but the third-party
+material identified below is excluded from that grant and remains subject to
+its own terms.
 
 ## Warp Stone artwork
 

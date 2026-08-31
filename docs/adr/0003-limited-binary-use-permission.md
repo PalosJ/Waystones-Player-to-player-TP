@@ -1,6 +1,6 @@
 # ADR 0003：ARR 下的有限最终用户授权
 
-- 状态：Accepted
+- 状态：Superseded by ADR 0005
 - 日期：2026-08-12
 
 ## Context
@@ -16,3 +16,7 @@
 - Modrinth 使用自定义许可证 URL，CurseForge 选择 Custom License。
 - README、平台材料和 JAR必须包含相同边界，不能把项目描述为开源。
 - 该授权不能对已获得的正式版本任意追溯收回，因此变更需要新的明确决定。
+
+## Supersession
+
+本决策继续记录 1.0.0 及此前已发布内容的授权背景。自 1.0.1 起，原创代码改用 ADR 0005 记录的 MIT License；第三方素材仍不包含在原创代码授权中。
