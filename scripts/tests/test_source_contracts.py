@@ -55,7 +55,32 @@ class NetworkAuthoritySourceContractTest(unittest.TestCase):
         self.assertNotIn("experience", payload.lower())
         self.assertIn("registerServerboundPacket", networking)
         self.assertLess(service.index("runtime.resolveWarpStoneUse"), service.index("runtime.tryTeleport"))
-        self.assertLess(service.index("runtime.resolveListedTarget"), service.index("runtime.tryTeleport"))
+        self.assertLess(service.index("runtime.resolveOnlineTarget"), service.index("runtime.tryTeleport"))
+
+    def test_online_targets_do_not_treat_listing_privacy_as_authorization(self) -> None:
+        runtime = source(
+            "common/src/main/java/com/palosj/waystonesplayer/teleport/TeleportRuntime.java"
+        )
+        evaluator = source(
+            "common/src/main/java/com/palosj/waystonesplayer/compat/WaystonesTeleportEvaluator.java"
+        )
+        compat = source(
+            "common/src/main/java/com/palosj/waystonesplayer/compat/WaystonesCompat.java"
+        )
+
+        self.assertIn("resolveOnlineTarget", runtime)
+        self.assertNotIn("allowsListing", runtime)
+        self.assertNotIn("hasAdjacentNonSuffocatingSpace", evaluator)
+        self.assertNotIn("isCurrentPositionNonSuffocating", evaluator)
+        self.assertNotIn("hasAdjacentNonSuffocatingSpace", compat)
+
+    def test_successful_player_teleports_restore_the_original_rotation(self) -> None:
+        service = source(
+            "common/src/main/java/com/palosj/waystonesplayer/teleport/PlayerTeleportService.java"
+        )
+
+        self.assertLess(service.index("runtime.captureRotation"), service.index("runtime.tryTeleport"))
+        self.assertGreater(service.index("runtime.restoreRotation"), service.index("runtime.tryTeleport"))
 
 class RuntimeWorkflowSourceContractTest(unittest.TestCase):
     def test_runtime_consumes_only_a_trusted_exact_build_artifact(self) -> None:
