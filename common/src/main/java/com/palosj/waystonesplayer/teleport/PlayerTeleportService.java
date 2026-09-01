@@ -49,7 +49,7 @@ public final class PlayerTeleportService {
         }
 
         Optional<TeleportRuntimeBoundary.TargetPlayer> resolvedTarget =
-                runtime.resolveListedTarget(sender, targetPlayerId);
+                runtime.resolveOnlineTarget(sender, targetPlayerId);
         if (resolvedTarget.isEmpty()) {
             runtime.displayMessage(sender, "message.waystonesplayer.target_unavailable");
             return;
@@ -61,12 +61,13 @@ public final class PlayerTeleportService {
             return;
         }
 
+        TeleportRuntimeBoundary.PlayerRotation originalRotation = runtime.captureRotation(sender);
         WaystonesCompat.WarpStoneUse boundUse = warpStoneUse.orElseThrow();
         try {
             runtime.tryTeleport(sender, target.player(), boundUse, experienceMode)
                     .whenComplete((result, error) -> runtime.executeOnServerThread(
                             sender,
-                            () -> settleTeleport(sender, boundUse, result, error, runtime)));
+                            () -> settleTeleport(sender, boundUse, originalRotation, result, error, runtime)));
         } catch (RuntimeException | LinkageError error) {
             WaystonesPlayer.LOGGER.warn("Waystones rejected a player-destination teleport before it started.", error);
             runtime.displayMessage(sender, "message.waystonesplayer.compatibility_unavailable");
@@ -76,6 +77,7 @@ public final class PlayerTeleportService {
     private static void settleTeleport(
             ServerPlayer sender,
             WaystonesCompat.WarpStoneUse warpStoneUse,
+            TeleportRuntimeBoundary.PlayerRotation originalRotation,
             Optional<TeleportOutcome> result,
             Throwable error,
             TeleportRuntimeBoundary runtime) {
@@ -99,6 +101,7 @@ public final class PlayerTeleportService {
             return;
         }
 
+        runtime.restoreRotation(sender, originalRotation);
         runtime.resetFallDistance(sender);
         WaystonesCompat.WarpStoneUse successfulUse = warpStoneUse;
         Optional<TeleportRuntimeBoundary.DurabilityTarget> durabilityTarget =

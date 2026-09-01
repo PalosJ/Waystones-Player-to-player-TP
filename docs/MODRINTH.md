@@ -43,15 +43,15 @@ Waystones Player is an unofficial add-on that brings other listed players into t
 
 - A live player directory based on Minecraft's existing listed-player data.
 - A responsive 164px full list, 128–163px compact list, or 36px clickable avatar rail.
-- Server-side validation of the exact Warp Stone and hand, `allowsListing()` target authorization, experience requirement, and confirmed movement.
-- Waystones-compatible cancellable events, sound, effects, and adjacent non-suffocating placement.
+- Server-side validation of the exact Warp Stone and hand, online target UUID, experience requirement, and confirmed movement.
+- Waystones-compatible cancellable events, sound, effects, and native adjacent-or-target-block destination placement.
 - Exactly one point of native Warp Stone durability after confirmed success.
 - Free, follow-Waystones, or always-evaluate-Waystones experience modes.
 - No telemetry, advertising, analytics, or external uploads.
 
-The client sends only the selected target UUID. The server independently resolves the target and requires `ServerPlayer.allowsListing()`. The client listed stream and this server authorization are separate boundaries: a third-party per-client `UPDATE_LISTED` hide can leave a displayed entry rejected by the server, and this add-on does not promise to prevent guessed-UUID requests against that third-party state. Player destinations are transient and are not stored as Waystones.
+The client sends only the selected target UUID. The server independently resolves the corresponding currently online player; client listing state is not server-side teleport authorization. This add-on does not promise to prevent custom packets from guessing a third-party-hidden player's UUID. Player destinations are transient and are not stored as Waystones.
 
-Adjacent non-suffocating placement is not an absolute safety guarantee. It does not require solid ground and does not exclude dangerous fluids or cliffs.
+Player destinations carry no safety guarantee. They may be inside blocks, in mid-air, in dangerous fluids, or near cliffs; Waystones falls back to the target block center when no adjacent opening exists.
 
 ## Compatibility
 
@@ -103,9 +103,9 @@ NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR 
 
 Waystones Player 会把当前连接中可列出的其他玩家加入 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的 Warp Stone 菜单。选择玩家后，传送会进入 Waystones 的事件、声音、效果与相邻落点流程，不需要命令、OP 权限或第二次确认。
 
-玩家目录会实时更新，并按界面空间显示完整名单、收窄名单或可点击头像栏。客户端复用 listed 玩家流并只发送目标 UUID；服务端独立以 `allowsListing()` 授权，再检查确切物品、使用手、经验和实际移动。两者不是同一状态：第三方逐客户端 `UPDATE_LISTED` 隐藏可能导致已显示条目被拒绝，本模组不承诺阻止针对该状态的猜 UUID 请求。确认成功后才损耗 1 点原生耐久；失败恢复经验、保留耐久并保持界面打开。
+玩家目录会实时更新，并按界面空间显示完整名单、收窄名单或可点击头像栏。客户端复用 listed 玩家流并只发送目标 UUID；服务端独立解析当前在线玩家，再检查确切物品、使用手、经验和实际移动。客户端隐藏状态不构成服务端传送权限，本模组不承诺阻止自定义数据包猜测第三方隐藏玩家 UUID。确认成功后才损耗 1 点原生耐久；失败恢复经验、保留耐久并保持界面打开。
 
-相邻非窒息落点不是绝对安全保证：它不要求脚下有实体方块，也不会排除危险流体或悬崖。
+玩家目的地不提供安全落点保证：目标可能位于方块、空中、危险流体或悬崖；Waystones 找不到相邻空位时会回退到目标方块中心。
 
 本模组需要在客户端和服务端同时安装，并配套安装对应版本的 Waystones 与 Balm；Fabric 文件还需要对应版本的 Fabric API，NeoForge 文件不需要 Fabric API：
 

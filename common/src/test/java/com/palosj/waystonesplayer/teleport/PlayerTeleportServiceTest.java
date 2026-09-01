@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
 
-import net.blay09.mods.waystones.api.WaystoneTeleportContext;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 
@@ -61,10 +60,13 @@ class PlayerTeleportServiceTest {
             execute(runtime);
 
             assertEquals(1, runtime.teleportCalls);
+            assertEquals(1, runtime.captureRotationCalls);
+            assertEquals(1, runtime.restoreRotationCalls);
             assertEquals(1, runtime.resetFallDistanceCalls);
             assertEquals(1, runtime.damageCalls);
             assertEquals(1, runtime.closeCalls);
             assertSame(hand, runtime.damagedUse.hand());
+            assertSame(runtime.rotation, runtime.restoredRotation);
             assertEquals(List.of(), runtime.messages);
         }
     }
@@ -77,6 +79,7 @@ class PlayerTeleportServiceTest {
         execute(runtime);
 
         assertEquals(1, runtime.resetFallDistanceCalls);
+        assertEquals(1, runtime.restoreRotationCalls);
         assertEquals(0, runtime.damageCalls);
         assertEquals(1, runtime.closeCalls);
         assertEquals(List.of("message.waystonesplayer.post_teleport_item_changed"), runtime.messages);
@@ -90,6 +93,7 @@ class PlayerTeleportServiceTest {
         execute(runtime);
 
         assertEquals(1, runtime.resetFallDistanceCalls);
+        assertEquals(1, runtime.restoreRotationCalls);
         assertEquals(1, runtime.damageCalls);
         assertEquals(1, runtime.closeCalls);
         assertEquals(List.of("message.waystonesplayer.post_teleport_destination_changed"), runtime.messages);
@@ -113,6 +117,7 @@ class PlayerTeleportServiceTest {
         runtime.outcome = outcome;
         execute(runtime);
         assertEquals(1, runtime.teleportCalls);
+        assertEquals(0, runtime.restoreRotationCalls);
         assertEquals(0, runtime.damageCalls);
         assertEquals(0, runtime.closeCalls);
         assertEquals(List.of(expectedMessage), runtime.messages);
@@ -134,11 +139,15 @@ class PlayerTeleportServiceTest {
         private Optional<TargetPlayer> target = Optional.of(new TargetPlayer(null, TARGET_ID));
         private Optional<TeleportOutcome> outcome = Optional.of(TeleportOutcome.SUCCESS);
         private Optional<DurabilityTarget> durabilityTarget = Optional.of(new DurabilityTarget(null));
+        private final PlayerRotation rotation = new PlayerRotation(123.5f, -27.25f);
         private int teleportCalls;
+        private int captureRotationCalls;
+        private int restoreRotationCalls;
         private int resetFallDistanceCalls;
         private int damageCalls;
         private int closeCalls;
         private WaystonesCompat.WarpStoneUse damagedUse;
+        private PlayerRotation restoredRotation;
 
         @Override
         public int currentTick(ServerPlayer sender) {
@@ -161,8 +170,14 @@ class PlayerTeleportServiceTest {
         }
 
         @Override
-        public Optional<TargetPlayer> resolveListedTarget(ServerPlayer sender, UUID targetPlayerId) {
+        public Optional<TargetPlayer> resolveOnlineTarget(ServerPlayer sender, UUID targetPlayerId) {
             return target;
+        }
+
+        @Override
+        public PlayerRotation captureRotation(ServerPlayer player) {
+            captureRotationCalls++;
+            return rotation;
         }
 
         @Override
@@ -202,6 +217,12 @@ class PlayerTeleportServiceTest {
         }
 
         @Override
+        public void restoreRotation(ServerPlayer sender, PlayerRotation rotation) {
+            restoreRotationCalls++;
+            restoredRotation = rotation;
+        }
+
+        @Override
         public void closeContainer(ServerPlayer sender) {
             closeCalls++;
         }
@@ -213,13 +234,6 @@ class PlayerTeleportServiceTest {
 
         @Override
         public boolean isWarpStoneUseBound(ServerPlayer sender, WaystonesCompat.WarpStoneUse use) {
-            return true;
-        }
-
-        @Override
-        public boolean hasAdjacentNonSuffocatingSpace(
-                ServerPlayer sender,
-                WaystoneTeleportContext context) {
             return true;
         }
     }
