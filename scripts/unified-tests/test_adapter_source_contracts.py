@@ -99,14 +99,13 @@ class UnifiedNetworkFamilySourceContractTest(unittest.TestCase):
 
 
 class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
-    def test_identifier_compat_keeps_post_move_suffocation_check(self) -> None:
+    def test_identifier_compat_does_not_reintroduce_arrival_suffocation_check(self) -> None:
         path = "adapters/identifier/1.21.11/java/com/palosj/waystonesplayer/compat/WaystonesCompat.java"
         if not REPO.joinpath(path).is_file():
             return
         compat = source(path)
-        self.assertIn("isCurrentPositionNonSuffocating", compat)
-        self.assertIn("player.blockPosition()", compat)
-        self.assertIn("body.above()", compat)
+        self.assertNotIn("isCurrentPositionNonSuffocating", compat)
+        self.assertNotIn("hasAdjacentNonSuffocatingSpace", compat)
 
     def test_optional_hand_family_never_directly_links_the_delegate(self) -> None:
         context_path = (

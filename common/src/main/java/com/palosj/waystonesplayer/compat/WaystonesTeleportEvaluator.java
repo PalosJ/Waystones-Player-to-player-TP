@@ -81,7 +81,7 @@ final class WaystonesTeleportEvaluator {
                     .orElse(false);
         } catch (TeleportRejectedException error) {
             experienceSnapshot.restore();
-            WaystonesPlayer.LOGGER.debug("Rejected an unsafe player-destination teleport: {}", error.getMessage());
+            WaystonesPlayer.LOGGER.debug("Rejected a guarded player-destination teleport: {}", error.getMessage());
             return TeleportOutcome.FAILED;
         } catch (RuntimeException | LinkageError error) {
             if (TeleportArrivalVerifier.hasMoved(before, positionOf(sender))) {
@@ -179,30 +179,27 @@ final class WaystonesTeleportEvaluator {
             GuardedRollbackRequirement guardedRequirement,
             LockedWaystoneTeleportContext teleportContext) {
         boolean targetMatches = false;
-        boolean arrivalIsClear = false;
         try {
             TeleportArrivalVerifier.Target validatedTarget = guardedRequirement.validatedTarget();
             targetMatches = validatedTarget != null
                     && TeleportArrivalVerifier.matchesTargetOrHorizontalAdjacent(
                             positionOf(sender),
                             validatedTarget);
-            arrivalIsClear = TeleportRuntime.isCurrentPositionNonSuffocating(sender);
         } catch (RuntimeException | LinkageError error) {
             WaystonesPlayer.LOGGER.error(
                     "Failed to verify the destination after a confirmed player movement; "
                             + "preserving consumed experience and reporting a compatibility warning.",
                     error);
         }
-        if (targetMatches && arrivalIsClear && !teleportContext.replacementAttempted()) {
+        if (targetMatches && !teleportContext.replacementAttempted()) {
             return TeleportOutcome.SUCCESS;
         }
 
         WaystonesPlayer.LOGGER.error(
                 "Waystones moved a player without a matching validated destination "
-                        + "(targetMatches={}, arrivalIsClear={}, replacementAttempted={}); "
+                        + "(targetMatches={}, replacementAttempted={}); "
                         + "preserving consumed experience and reporting a compatibility warning.",
                 targetMatches,
-                arrivalIsClear,
                 teleportContext.replacementAttempted());
         return TeleportOutcome.MOVED_INCOMPATIBLY;
     }
@@ -302,9 +299,6 @@ final class WaystonesTeleportEvaluator {
             }
             if (!TeleportRuntime.isWarpStoneUseBound(sender, warpStoneUse)) {
                 throw new TeleportRejectedException("the bound Warp Stone changed before teleport consumption");
-            }
-            if (!TeleportRuntime.hasAdjacentNonSuffocatingSpace(sender, teleportContext)) {
-                throw new TeleportRejectedException("the destination has no adjacent non-suffocating space");
             }
             if (captureTarget) {
                 validatedTarget = targetOf(teleportContext);
