@@ -49,7 +49,7 @@ public final class PlayerTeleportService {
         }
 
         Optional<TeleportRuntimeBoundary.TargetPlayer> resolvedTarget =
-                runtime.resolveListedTarget(sender, targetPlayerId);
+                runtime.resolveOnlineTarget(sender, targetPlayerId);
         if (resolvedTarget.isEmpty()) {
             runtime.displayMessage(sender, "message.waystonesplayer.target_unavailable");
             return;
@@ -61,6 +61,7 @@ public final class PlayerTeleportService {
             return;
         }
 
+        TeleportRuntimeBoundary.PlayerRotation originalRotation = runtime.captureRotation(sender);
         Optional<TeleportOutcome> result = runtime.tryTeleport(
                 sender,
                 target.player(),
@@ -81,6 +82,7 @@ public final class PlayerTeleportService {
             return;
         }
 
+        runtime.restoreRotation(sender, originalRotation);
         runtime.resetFallDistance(sender);
         WaystonesCompat.WarpStoneUse successfulUse = warpStoneUse.orElseThrow();
         Optional<TeleportRuntimeBoundary.DurabilityTarget> durabilityTarget =

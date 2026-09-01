@@ -6,7 +6,6 @@ import java.util.UUID;
 import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
 
-import net.blay09.mods.waystones.api.WaystoneTeleportContext;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
@@ -19,7 +18,9 @@ interface TeleportRuntimeBoundary {
 
     Optional<WaystonesCompat.WarpStoneUse> resolveWarpStoneUse(ServerPlayer sender);
 
-    Optional<TargetPlayer> resolveListedTarget(ServerPlayer sender, UUID targetPlayerId);
+    Optional<TargetPlayer> resolveOnlineTarget(ServerPlayer sender, UUID targetPlayerId);
+
+    PlayerRotation captureRotation(ServerPlayer player);
 
     Optional<TeleportOutcome> tryTeleport(
             ServerPlayer sender,
@@ -38,17 +39,20 @@ interface TeleportRuntimeBoundary {
 
     void resetFallDistance(ServerPlayer sender);
 
+    void restoreRotation(ServerPlayer sender, PlayerRotation rotation);
+
     void closeContainer(ServerPlayer sender);
 
     void displayMessage(ServerPlayer sender, String translationKey);
 
     boolean isWarpStoneUseBound(ServerPlayer sender, WaystonesCompat.WarpStoneUse warpStoneUse);
 
-    boolean hasAdjacentNonSuffocatingSpace(ServerPlayer sender, WaystoneTeleportContext context);
-
     record TargetPlayer(ServerPlayer player, UUID id) {
     }
 
     record DurabilityTarget(ItemStack stack) {
+    }
+
+    record PlayerRotation(float yaw, float pitch) {
     }
 }

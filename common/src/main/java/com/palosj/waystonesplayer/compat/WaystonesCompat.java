@@ -5,12 +5,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.palosj.waystonesplayer.WaystonesPlayer;
 
-import net.blay09.mods.waystones.api.WaystoneTeleportContext;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -87,34 +83,6 @@ public final class WaystonesCompat {
             }
         }
         return Optional.empty();
-    }
-
-    public static boolean hasAdjacentNonSuffocatingSpace(
-            ServerPlayer player,
-            WaystoneTeleportContext context) {
-        ServerLevel targetLevel = player.level().getServer().getLevel(context.getTargetWaystone().getDimension());
-        if (targetLevel == null) {
-            return false;
-        }
-
-        BlockPos target = context.getTargetWaystone().getPos();
-        for (Direction direction : Direction.Plane.HORIZONTAL) {
-            BlockPos body = target.relative(direction);
-            BlockPos head = body.above();
-            if (!targetLevel.getBlockState(body).isSuffocating(targetLevel, body)
-                    && !targetLevel.getBlockState(head).isSuffocating(targetLevel, head)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static boolean isCurrentPositionNonSuffocating(ServerPlayer player) {
-        ServerLevel level = (ServerLevel) player.level();
-        BlockPos body = player.blockPosition();
-        BlockPos head = body.above();
-        return !level.getBlockState(body).isSuffocating(level, body)
-                && !level.getBlockState(head).isSuffocating(level, head);
     }
 
     private static void logMenuCompatibilityFailure(AbstractContainerMenu menu, Throwable error) {

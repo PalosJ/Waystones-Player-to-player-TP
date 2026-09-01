@@ -7,7 +7,6 @@ import com.palosj.waystonesplayer.PlayerTeleportExperienceMode;
 import com.palosj.waystonesplayer.compat.WaystonesCompat;
 import com.palosj.waystonesplayer.compat.WaystonesTeleportCompat;
 
-import net.blay09.mods.waystones.api.WaystoneTeleportContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,16 +25,6 @@ public final class TeleportRuntime {
             ServerPlayer sender,
             WaystonesCompat.WarpStoneUse warpStoneUse) {
         return LIVE.isWarpStoneUseBound(sender, warpStoneUse);
-    }
-
-    public static boolean hasAdjacentNonSuffocatingSpace(
-            ServerPlayer sender,
-            WaystoneTeleportContext context) {
-        return LIVE.hasAdjacentNonSuffocatingSpace(sender, context);
-    }
-
-    public static boolean isCurrentPositionNonSuffocating(ServerPlayer sender) {
-        return WaystonesCompat.isCurrentPositionNonSuffocating(sender);
     }
 
     private static final class LiveBoundary implements TeleportRuntimeBoundary {
@@ -60,12 +49,17 @@ public final class TeleportRuntime {
         }
 
         @Override
-        public Optional<TargetPlayer> resolveListedTarget(ServerPlayer sender, UUID targetPlayerId) {
+        public Optional<TargetPlayer> resolveOnlineTarget(ServerPlayer sender, UUID targetPlayerId) {
             ServerPlayer target = sender.level().getServer().getPlayerList().getPlayer(targetPlayerId);
-            if (target == null || !target.allowsListing()) {
+            if (target == null) {
                 return Optional.empty();
             }
             return Optional.of(new TargetPlayer(target, target.getUUID()));
+        }
+
+        @Override
+        public PlayerRotation captureRotation(ServerPlayer player) {
+            return new PlayerRotation(player.getYRot(), player.getXRot());
         }
 
         @Override
@@ -98,6 +92,16 @@ public final class TeleportRuntime {
         }
 
         @Override
+        public void restoreRotation(ServerPlayer sender, PlayerRotation rotation) {
+            sender.connection.teleport(
+                    sender.getX(),
+                    sender.getY(),
+                    sender.getZ(),
+                    rotation.yaw(),
+                    rotation.pitch());
+        }
+
+        @Override
         public void closeContainer(ServerPlayer sender) {
             sender.closeContainer();
         }
@@ -114,13 +118,6 @@ public final class TeleportRuntime {
                 ServerPlayer sender,
                 WaystonesCompat.WarpStoneUse warpStoneUse) {
             return WaystonesCompat.isWarpStoneUseBound(sender, warpStoneUse);
-        }
-
-        @Override
-        public boolean hasAdjacentNonSuffocatingSpace(
-                ServerPlayer sender,
-                WaystoneTeleportContext context) {
-            return WaystonesCompat.hasAdjacentNonSuffocatingSpace(sender, context);
         }
     }
 }

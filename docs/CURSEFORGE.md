@@ -20,9 +20,9 @@ Use the exact artifact filename, game versions, loader, and dependency suite fro
 
 Waystones Player is an unofficial Waystones add-on that lets a Warp Stone target other listed online players. The directory updates live and stays on the left of the original screen, using a full list, compact list, or clickable avatar rail depending on available GUI space.
 
-The client sends only a target UUID. The server revalidates the exact Warp Stone and hand, `ServerPlayer.allowsListing()` authorization, experience requirements, and actual movement. The client listed stream and server authorization are separate: a third-party per-client `UPDATE_LISTED` hide can leave a displayed entry rejected by the server, and this add-on does not promise to prevent guessed-UUID requests against that third-party state. A successful player destination uses Waystones' cancellable events, sound, effects, and adjacent non-suffocating placement, then applies exactly one point of native Warp Stone durability. Failed or cancelled attempts restore experience, preserve durability, and keep the menu open.
+The client sends only a target UUID. The server revalidates the exact Warp Stone and hand, the corresponding currently online player, experience requirements, and actual movement. Client listing state is not server-side teleport authorization, and this add-on does not promise to prevent custom packets from guessing a third-party-hidden player's UUID. A successful player destination uses Waystones' cancellable events, sound, effects, and native adjacent-or-target-block placement, then applies exactly one point of native Warp Stone durability. Failed or cancelled attempts restore experience, preserve durability, and keep the menu open.
 
-Adjacent non-suffocating placement is not a guarantee of solid ground or protection from dangerous fluids and cliffs.
+Player destinations carry no safety guarantee and may be inside blocks, in mid-air, in dangerous fluids, or near cliffs.
 
 ## Requirements
 
