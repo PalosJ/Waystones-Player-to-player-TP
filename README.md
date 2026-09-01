@@ -12,13 +12,13 @@ Waystones Player 是 [Waystones（传送石碑）](https://modrinth.com/mod/ways
 
 - 玩家目录始终位于左侧：宽屏显示 164px 完整名单，中等空间收窄至 128px，继续不足时改为 36px 可点击头像栏；只有必要时才把 Waystones 原界面整体右移。
 - 名单复用 Minecraft 已同步的 listed 玩家数据，不增加第二套名单协议；每 5 个客户端 tick 刷新一次，连接变化时立即刷新。稳定目录只做线性精确比较，加入、离开或改名时才排序，并按 UUID 复用行、保留可见锚点；焦点玩家退出时回退到邻近行。Waystones 自身搜索框只筛选 Waystones，不会隐藏玩家目录。
-- 客户端只发送目标 UUID。客户端目录复用 Minecraft 的 listed 玩家流；服务端则独立用 `allowsListing()` 作为硬授权，并重新验证菜单、打开菜单的确切 Warp Stone 与使用手、费用和最终移动。
-- 传送进入 Waystones 的可取消事件、声音和效果流程；事件重定向完成后还会再次要求目标四个水平相邻位置至少有一处身体与头部均不窒息。事件可以观察、取消或重定向，但不能替换已锁定费用。
+- 客户端只发送目标 UUID。客户端目录复用 Minecraft 的 listed 玩家流；服务端独立解析当前在线玩家，并重新验证菜单、打开菜单的确切 Warp Stone 与使用手、费用和最终移动。
+- 传送进入 Waystones 的可取消事件、声音、效果和原生落点流程；Waystones 优先使用相邻空位，并在没有相邻候选时回退到目标方块中心。事件可以观察、取消或重定向，但不能替换已锁定费用。
 - 每次确认成功后才重新定位原手中的当前 Warp Stone，并结算 1 点原生耐久；失败不扣耐久，经验会恢复且界面保持打开。若第三方模组在移动后彻底移除该物品，不会损坏无关物品或回滚已经完成的移动。
-- 若玩家已经移动，但最终位置不再匹配事件后验证的目标或实际身体/头部变为窒息位置，传送仍按已发生移动结算且不会退还经验，同时显示兼容性警告。
+- 若玩家已经移动，但最终位置不再匹配事件后验证的目标，传送仍按已发生移动结算且不会退还经验，同时显示兼容性警告。
 - 三种经验模式：免费、跟随 Waystones 总开关，或始终计算 Waystones 当前的经验点数/等级公式。
 
-“相邻非窒息”只表示身体与头部空间不会窒息，不保证脚下有方块，也不排除危险流体或悬崖。目标玩家本身也可能在传送期间移动。
+玩家目的地不提供安全落点保证：目标可能位于空中、危险流体、悬崖或方块内部；Waystones 找不到相邻空位时会回退到目标方块中心。
 
 ### 安装与支持范围
 
@@ -43,7 +43,7 @@ Waystones Player、Waystones 和 Balm 必须同时安装在客户端与服务端
 3. 服务端验证本次菜单仍绑定同一个主手或副手物品，并重新查询目标。
 4. Waystones 执行事件、效果和落点流程；只有服务器确认发送者实际移动后，才结算费用、耐久并关闭界面。
 
-客户端只展示原版 listed 玩家流中的目标；服务端另行要求目标的 `allowsListing()` 为真。因此第三方逐客户端 `UPDATE_LISTED` 隐藏可能让一个已显示条目在服务端被拒绝，而本模组不承诺阻止针对这类第三方隐藏状态的猜 UUID 请求。玩家目的地不会写入 Waystones 数据库，不会继承物品费用、冷却或非经验 requirement。
+客户端只展示原版 listed 玩家流中的目标；服务端收到 UUID 后独立解析当前在线玩家。客户端隐藏状态不是服务端传送权限，本模组不承诺阻止通过自定义数据包猜测第三方隐藏玩家 UUID。玩家目的地不会写入 Waystones 数据库，不会继承物品费用、冷却或非经验 requirement。
 
 ### 经验配置
 
@@ -94,13 +94,13 @@ Waystones Player is an unofficial add-on for [Waystones](https://modrinth.com/mo
 
 - A responsive player directory: 164px full list, 128–163px narrowed list, or a 36px clickable avatar rail. The Waystones UI moves right only when required.
 - Updates from Minecraft's existing listed-player data every five client ticks, with immediate refresh on connection changes. Stable directories use a linear exact comparison; sorting happens only after a join, leave, rename, or identity replacement. Rows are reused by UUID, visible anchors are preserved, and removed focus falls back to a nearby row. The Waystones search field filters only Waystones, never the player directory.
-- Server-authoritative validation of the menu, exact Warp Stone and hand, `allowsListing()` authorization, cost, and confirmed movement.
-- Waystones' cancellable events, sound, effects, and a final adjacent non-suffocating-space guard after event redirection. Events may observe, cancel, or redirect, but cannot replace the locked cost.
+- Server-authoritative validation of the menu, exact Warp Stone and hand, online target UUID, cost, and confirmed movement.
+- Waystones' cancellable events, sound, effects, and native destination resolution: an adjacent opening is preferred, with the target block center as the fallback. Events may observe, cancel, or redirect, but cannot replace the locked cost.
 - One point of native Warp Stone durability only after confirmed success and re-resolving the original hand/reference; failures restore experience, preserve durability, and keep the menu open.
-- Confirmed movement to a destination that no longer matches the post-event validation, or to a suffocating actual body/head position, keeps the consumed experience and durability settlement but reports a compatibility warning.
+- Confirmed movement to a destination that no longer matches the post-event validation keeps the consumed experience and durability settlement but reports a compatibility warning.
 - `NEVER`, `FOLLOW_WAYSTONES`, and `ALWAYS` experience modes.
 
-Adjacent non-suffocating placement is not an absolute safety guarantee: it does not require solid ground or exclude dangerous fluids and cliffs.
+Player destinations carry no safety guarantee. They may be in mid-air, dangerous fluids, cliffs, or blocks; if Waystones finds no adjacent opening, it falls back to the target block center.
 
 ### Installation and supported targets
 
@@ -120,7 +120,7 @@ The exact minimum/current dependency suites and canonical filenames are in [grad
 
 ### Rules and configuration
 
-The client displays players from Minecraft's listed-player stream. The client sends a UUID, and the server independently resolves it and authorizes it only when `allowsListing()` is true. These are separate boundaries: a third-party per-client `UPDATE_LISTED` hide can leave an entry displayed but rejected by the server, and this add-on does not promise to prevent guessed-UUID requests against such third-party hiding. A player destination is transient and is never stored as a Waystone.
+The client displays players from Minecraft's listed-player stream. It sends a UUID, and the server independently resolves the corresponding currently online player. Client-side listing state is not server-side teleport authorization, and this add-on does not promise to prevent custom packets from guessing a third-party-hidden player's UUID. A player destination is transient and is never stored as a Waystone.
 
 `playerTeleportExperienceMode` defaults to `NEVER`. Only verifiable built-in experience-point and experience-level requirements are selected; item costs, cooldowns, and unrelated requirements are ignored. A non-empty rule that parses empty, an unknown third-party type, a negative/non-finite/overflowing value, or an event cost replacement rejects the teleport instead of becoming free. NeoForge keeps SERVER config and per-world override semantics. Fabric uses the same `config/waystonesplayer-server.toml`, key, and default as a global instance configuration, without claiming per-world overrides.
 
