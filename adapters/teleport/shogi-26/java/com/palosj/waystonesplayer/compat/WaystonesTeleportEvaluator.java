@@ -128,9 +128,6 @@ final class WaystonesTeleportEvaluator {
         if (targetWaystone.liveTarget().isEmpty()) {
             throw new TeleportRejectedException("the selected player moved, disconnected, or changed dimension");
         }
-        if (!TeleportRuntime.hasAdjacentNonSuffocatingSpace(sender, context)) {
-            throw new TeleportRejectedException("the destination has no adjacent non-suffocating space");
-        }
     }
 
     private static CompletionStage<Either<?, ?>> invokeTeleport(WaystoneTeleportContext context) {
@@ -195,27 +192,24 @@ final class WaystonesTeleportEvaluator {
             LockedWaystoneTeleportContext context,
             TransactionState transaction) {
         boolean targetMatches = false;
-        boolean arrivalIsClear = false;
         try {
             TeleportArrivalVerifier.Target validatedTarget = transaction.validatedTarget();
             targetMatches = validatedTarget != null
                     && TeleportArrivalVerifier.matchesTargetOrHorizontalAdjacent(
                             positionOf(sender),
                             validatedTarget);
-            arrivalIsClear = TeleportRuntime.isCurrentPositionNonSuffocating(sender);
         } catch (RuntimeException | LinkageError error) {
             WaystonesPlayer.LOGGER.error(
                     "Could not validate a confirmed player movement; consumed XP will be preserved.",
                     error);
         }
-        if (targetMatches && arrivalIsClear && !context.wasModified()) {
+        if (targetMatches && !context.wasModified()) {
             return TeleportOutcome.SUCCESS;
         }
         WaystonesPlayer.LOGGER.error(
                 "Waystones moved a player outside the locked destination contract "
-                        + "(targetMatches={}, arrivalIsClear={}, contextModified={}).",
+                        + "(targetMatches={}, contextModified={}).",
                 targetMatches,
-                arrivalIsClear,
                 context.wasModified());
         return TeleportOutcome.MOVED_INCOMPATIBLY;
     }
