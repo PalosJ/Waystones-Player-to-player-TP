@@ -97,8 +97,8 @@ jobs:
         if: matrix.stack == 'minimum'
         uses: actions/upload-artifact@v7
         with:
-          name: waystonesplayer-${{ matrix.target }}
-          path: targets/${{ matrix.target }}/build/libs/waystonesplayer-${{ matrix.target }}-1.0.1.jar
+          name: waystonesptpt-${{ matrix.target }}
+          path: targets/${{ matrix.target }}/build/libs/waystonesptpt-${{ matrix.target }}-1.0.1.jar
           if-no-files-found: error
           retention-days: 14
 
@@ -114,7 +114,7 @@ jobs:
       - name: Download minimum-built artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: waystonesplayer-neoforge-*
+          pattern: waystonesptpt-neoforge-*
           path: build/runtime-artifacts
           merge-multiple: true
 
@@ -128,7 +128,7 @@ jobs:
       - name: Upload release manifest
         uses: actions/upload-artifact@v7
         with:
-          name: waystonesplayer-release-manifest-neoforge-1.21.x
+          name: waystonesptpt-release-manifest-neoforge-1.21.x
           path: build/release-manifest.json
           if-no-files-found: error
           retention-days: 14

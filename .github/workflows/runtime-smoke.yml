@@ -75,8 +75,8 @@ jobs:
           ./scripts/fetch-build-artifact.sh
           neoforge/1.21.x
           "$REQUESTED_RUN_ID"
-          waystonesplayer-${{ matrix.target }}
-          waystonesplayer-${{ matrix.target }}-1.0.1.jar
+          waystonesptpt-${{ matrix.target }}
+          waystonesptpt-${{ matrix.target }}-1.0.1.jar
           build/runtime-artifacts/${{ matrix.target }}
 
       - name: Verify Xvfb and canonical parity

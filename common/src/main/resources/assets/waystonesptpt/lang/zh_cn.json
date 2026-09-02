@@ -1,0 +1,15 @@
+{
+  "gui.waystonesptpt.no_other_players": "当前没有其他在线玩家",
+  "gui.waystonesptpt.online_players": "在线玩家",
+  "narration.waystonesptpt.online_players.empty": "在线玩家。当前没有其他在线玩家。",
+  "config.waystonesptpt.player_teleport_experience_mode": "玩家间传送经验模式",
+  "message.waystonesptpt.invalid_context": "当前传送请求已失效。",
+  "message.waystonesptpt.target_unavailable": "目标玩家当前不可用。",
+  "message.waystonesptpt.target_self": "你已经在自己的位置附近了。",
+  "message.waystonesptpt.insufficient_experience": "经验不足，无法传送！",
+  "message.waystonesptpt.compatibility_unavailable": "无法安全确认传送石碑兼容状态，已取消本次传送。",
+  "message.waystonesptpt.teleport_failed": "传送失败，请稍后再试。",
+  "message.waystonesptpt.post_teleport_item_changed": "传送已完成，但绑定的传送石在耐久结算前发生变化。",
+  "message.waystonesptpt.post_teleport_destination_changed": "传送已完成，但其他模组改变了最终目标或使实际落点变得不安全。",
+  "message.waystonesptpt.teleport_cooling_down": "传送请求过快，请稍后再试。"
+}

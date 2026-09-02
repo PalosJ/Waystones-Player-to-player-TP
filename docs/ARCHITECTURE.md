@@ -1,6 +1,6 @@
 # 项目架构
 
-本文固定 Waystones Player 的模块、信任、兼容和多目标维护边界。领域词汇以 [CONTEXT.md](../CONTEXT.md) 为准，真实依赖矩阵以 [gradle/targets.json](../gradle/targets.json) 为准。
+本文固定 Waystones Player-to-player TP 的模块、信任、兼容和多目标维护边界。领域词汇以 [CONTEXT.md](../CONTEXT.md) 为准，真实依赖矩阵以 [gradle/targets.json](../gradle/targets.json) 为准。
 
 ## 仓库与分支
 
@@ -21,7 +21,7 @@
 ## 模块模型
 
 ```text
-waystonesplayer
+waystonesptpt
 ├── core                 纯 Java 规则、值对象、布局/差分算法和单元测试
 ├── common               Minecraft-bound 业务、协议、兼容、Mixin、客户端控件和资源
 ├── loader target        入口、配置、加载器网络桥接、元数据与发行打包
@@ -45,7 +45,7 @@ waystonesplayer
 
 - 只负责物理端入口、加载器配置、网络注册、加载器元数据、运行配置和最终打包。
 - NeoForge 保留 SERVER 配置的全局默认、按世界覆盖与重载语义。
-- Fabric 保持同名 `waystonesplayer-server.toml`、同键、同默认值和重启读取，但只提供实例全局配置。
+- Fabric 保持同名 `waystonesptpt-server.toml`、同键、同默认值和重启读取，但只提供实例全局配置。
 - 客户端入口必须与通用/服务端入口分离；物理服务器不得链接 Minecraft 客户端、Waystones GUI 或客户端 Mixin 类。
 
 ## 初始化与物理端边界
@@ -65,10 +65,10 @@ flowchart LR
 
 ## 网络与服务端信任
 
-[waystonesplayer.network.json](../common/src/main/resources/waystonesplayer.network.json) 是协议的机器契约：
+[waystonesptpt.network.json](../common/src/main/resources/waystonesptpt.network.json) 是协议的机器契约：
 
 - 网络版本 `1`。
-- 唯一载荷 `waystonesplayer:request_player_teleport`。
+- 唯一载荷 `waystonesptpt:request_player_teleport`。
 - 方向固定 client → server。
 - 载荷只包含目标 UUID。
 - Balm/加载器桥接必须把处理放回服务器主线程。
@@ -172,7 +172,7 @@ NeoForge 修改配置时必须同步默认值、注释、语言、README、SERVE
 
 统一分支 push 检查自身基线；main push 主动检查两个远端统一分支，并额外比较两条统一分支的共享 `adapters/` 适配族，避免“旧 CI 曾经绿色”掩盖后续漂移。只有加载器入口、目标工程、版本适配族、构建器和加载器元数据允许按分支不同；两边共同使用的适配族仍必须保持一致，并通过中央目标矩阵和各分支全目标构建/运行门禁。
 
-普通 push 的最低门禁覆盖每个目标最低/当前源码构建、单测、模块边界、JAR内容、元数据和漂移。Build 上传的 minimum JAR必须带 `WaystonesPlayer-Source-Commit`；Runtime 只下载同分支、精确 HEAD 的成功 Build artifact，并以文件名、target、版本、build stack、source commit 和 SHA-256 六重绑定后，把同一 JAR放入最低、关键断点和当前运行时。手动 Runtime 必须提供 Build run ID；定时任务找不到精确 artifact 时失败，禁止静默重建。
+普通 push 的最低门禁覆盖每个目标最低/当前源码构建、单测、模块边界、JAR内容、元数据和漂移。Build 上传的 minimum JAR必须带 `WaystonesPTPT-Source-Commit`；Runtime 只下载同分支、精确 HEAD 的成功 Build artifact，并以文件名、target、版本、build stack、source commit 和 SHA-256 六重绑定后，把同一 JAR放入最低、关键断点和当前运行时。手动 Runtime 必须提供 Build run ID；定时任务找不到精确 artifact 时失败，禁止静默重建。
 
 ## 发行门禁
 

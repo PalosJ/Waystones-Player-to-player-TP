@@ -6,7 +6,7 @@ Use the exact artifact filename, game versions, loader, and dependency suite fro
 
 | Field | Value |
 |---|---|
-| Project title | Waystones Player |
+| Project title | Waystones Player-to-player TP |
 | Summary | Adds a live online-player directory to the Waystones Warp Stone menu. |
 | Main category | Addons |
 | Client / server | Required on both |
@@ -16,9 +16,9 @@ Use the exact artifact filename, game versions, loader, and dependency suite fro
 
 ## Project description
 
-# Waystones Player
+# Waystones Player-to-player TP
 
-Waystones Player is an unofficial Waystones add-on that lets a Warp Stone target other listed online players. The directory updates live and stays on the left of the original screen, using a full list, compact list, or clickable avatar rail depending on available GUI space.
+Waystones Player-to-player TP is an unofficial Waystones add-on that lets a Warp Stone target other listed online players. The directory updates live and stays on the left of the original screen, using a full list, compact list, or clickable avatar rail depending on available GUI space.
 
 The client sends only a target UUID. The server revalidates the exact Warp Stone and hand, the corresponding currently online player, experience requirements, and actual movement. Client listing state is not server-side teleport authorization, and this add-on does not promise to prevent custom packets from guessing a third-party-hidden player's UUID. A successful player destination uses Waystones' cancellable events, sound, effects, and native adjacent-or-target-block placement, then applies exactly one point of native Warp Stone durability. Failed or cancelled attempts restore experience, preserve durability, and keep the menu open.
 
@@ -40,17 +40,17 @@ Use only the file that exactly matches the instance's loader and Minecraft versi
 
 `playerTeleportExperienceMode` defaults to `NEVER`. It can keep player travel free, follow Waystones' global experience-cost switch, or always evaluate Waystones' experience point/level formula. Item costs, cooldowns, and unrelated requirements are not inherited.
 
-NeoForge supports its SERVER config and per-world overrides. Fabric uses the same `config/waystonesplayer-server.toml` key and default as a global instance config; it does not claim per-world override support.
+NeoForge supports its SERVER config and per-world overrides. Fabric uses the same `config/waystonesptpt-server.toml` key and default as a global instance config; it does not claim per-world override support.
 
 ## Privacy and license
 
 There is no telemetry, advertising, analytics, or external upload. The only add-on payload contains the UUID selected from the current Minecraft server's listed-player data.
 
-Original code is open source under the [MIT License](https://github.com/PalosJ/waystonesplayer/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the separately documented terms.
+Original code is open source under the [MIT License](https://github.com/PalosJ/waystonesptpt/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the separately documented terms.
 
-The existing icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by Joe Williamson (JoeCreates), CC BY-SA 3.0. Complete attribution and the separate terms for player imagery are in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/waystonesplayer/blob/main/THIRD_PARTY_NOTICES.md).
+The existing icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by Joe Williamson (JoeCreates), CC BY-SA 3.0. Complete attribution and the separate terms for player imagery are in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/waystonesptpt/blob/main/THIRD_PARTY_NOTICES.md).
 
-Waystones Player is not endorsed by Twelve Iterations.
+Waystones Player-to-player TP is not endorsed by Twelve Iterations.
 
 NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
@@ -58,7 +58,7 @@ NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR 
 
 For every JAR:
 
-- Display name: `Waystones Player 1.0.1 – <Loader> <Minecraft target>`.
+- Display name: `Waystones Player-to-player TP 1.0.1 – <Loader> <Minecraft target>`.
 - Release type: Release.
 - Game version(s): exactly the target's `minecraft` array.
 - Mod loader: exactly one of NeoForge or Fabric.

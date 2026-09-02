@@ -42,7 +42,7 @@ class ReleaseManifestPathTest(unittest.TestCase):
             release_manifest.resolve_output_path("docs/release-manifest.json")
 
     def test_artifact_root_requires_one_exact_filename(self):
-        target = {"artifactFile": "waystonesplayer-test-1.0.1.jar"}
+        target = {"artifactFile": "waystonesptpt-test-1.0.1.jar"}
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             with self.assertRaises(ValueError):
@@ -91,27 +91,27 @@ class FixedWaystonesSourceTest(unittest.TestCase):
             manifest = (
                 "Manifest-Version: 1.0\r\n"
                 "Implementation-Version: 1.0.1\r\n"
-                f"WaystonesPlayer-Target: {target['id']}\r\n"
-                "WaystonesPlayer-Build-Stack: minimum\r\n"
-                f"WaystonesPlayer-Source-Commit: {commit}\r\n"
-                f"WaystonesPlayer-Upstream-Waystones-Commit: {target['waystonesSource']['commit']}\r\n"
-                "WaystonesPlayer-Upstream-Waystones-Patch-SHA256: "
+                f"WaystonesPTPT-Target: {target['id']}\r\n"
+                "WaystonesPTPT-Build-Stack: minimum\r\n"
+                f"WaystonesPTPT-Source-Commit: {commit}\r\n"
+                f"WaystonesPTPT-Upstream-Waystones-Commit: {target['waystonesSource']['commit']}\r\n"
+                "WaystonesPTPT-Upstream-Waystones-Patch-SHA256: "
                 f"{target['waystonesSource']['patchSha256']}\r\n"
-                f"WaystonesPlayer-Upstream-Waystones-JAR-SHA256: {upstream_sha}\r\n\r\n"
+                f"WaystonesPTPT-Upstream-Waystones-JAR-SHA256: {upstream_sha}\r\n\r\n"
             )
             with zipfile.ZipFile(path, "w") as archive:
                 archive.writestr("META-INF/MANIFEST.MF", manifest)
-                archive.writestr("waystonesplayer.png", icon)
-                archive.writestr("waystonesplayer.mixins.json", "{}")
-                archive.writestr("waystonesplayer.network.json", "{}")
-                archive.writestr("assets/waystonesplayer/lang/en_us.json", "{}")
-                archive.writestr("assets/waystonesplayer/lang/zh_cn.json", "{}")
+                archive.writestr("waystonesptpt.png", icon)
+                archive.writestr("waystonesptpt.mixins.json", "{}")
+                archive.writestr("waystonesptpt.network.json", "{}")
+                archive.writestr("assets/waystonesptpt/lang/en_us.json", "{}")
+                archive.writestr("assets/waystonesptpt/lang/zh_cn.json", "{}")
             attributes = release_manifest.inspect_artifact(
                 path, target, commit, "1.0.1", hashlib.sha256(icon).hexdigest()
             )
             self.assertEqual(
                 upstream_sha,
-                attributes["WaystonesPlayer-Upstream-Waystones-JAR-SHA256"],
+                attributes["WaystonesPTPT-Upstream-Waystones-JAR-SHA256"],
             )
 
 
@@ -130,7 +130,7 @@ class RuntimeMatrixBranchTest(unittest.TestCase):
 class BinaryEvidenceTest(unittest.TestCase):
     TARGET = {
         "id": "neoforge-1.21.1",
-        "artifactFile": "waystonesplayer-neoforge-1.21.1-1.0.1.jar",
+        "artifactFile": "waystonesptpt-neoforge-1.21.1-1.0.1.jar",
     }
     MATRIX = {"modVersion": "1.0.1"}
     COMMIT = "a" * 40
@@ -140,9 +140,9 @@ class BinaryEvidenceTest(unittest.TestCase):
         manifest = (
             "Manifest-Version: 1.0\r\n"
             "Implementation-Version: 1.0.1\r\n"
-            "WaystonesPlayer-Target: neoforge-1.21.1\r\n"
-            "WaystonesPlayer-Build-Stack: minimum\r\n"
-            f"WaystonesPlayer-Source-Commit: {commit or self.COMMIT}\r\n\r\n"
+            "WaystonesPTPT-Target: neoforge-1.21.1\r\n"
+            "WaystonesPTPT-Build-Stack: minimum\r\n"
+            f"WaystonesPTPT-Source-Commit: {commit or self.COMMIT}\r\n\r\n"
         )
         with zipfile.ZipFile(path, "w") as archive:
             archive.writestr("META-INF/MANIFEST.MF", manifest)
@@ -187,8 +187,8 @@ class BinaryEvidenceTest(unittest.TestCase):
                     "META-INF/MANIFEST.MF",
                     "Manifest-Version: 1.0\r\n"
                     "Implementation-Version: 1.0.1\r\n"
-                    "WaystonesPlayer-Target: neoforge-1.21.1\r\n"
-                    "WaystonesPlayer-Build-Stack: minimum\r\n\r\n",
+                    "WaystonesPTPT-Target: neoforge-1.21.1\r\n"
+                    "WaystonesPTPT-Build-Stack: minimum\r\n\r\n",
                 )
             with self.assertRaises(ValueError):
                 runtime_smoke.verify_binary(path, self.MATRIX, self.TARGET, None, None)

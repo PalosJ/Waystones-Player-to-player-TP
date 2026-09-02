@@ -172,7 +172,7 @@ def validate_target_properties(
 
         teleport_family = target["families"]["teleport"]
         common_excludes = comma_values(properties.get("commonExcludes", ""))
-        locked_context = "com/palosj/waystonesplayer/compat/LockedWaystoneTeleportContext.java"
+        locked_context = "com/palosj/waystonesptpt/compat/LockedWaystoneTeleportContext.java"
         if teleport_family in {"legacy-21.3-21.9", "context-optional-hand-21.10"}:
             require(locked_context in common_excludes,
                     f"{target_id}: optional-hand family must replace the common locked context")
@@ -195,6 +195,8 @@ def validate_target_properties(
 
 def validate_matrix_shape(matrix: Dict[str, object]) -> None:
     """Reject structurally ambiguous targets before Gradle expands any metadata."""
+    mod_id = matrix.get("modId")
+    require(mod_id == "waystonesptpt", f"targets.json must use modId=waystonesptpt, got {mod_id!r}")
     version = matrix.get("modVersion")
     require(version == "1.0.1", f"targets.json must keep modVersion=1.0.1, got {version!r}")
 
@@ -257,7 +259,7 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
         require(release_version == version,
                 f"{target_id}: releaseVersion must match matrix modVersion {version!r}")
         require(
-            artifact_file == f"waystonesplayer-{loader}-{'-'.join(minecraft)}-{version}.jar",
+            artifact_file == f"{mod_id}-{loader}-{'-'.join(minecraft)}-{version}.jar",
             f"{target_id}: artifactFile does not match loader, Minecraft list, and version",
         )
         require(target_id == f"{loader}-{'-'.join(minecraft)}",

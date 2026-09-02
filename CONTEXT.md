@@ -1,6 +1,6 @@
-# Waystones Player
+# Waystones Player-to-player TP
 
-本词汇表固定 Waystones Player 在全部加载器与 Minecraft 目标中的领域语言，避免把上游实现细节误当成产品语义。
+本词汇表固定 Waystones Player-to-player TP 在全部加载器与 Minecraft 目标中的领域语言，避免把上游实现细节误当成产品语义。
 
 ## 维护与发布
 
