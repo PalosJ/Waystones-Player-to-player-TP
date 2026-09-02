@@ -277,9 +277,9 @@ tasks.named('jar', Jar).configure {
         attributes(
                 'Implementation-Title': mod_name,
                 'Implementation-Version': matrix.modVersion,
-                'WaystonesPlayer-Target': target.id,
-                'WaystonesPlayer-Build-Stack': stackName,
-                'WaystonesPlayer-Source-Commit': sourceCommit.get(),
+                'WaystonesPTPT-Target': target.id,
+                'WaystonesPTPT-Build-Stack': stackName,
+                'WaystonesPTPT-Source-Commit': sourceCommit.get(),
         )
     }
     from project(':core').sourceSets.main.output
@@ -319,21 +319,21 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
         def requiredEntries = [
                 'META-INF/MANIFEST.MF',
                 'fabric.mod.json',
-                'META-INF/LICENSE_waystonesplayer',
-                'META-INF/TEMPLATE_LICENSE_waystonesplayer.txt',
-                'META-INF/THIRD_PARTY_NOTICES_waystonesplayer.md',
-                'waystonesplayer.png',
-                'waystonesplayer.mixins.json',
-                'waystonesplayer.network.json',
-                'com/palosj/waystonesplayer/PlayerTeleportExperienceMode.class',
-                'com/palosj/waystonesplayer/client/PlayerPanelLayout.class',
-                'com/palosj/waystonesplayer/teleport/TeleportArrivalVerifier.class',
-                'com/palosj/waystonesplayer/mixin/WarpStoneItemMixin.class',
-                'com/palosj/waystonesplayer/mixin/WaystoneSelectionMenuMixin.class',
-                'com/palosj/waystonesplayer/mixin/client/AbstractContainerScreenAccessor.class',
-                'com/palosj/waystonesplayer/fabric/FabricWaystonesPlayer.class',
-                'com/palosj/waystonesplayer/fabric/FabricWaystonesPlayerConfig.class',
-                'com/palosj/waystonesplayer/fabric/client/FabricWaystonesPlayerClient.class',
+                'META-INF/LICENSE_waystonesptpt',
+                'META-INF/TEMPLATE_LICENSE_waystonesptpt.txt',
+                'META-INF/THIRD_PARTY_NOTICES_waystonesptpt.md',
+                'waystonesptpt.png',
+                'waystonesptpt.mixins.json',
+                'waystonesptpt.network.json',
+                'com/palosj/waystonesptpt/PlayerTeleportExperienceMode.class',
+                'com/palosj/waystonesptpt/client/PlayerPanelLayout.class',
+                'com/palosj/waystonesptpt/teleport/TeleportArrivalVerifier.class',
+                'com/palosj/waystonesptpt/mixin/WarpStoneItemMixin.class',
+                'com/palosj/waystonesptpt/mixin/WaystoneSelectionMenuMixin.class',
+                'com/palosj/waystonesptpt/mixin/client/AbstractContainerScreenAccessor.class',
+                'com/palosj/waystonesptpt/fabric/FabricWaystonesPTPT.class',
+                'com/palosj/waystonesptpt/fabric/FabricWaystonesPTPTConfig.class',
+                'com/palosj/waystonesptpt/fabric/client/FabricWaystonesPTPTClient.class',
         ]
 
         new java.util.zip.ZipFile(archive).withCloseable { zip ->
@@ -359,8 +359,18 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 throw new GradleException(
                         "Release JAR is missing required entries: ${missingEntries.join(', ')}")
             }
+            def legacyIdentityEntries = entryNames.findAll { name ->
+                name == 'waystonesplayer.png'
+                        || name.startsWith('waystonesplayer.')
+                        || name.startsWith('assets/waystonesplayer/')
+                        || name.startsWith('com/palosj/waystonesplayer/')
+            }
+            if (!legacyIdentityEntries.isEmpty()) {
+                throw new GradleException(
+                        "Release JAR contains legacy identity entries: ${legacyIdentityEntries.take(10).join(', ')}")
+            }
             def removedEntries = [
-                    'com/palosj/waystonesplayer/teleport/TeleportArrivalVerifier$BlockTarget.class',
+                    'com/palosj/waystonesptpt/teleport/TeleportArrivalVerifier$BlockTarget.class',
             ].findAll { entryNameSet.contains(it) }
             if (!removedEntries.isEmpty()) {
                 throw new GradleException(
@@ -370,14 +380,14 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
             def manifest = new java.util.jar.Manifest(zip.getInputStream(zip.getEntry('META-INF/MANIFEST.MF')))
             def attributes = manifest.mainAttributes
             if (attributes.getValue('Implementation-Version') != matrix.modVersion
-                    || attributes.getValue('WaystonesPlayer-Target') != target.id
-                    || attributes.getValue('WaystonesPlayer-Build-Stack') != stackName
-                    || attributes.getValue('WaystonesPlayer-Source-Commit') != sourceCommit.get()) {
+                    || attributes.getValue('WaystonesPTPT-Target') != target.id
+                    || attributes.getValue('WaystonesPTPT-Build-Stack') != stackName
+                    || attributes.getValue('WaystonesPTPT-Source-Commit') != sourceCommit.get()) {
                 throw new GradleException(
                         'Release JAR manifest does not identify its target, dependency build stack, and source commit.')
             }
 
-            def iconEntry = zip.getEntry('waystonesplayer.png')
+            def iconEntry = zip.getEntry('waystonesptpt.png')
             def icon = javax.imageio.ImageIO.read(zip.getInputStream(iconEntry))
             if (icon == null || icon.width != 1024 || icon.height != 1024 || !icon.colorModel.hasAlpha()) {
                 throw new GradleException(
@@ -417,13 +427,13 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
             def parsedMetadata = new groovy.json.JsonSlurper().parseText(metadata)
             if (parsedMetadata.id != mod_id
                     || parsedMetadata.version != matrix.modVersion
-                    || parsedMetadata.icon != 'waystonesplayer.png'
+                    || parsedMetadata.icon != 'waystonesptpt.png'
                     || parsedMetadata.environment != '*') {
                 throw new GradleException('Release JAR Fabric metadata has invalid identity or environment fields.')
             }
             def expectedEntrypoints = [
-                    main  : 'com.palosj.waystonesplayer.fabric.FabricWaystonesPlayer',
-                    client: 'com.palosj.waystonesplayer.fabric.client.FabricWaystonesPlayerClient',
+                    main  : 'com.palosj.waystonesptpt.fabric.FabricWaystonesPTPT',
+                    client: 'com.palosj.waystonesptpt.fabric.client.FabricWaystonesPTPTClient',
             ]
             expectedEntrypoints.each { type, className ->
                 if (parsedMetadata.entrypoints[type] != [className]) {
@@ -431,7 +441,7 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                             "Release JAR metadata has an invalid ${type} entrypoint.")
                 }
             }
-            if (parsedMetadata.mixins != ['waystonesplayer.mixins.json']) {
+            if (parsedMetadata.mixins != ['waystonesptpt.mixins.json']) {
                 throw new GradleException('Release JAR metadata does not register the exact Mixin configuration.')
             }
             def expectedDependencies = [
@@ -446,8 +456,11 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 throw new GradleException(
                         "Release JAR dependencies ${parsedMetadata.depends} do not match ${expectedDependencies}.")
             }
+            if (parsedMetadata.breaks != [waystonesplayer: '*']) {
+                throw new GradleException('Release JAR metadata must reject the legacy waystonesplayer mod ID.')
+            }
 
-            String mixinConfig = zip.getInputStream(zip.getEntry('waystonesplayer.mixins.json'))
+            String mixinConfig = zip.getInputStream(zip.getEntry('waystonesptpt.mixins.json'))
                     .getText('UTF-8')
             def parsedMixinConfig = new groovy.json.JsonSlurper().parseText(mixinConfig)
             def requiredCommonMixins = ['WarpStoneItemMixin', 'WaystoneSelectionMenuMixin'] as Set
@@ -457,11 +470,11 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                         'Release JAR mixin configuration does not contain the required server-safe and client-only mixins.')
             }
 
-            String networkContract = zip.getInputStream(zip.getEntry('waystonesplayer.network.json'))
+            String networkContract = zip.getInputStream(zip.getEntry('waystonesptpt.network.json'))
                     .getText('UTF-8')
             def parsedNetworkContract = new groovy.json.JsonSlurper().parseText(networkContract)
             if (parsedNetworkContract.networkVersion != '1'
-                    || parsedNetworkContract.payloads*.id != ['waystonesplayer:request_player_teleport']
+                    || parsedNetworkContract.payloads*.id != ['waystonesptpt:request_player_teleport']
                     || parsedNetworkContract.payloads*.direction != ['client_to_server']) {
                 throw new GradleException(
                         'Release JAR network contract does not match protocol version 1.')

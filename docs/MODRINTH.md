@@ -6,8 +6,8 @@
 
 | 字段 | 值 |
 |---|---|
-| Title | Waystones Player |
-| Slug | `waystonesplayer` |
+| Title | Waystones Player-to-player TP |
+| Slug | `waystonesptpt` |
 | Client side | Required |
 | Server side | Required |
 | Project license | MIT |
@@ -33,11 +33,11 @@ Adds a live online-player directory to the Waystones Warp Stone menu, with serve
 
 ### Description
 
-# Waystones Player
+# Waystones Player-to-player TP
 
 Sometimes the person you are looking for matters more than the place.
 
-Waystones Player is an unofficial add-on that brings other listed players into the [Waystones](https://modrinth.com/mod/waystones) Warp Stone menu. Choose a player and travel through Waystones' normal event, sound, effect, and adjacent-destination pipeline—without commands, operator permissions, or a second confirmation screen.
+Waystones Player-to-player TP is an unofficial add-on that brings other listed players into the [Waystones](https://modrinth.com/mod/waystones) Warp Stone menu. Choose a player and travel through Waystones' normal event, sound, effect, and adjacent-destination pipeline—without commands, operator permissions, or a second confirmation screen.
 
 ## Features
 
@@ -55,7 +55,7 @@ Player destinations carry no safety guarantee. They may be inside blocks, in mid
 
 ## Compatibility
 
-Waystones Player must be installed on both client and server together with matching [Waystones](https://modrinth.com/mod/waystones) and [Balm](https://modrinth.com/mod/balm) files. Fabric files additionally require the matching [Fabric API](https://modrinth.com/mod/fabric-api); NeoForge files do not.
+Waystones Player-to-player TP must be installed on both client and server together with matching [Waystones](https://modrinth.com/mod/waystones) and [Balm](https://modrinth.com/mod/balm) files. Fabric files additionally require the matching [Fabric API](https://modrinth.com/mod/fabric-api); NeoForge files do not.
 
 - NeoForge: Minecraft 1.21.1–1.21.11.
 - Fabric: Minecraft 1.21.1–1.21.11.
@@ -75,15 +75,15 @@ Use the file whose loader and Minecraft version exactly match the instance. Some
 
 Only experience-point and experience-level requirements are selected. Item costs, cooldowns, and unrelated requirements are not inherited.
 
-NeoForge keeps SERVER configuration and per-world override semantics. Fabric uses the same `config/waystonesplayer-server.toml` name, key, and default as a global instance configuration, without per-world overrides.
+NeoForge keeps SERVER configuration and per-world override semantics. Fabric uses the same `config/waystonesptpt-server.toml` name, key, and default as a global instance configuration, without per-world overrides.
 
 ## License and attribution
 
-Original code is open source under the [MIT License](https://github.com/PalosJ/waystonesplayer/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the terms documented below.
+Original code is open source under the [MIT License](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the terms documented below.
 
-The existing project icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by [Joe Williamson (JoeCreates)](https://opengameart.org/content/roguelikerpg-items) under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Additional player imagery and complete terms are documented in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/waystonesplayer/blob/main/THIRD_PARTY_NOTICES.md).
+The existing project icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by [Joe Williamson (JoeCreates)](https://opengameart.org/content/roguelikerpg-items) under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Additional player imagery and complete terms are documented in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/THIRD_PARTY_NOTICES.md).
 
-Waystones Player is not endorsed by Twelve Iterations.
+Waystones Player-to-player TP is not endorsed by Twelve Iterations.
 
 NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
@@ -97,11 +97,11 @@ NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR 
 
 ### 描述
 
-# Waystones Player
+# Waystones Player-to-player TP
 
 有时候，你想找的不是某一座石碑，而是正在世界另一头冒险的朋友。
 
-Waystones Player 会把当前连接中可列出的其他玩家加入 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的 Warp Stone 菜单。选择玩家后，传送会进入 Waystones 的事件、声音、效果与相邻落点流程，不需要命令、OP 权限或第二次确认。
+Waystones Player-to-player TP 会把当前连接中可列出的其他玩家加入 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的 Warp Stone 菜单。选择玩家后，传送会进入 Waystones 的事件、声音、效果与相邻落点流程，不需要命令、OP 权限或第二次确认。
 
 玩家目录会实时更新，并按界面空间显示完整名单、收窄名单或可点击头像栏。客户端复用 listed 玩家流并只发送目标 UUID；服务端独立解析当前在线玩家，再检查确切物品、使用手、经验和实际移动。客户端隐藏状态不构成服务端传送权限，本模组不承诺阻止自定义数据包猜测第三方隐藏玩家 UUID。确认成功后才损耗 1 点原生耐久；失败恢复经验、保留耐久并保持界面打开。
 

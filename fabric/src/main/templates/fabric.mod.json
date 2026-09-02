@@ -8,22 +8,22 @@
     "${mod_authors}"
   ],
   "contact": {
-    "sources": "https://github.com/PalosJ/waystonesplayer",
-    "issues": "https://github.com/PalosJ/waystonesplayer/issues"
+    "sources": "https://github.com/PalosJ/Waystones-Player-to-player-TP",
+    "issues": "https://github.com/PalosJ/Waystones-Player-to-player-TP/issues"
   },
   "license": "${mod_license}",
-  "icon": "waystonesplayer.png",
+  "icon": "waystonesptpt.png",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.palosj.waystonesplayer.fabric.FabricWaystonesPlayer"
+      "com.palosj.waystonesptpt.fabric.FabricWaystonesPTPT"
     ],
     "client": [
-      "com.palosj.waystonesplayer.fabric.client.FabricWaystonesPlayerClient"
+      "com.palosj.waystonesptpt.fabric.client.FabricWaystonesPTPTClient"
     ]
   },
   "mixins": [
-    "waystonesplayer.mixins.json"
+    "waystonesptpt.mixins.json"
   ],
   "depends": {
     "fabricloader": "${fabric_loader_version_range}",
@@ -32,5 +32,8 @@
     "java": ">=21",
     "waystones": "${waystones_version_range}",
     "${balm_mod_id}": "${balm_version_range}"
+  },
+  "breaks": {
+    "waystonesplayer": "*"
   }
 }

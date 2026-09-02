@@ -11,7 +11,7 @@
 - [ ] `python3 scripts/verify-target-matrix.py` 通过，settings 与 Build/Runtime workflow 的 target 列表和中央矩阵一致。
 - [ ] `python3 -m unittest discover -s scripts/tests -v` 通过，包含 target.properties family/source root 与 artifact provenance 负向测试。
 - [ ] 所有 `mod_version`、加载器元数据、文件名、changelog 和平台版本均为 `1.0.1`。
-- [ ] 原 `common/src/main/resources/waystonesplayer.png` 字节未改变。
+- [ ] 原 `common/src/main/resources/waystonesptpt.png` 字节未改变。
 - [ ] 1.21.x 使用 Java 21，26.x 使用 Java 25；26.x 元数据把 Waystones、Balm、Shogi 都声明为强制依赖。
 
 ## 2. 静态与源码边界
@@ -20,7 +20,7 @@
 - [ ] `core` 不含 Minecraft、Waystones、Balm、Mixin、Fabric 或 NeoForge API。
 - [ ] `common` 不含 Fabric/NeoForge API。
 - [ ] 客户端类只从客户端入口或 mixin `client` 列表触达。
-- [ ] payload 方向、编解码、主线程执行和 `waystonesplayer.network.json` 一致。
+- [ ] payload 方向、编解码、主线程执行和 `waystonesptpt.network.json` 一致。
 - [ ] 服务端重新验证菜单、确切物品/手、在线目标 UUID、费用和实际移动；客户端 listed 展示仅是目录输入。
 - [ ] Waystones/Balm 内部访问集中在兼容/适配边界。
 - [ ] NeoForge SERVER 与 Fabric 全局配置语义没有被混写。
@@ -35,7 +35,7 @@
 - [ ] 当前分支 wrapper 与矩阵一致：NeoForge 为 Gradle 9.2.1，Fabric 为 Gradle 9.5.1；distribution SHA-256 已锁定。
 - [ ] warning 已审查，未忽略 Mixin target/refmap、弃用 API 或元数据问题。
 - [ ] 上传候选保留最低套件生成的 JAR；当前套件 JAR不覆盖它。
-- [ ] JAR 清单的 `WaystonesPlayer-Target`、`WaystonesPlayer-Build-Stack` 与 `WaystonesPlayer-Source-Commit` 分别匹配目标、`minimum` 和精确源码提交；运行器拒绝 current、提交不明或身份不明的二进制。
+- [ ] JAR 清单的 `WaystonesPTPT-Target`、`WaystonesPTPT-Build-Stack` 与 `WaystonesPTPT-Source-Commit` 分别匹配目标、`minimum` 和精确源码提交；运行器拒绝 current、提交不明或身份不明的二进制。
 - [ ] 26.1.1 从固定官方提交和 SHA 锁定补丁重建；Build/Runtime 上游 JAR SHA 一致，清单记录上游提交、补丁 SHA、闭包和 JAR SHA。
 
 ## 4. 同一发行 JAR运行
@@ -77,7 +77,7 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 
 ## 6. 配置验收
 
-- [ ] NeoForge 生成 `waystonesplayer-server.toml`，全局默认、世界覆盖和重载实测。
+- [ ] NeoForge 生成 `waystonesptpt-server.toml`，全局默认、世界覆盖和重载实测。
 - [ ] Fabric 生成同名文件、同键/注释/默认值，重启读取实测。
 - [ ] Fabric 文档和平台页面没有声称按世界覆盖或热重载。
 - [ ] 非法枚举值/损坏文件的失败或回退行为已记录。

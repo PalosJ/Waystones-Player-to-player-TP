@@ -12,7 +12,7 @@ def source(relative_path: str) -> str:
 class ClientDirectorySourceContractTest(unittest.TestCase):
     def test_render_path_never_queries_connection_or_profile_skin(self) -> None:
         button = source(
-            "common/src/main/java/com/palosj/waystonesplayer/client/widget/PlayerTeleportButton.java"
+            "common/src/main/java/com/palosj/waystonesptpt/client/widget/PlayerTeleportButton.java"
         )
         render = button.split("public void renderString", 1)[1].split("public void tickSkin", 1)[0]
         self.assertNotIn("getConnection", render)
@@ -21,13 +21,13 @@ class ClientDirectorySourceContractTest(unittest.TestCase):
 
     def test_directory_uses_exact_values_throttle_and_explicit_cleanup(self) -> None:
         injector = source(
-            "common/src/main/java/com/palosj/waystonesplayer/client/WaystonePlayerScreenInjector.java"
+            "common/src/main/java/com/palosj/waystonesptpt/client/WaystonePlayerScreenInjector.java"
         )
         refresh = source(
-            "core/src/main/java/com/palosj/waystonesplayer/client/PlayerListRefresh.java"
+            "core/src/main/java/com/palosj/waystonesptpt/client/PlayerListRefresh.java"
         )
         policy = source(
-            "core/src/main/java/com/palosj/waystonesplayer/client/PlayerDirectoryRefreshPolicy.java"
+            "core/src/main/java/com/palosj/waystonesptpt/client/PlayerDirectoryRefreshPolicy.java"
         )
         self.assertNotIn("hashCode()", injector)
         self.assertIn("!previous.equals(current)", refresh)
@@ -41,13 +41,13 @@ class ClientDirectorySourceContractTest(unittest.TestCase):
 class NetworkAuthoritySourceContractTest(unittest.TestCase):
     def test_payload_is_serverbound_uuid_only_and_service_revalidates_first(self) -> None:
         payload = source(
-            "common/src/main/java/com/palosj/waystonesplayer/network/payload/RequestPlayerTeleportPayload.java"
+            "common/src/main/java/com/palosj/waystonesptpt/network/payload/RequestPlayerTeleportPayload.java"
         )
         networking = source(
-            "common/src/main/java/com/palosj/waystonesplayer/network/ModNetworking.java"
+            "common/src/main/java/com/palosj/waystonesptpt/network/ModNetworking.java"
         )
         service = source(
-            "common/src/main/java/com/palosj/waystonesplayer/teleport/PlayerTeleportService.java"
+            "common/src/main/java/com/palosj/waystonesptpt/teleport/PlayerTeleportService.java"
         )
 
         self.assertIn("record RequestPlayerTeleportPayload(UUID targetPlayerId)", payload)
@@ -59,13 +59,13 @@ class NetworkAuthoritySourceContractTest(unittest.TestCase):
 
     def test_online_targets_do_not_treat_listing_privacy_as_authorization(self) -> None:
         runtime = source(
-            "common/src/main/java/com/palosj/waystonesplayer/teleport/TeleportRuntime.java"
+            "common/src/main/java/com/palosj/waystonesptpt/teleport/TeleportRuntime.java"
         )
         evaluator = source(
-            "common/src/main/java/com/palosj/waystonesplayer/compat/WaystonesTeleportEvaluator.java"
+            "common/src/main/java/com/palosj/waystonesptpt/compat/WaystonesTeleportEvaluator.java"
         )
         compat = source(
-            "common/src/main/java/com/palosj/waystonesplayer/compat/WaystonesCompat.java"
+            "common/src/main/java/com/palosj/waystonesptpt/compat/WaystonesCompat.java"
         )
 
         self.assertIn("resolveOnlineTarget", runtime)
@@ -76,7 +76,7 @@ class NetworkAuthoritySourceContractTest(unittest.TestCase):
 
     def test_successful_player_teleports_restore_the_original_rotation(self) -> None:
         service = source(
-            "common/src/main/java/com/palosj/waystonesplayer/teleport/PlayerTeleportService.java"
+            "common/src/main/java/com/palosj/waystonesptpt/teleport/PlayerTeleportService.java"
         )
 
         self.assertLess(service.index("runtime.captureRotation"), service.index("runtime.tryTeleport"))
@@ -120,7 +120,7 @@ class RuntimeWorkflowSourceContractTest(unittest.TestCase):
 class ClientTickFailureSourceContractTest(unittest.TestCase):
     def test_tick_failure_is_scoped_to_one_screen(self) -> None:
         setup = source(
-            "common/src/main/java/com/palosj/waystonesplayer/client/WaystoneClientSetup.java"
+            "common/src/main/java/com/palosj/waystonesptpt/client/WaystoneClientSetup.java"
         )
 
         self.assertIn("Screen tickInjectionDisabledScreen", setup)

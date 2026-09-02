@@ -71,9 +71,9 @@ if [[ ! -f $binary_path ]]; then
   exit 1
 fi
 binary_sha256=$(sha256sum "$binary_path" | awk '{print $1}')
-target_id=${artifact_name#waystonesplayer-}
+target_id=${artifact_name#waystonesptpt-}
 branch_slug=${branch//\//-}
-manifest_artifact="waystonesplayer-release-manifest-$branch_slug"
+manifest_artifact="waystonesptpt-release-manifest-$branch_slug"
 manifest_directory="$output_directory/provenance"
 mkdir -p "$manifest_directory"
 gh run download "$run_id" --name "$manifest_artifact" --dir "$manifest_directory"
