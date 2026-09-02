@@ -11,7 +11,7 @@
 
 ## Decision
 
-自 1.0.1 起，Waystones Player 的原创代码使用标准 MIT License，并保留 `Copyright (c) 2026 PalosJ`。使用、修改、再分发、再许可和商业使用必须保留 MIT版权与许可声明。
+自 1.0.1 起，Waystones Player-to-player TP 的原创代码使用标准 MIT License，并保留 `Copyright (c) 2026 PalosJ`。使用、修改、再分发、再许可和商业使用必须保留 MIT版权与许可声明。
 
 根 `LICENSE` 只授权项目原创代码。项目图标及其他在 `THIRD_PARTY_NOTICES.md` 中明确识别的第三方内容继续遵循各自条款，不包含在 MIT授权范围内。
 

@@ -79,6 +79,7 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
         }
 
         require(matrix.schemaVersion == 1, 'schemaVersion must be 1.')
+        require(matrix.modId == mod_id, "modId must match ${mod_id}.")
         require(matrix.modVersion == mod_version, "modVersion must remain ${mod_version}.")
         def tools121 = matrix.buildTools['1.21']
         def tools26 = matrix.buildTools['26']
@@ -96,7 +97,7 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
                 && tools26.sourceLoom == '1.14-20251223.202653-9'
                 && tools26.sourceShogiApi == '26.1.0.1-20260324.181500-45',
                 'build-tool versions must match the audited release toolchain.')
-        def iconFile = file('common/src/main/resources/waystonesplayer.png')
+        def iconFile = file('common/src/main/resources/waystonesptpt.png')
         def iconSha256 = java.security.MessageDigest.getInstance('SHA-256')
                 .digest(iconFile.bytes)
                 .encodeHex()
@@ -177,7 +178,7 @@ def verifyTargetMatrix = tasks.register('verifyTargetMatrix') {
         targets.each { target ->
             require(target.releaseVersion == matrix.modVersion,
                     "${target.id} must use release version ${matrix.modVersion}.")
-            require(target.artifactFile == "waystonesplayer-${target.id}-${matrix.modVersion}.jar",
+            require(target.artifactFile == "${matrix.modId}-${target.id}-${matrix.modVersion}.jar",
                     "${target.id} has a non-canonical artifact file name.")
             require(target.minecraft instanceof List && !target.minecraft.isEmpty(),
                     "${target.id} must declare supported Minecraft versions.")

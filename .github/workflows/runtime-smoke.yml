@@ -80,8 +80,8 @@ jobs:
           ./scripts/fetch-build-artifact.sh
           main
           "$REQUESTED_RUN_ID"
-          waystonesplayer-neoforge-1.21.1
-          waystonesplayer-neoforge-1.21.1-1.0.1.jar
+          waystonesptpt-neoforge-1.21.1
+          waystonesptpt-neoforge-1.21.1-1.0.1.jar
           build/runtime-artifacts/neoforge-1.21.1
 
       - name: Verify Xvfb
@@ -166,8 +166,8 @@ jobs:
           ./scripts/fetch-build-artifact.sh
           neoforge/1.21.x
           "$REQUESTED_RUN_ID"
-          waystonesplayer-${{ matrix.target }}
-          waystonesplayer-${{ matrix.target }}-1.0.1.jar
+          waystonesptpt-${{ matrix.target }}
+          waystonesptpt-${{ matrix.target }}-1.0.1.jar
           build/runtime-artifacts/${{ matrix.target }}
 
       - name: Verify Xvfb and canonical parity
@@ -254,8 +254,8 @@ jobs:
           ./scripts/fetch-build-artifact.sh
           fabric/1.21.x
           "$REQUESTED_RUN_ID"
-          waystonesplayer-${{ matrix.target }}
-          waystonesplayer-${{ matrix.target }}-1.0.1.jar
+          waystonesptpt-${{ matrix.target }}
+          waystonesptpt-${{ matrix.target }}-1.0.1.jar
           build/runtime-artifacts/${{ matrix.target }}
 
       - name: Verify Xvfb and canonical parity
@@ -336,8 +336,8 @@ jobs:
           ./scripts/fetch-build-artifact.sh
           neoforge/26.x
           "$REQUESTED_RUN_ID"
-          waystonesplayer-${{ matrix.target }}
-          waystonesplayer-${{ matrix.target }}-1.0.1.jar
+          waystonesptpt-${{ matrix.target }}
+          waystonesptpt-${{ matrix.target }}-1.0.1.jar
           build/runtime-artifacts/${{ matrix.target }}
 
       - name: Rebuild fixed Waystones 26.1.1 source artifact
@@ -425,8 +425,8 @@ jobs:
           ./scripts/fetch-build-artifact.sh
           fabric/26.x
           "$REQUESTED_RUN_ID"
-          waystonesplayer-${{ matrix.target }}
-          waystonesplayer-${{ matrix.target }}-1.0.1.jar
+          waystonesptpt-${{ matrix.target }}
+          waystonesptpt-${{ matrix.target }}-1.0.1.jar
           build/runtime-artifacts/${{ matrix.target }}
 
       - name: Rebuild fixed Waystones 26.1.1 source artifact

@@ -1,0 +1,15 @@
+{
+  "gui.waystonesptpt.no_other_players": "No other online players",
+  "gui.waystonesptpt.online_players": "Online players",
+  "narration.waystonesptpt.online_players.empty": "Online players. No other online players.",
+  "config.waystonesptpt.player_teleport_experience_mode": "Player Teleport Experience Mode",
+  "message.waystonesptpt.invalid_context": "This teleport request is no longer valid.",
+  "message.waystonesptpt.target_unavailable": "That player is no longer available.",
+  "message.waystonesptpt.target_self": "You are already here.",
+  "message.waystonesptpt.insufficient_experience": "Not enough experience to teleport!",
+  "message.waystonesptpt.compatibility_unavailable": "Waystones compatibility could not be verified, so the teleport was cancelled.",
+  "message.waystonesptpt.teleport_failed": "Teleport failed, please try again later.",
+  "message.waystonesptpt.post_teleport_item_changed": "Teleport succeeded, but the bound Warp Stone changed before durability could be applied.",
+  "message.waystonesptpt.post_teleport_destination_changed": "Teleport completed, but another mod changed the final destination or made the arrival unsafe.",
+  "message.waystonesptpt.teleport_cooling_down": "Teleport requests are too frequent, please try again later."
+}

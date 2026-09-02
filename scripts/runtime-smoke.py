@@ -47,7 +47,7 @@ FATAL_PATTERNS = tuple(
         r"FAILED TO BIND TO PORT",
         r"java\.net\.BindException",
         r"java\.lang\.LinkageError",
-        r"\[[^\n]*ERROR[^\n]*\][^\n]*(?:waystonesplayer|com\.palosj)",
+        r"\[[^\n]*ERROR[^\n]*\][^\n]*(?:waystonesptpt|com\.palosj)",
     )
 )
 
@@ -239,18 +239,18 @@ def verify_binary(
     manifest = jar_manifest(path)
     expected_attributes = {
         "Implementation-Version": matrix["modVersion"],
-        "WaystonesPlayer-Target": target["id"],
-        "WaystonesPlayer-Build-Stack": "minimum",
+        "WaystonesPTPT-Target": target["id"],
+        "WaystonesPTPT-Build-Stack": "minimum",
     }
     if expected_commit is not None:
-        expected_attributes["WaystonesPlayer-Source-Commit"] = expected_commit
+        expected_attributes["WaystonesPTPT-Source-Commit"] = expected_commit
     for key, expected in expected_attributes.items():
         actual = manifest.get(key)
         if actual != expected:
             raise ValueError(f"binary manifest {key} mismatch: expected {expected!r}, got {actual!r}")
-    source_commit = manifest.get("WaystonesPlayer-Source-Commit", "")
+    source_commit = manifest.get("WaystonesPTPT-Source-Commit", "")
     if not source_commit:
-        raise ValueError("binary manifest has no WaystonesPlayer-Source-Commit")
+        raise ValueError("binary manifest has no WaystonesPTPT-Source-Commit")
     return actual_sha256, source_commit
 
 
@@ -270,7 +270,7 @@ def required_signals(side: str, output: str, mod_version: str,
     common = {"minimum JAR manifest verified": "verifyBinaryUnderTest" in output}
     if target["loader"] == "neoforge":
         common.update({
-            "Waystones Player listed": f"Waystones Player {mod_version}" in output,
+            "Waystones Player-to-player TP listed": f"Waystones Player-to-player TP {mod_version}" in output,
             "Minecraft version exact": f"Minecraft {minecraft} (minecraft)" in output,
             "Waystones version exact": (
                 f"Waystones {display_version(runtime_stack['waystones'])} (waystones)" in output
@@ -288,8 +288,8 @@ def required_signals(side: str, output: str, mod_version: str,
                 f"Loading Minecraft {minecraft} with Fabric Loader "
                 f"{runtime_stack['fabricLoader']}" in output
             ),
-            "Waystones Player listed": fabric_mod_listed(
-                output, "waystonesplayer", mod_version
+            "Waystones Player-to-player TP listed": fabric_mod_listed(
+                output, "waystonesptpt", mod_version
             ),
             "Fabric API version exact": fabric_mod_listed(
                 output, "fabric-api", runtime_stack["fabricApi"]
@@ -310,8 +310,8 @@ def required_signals(side: str, output: str, mod_version: str,
             re.search(r"Done \([^\r\n)]+\)!", output)
         )
     else:
-        common["client resources include Waystones Player"] = any(
-            "Reloading ResourceManager:" in line and "waystonesplayer" in line
+        common["client resources include Waystones Player-to-player TP"] = any(
+            "Reloading ResourceManager:" in line and "waystonesptpt" in line
             for line in output.splitlines()
         )
         common["client GUI texture atlas created"] = any(

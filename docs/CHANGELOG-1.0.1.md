@@ -1,6 +1,9 @@
-# Waystones Player 1.0.1
+# Waystones Player-to-player TP 1.0.1
 
-- Relicenses Waystones Player's original code under the MIT License.
+- Renames the project, mod ID, Java packages, resource and network namespaces, configuration file, and artifacts to WaystonesPTPT while preserving the existing gameplay and version number.
+- Migrates the legacy `waystonesplayer-server.toml` configuration to `waystonesptpt-server.toml` without deleting or overwriting user files.
+- Refreshes the audited current dependency stacks for NeoForge and Fabric 1.21.1 and Fabric Loader 1.21.11 while retaining every existing minimum dependency floor.
+- Relicenses Waystones Player-to-player TP's original code under the MIT License.
 - Keeps third-party icon material under its existing CC BY-SA 3.0 and Minecraft Usage Guidelines terms.
 - Updates all 28 NeoForge and Fabric release artifacts and metadata to version `1.0.1`.
 - Restores player targeting for every currently online server player, including normally registered fake players, without treating server-list privacy as teleport authorization.
