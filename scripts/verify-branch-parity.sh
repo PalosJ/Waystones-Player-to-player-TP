@@ -7,7 +7,7 @@ shift || true
 readonly BASELINE_FILE="gradle/canonical-main.properties"
 readonly -a GLOBAL_PATHS=(
   "core"
-  "common/src/main/resources/waystonesplayer.png"
+  "common/src/main/resources/waystonesptpt.png"
   "gradle/targets.json"
   "scripts/verify-branch-parity.sh"
   "scripts/runtime-matrix.py"

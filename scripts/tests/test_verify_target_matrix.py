@@ -45,7 +45,7 @@ class TargetPropertiesTest(unittest.TestCase):
             (java_root / "Adapter.java").write_text("class Adapter {}\n", encoding="utf-8")
         common_context = (
             root / "common" / "src" / "main" / "java" / "com" / "palosj"
-            / "waystonesplayer" / "compat" / "LockedWaystoneTeleportContext.java"
+            / "waystonesptpt" / "compat" / "LockedWaystoneTeleportContext.java"
         )
         common_context.parent.mkdir(parents=True)
         common_context.write_text("class LockedWaystoneTeleportContext {}\n", encoding="utf-8")
@@ -53,7 +53,7 @@ class TargetPropertiesTest(unittest.TestCase):
         properties.parent.mkdir(parents=True)
         properties.write_text(
             f"targetId={target_id}\n"
-            "commonExcludes=com/palosj/waystonesplayer/compat/LockedWaystoneTeleportContext.java\n"
+            "commonExcludes=com/palosj/waystonesptpt/compat/LockedWaystoneTeleportContext.java\n"
             "neoForgeExcludes=\n"
             f"adapterRoots={','.join(selected_roots)}\n",
             encoding="utf-8",
@@ -103,7 +103,22 @@ class MatrixShapeTest(unittest.TestCase):
     def test_repository_matrix_covers_all_28_targets(self):
         matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
         verify.validate_matrix_shape(matrix)
+        self.assertEqual("waystonesptpt", matrix["modId"])
         self.assertEqual(28, len(matrix["targets"]))
+
+        targets = {item["id"]: item for item in matrix["targets"]}
+        self.assertEqual(
+            {"neoforge": "21.1.249", "waystones": "21.1.42+1.21.1", "balm": "21.0.65+1.21.1"},
+            targets["neoforge-1.21.1"]["current"],
+        )
+        self.assertEqual("0.19.5", targets["fabric-1.21.1"]["current"]["fabricLoader"])
+        self.assertEqual("0.19.5", targets["fabric-1.21.11"]["current"]["fabricLoader"])
+
+    def test_rejects_old_mod_id(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        matrix["modId"] = "waystonesplayer"
+        with self.assertRaises(ValueError):
+            verify.validate_matrix_shape(matrix)
 
     def test_rejects_wrong_26_source_commit(self):
         matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))

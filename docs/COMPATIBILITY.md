@@ -176,7 +176,7 @@ NeoForge：
 
 Fabric：
 
-- 使用无额外依赖的小型 TOML存储生成/读取 `config/waystonesplayer-server.toml`。
+- 使用无额外依赖的小型 TOML存储生成/读取 `config/waystonesptpt-server.toml`。
 - 保持同键、注释、默认值和重启读取。
 - 它是实例全局配置；不得在 README 或平台页面声称按世界覆盖或热重载。
 
