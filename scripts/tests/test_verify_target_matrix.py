@@ -122,16 +122,16 @@ class MatrixShapeTest(unittest.TestCase):
         )
         self.assertEqual("0.19.5", targets["fabric-1.21.11"]["current"]["fabricLoader"])
 
-    def test_rejects_old_mod_id(self):
-        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
-        matrix["modId"] = "waystonesplayer"
-        with self.assertRaises(ValueError):
-            verify.validate_matrix_shape(matrix)
-
     def test_rejects_wrong_26_source_commit(self):
         matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
         target = next(item for item in matrix["targets"] if item["id"] == "fabric-26.1.1")
         target["waystonesSource"]["commit"] = "0" * 40
+        with self.assertRaises(ValueError):
+            verify.validate_matrix_shape(matrix)
+
+    def test_rejects_old_mod_id(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        matrix["modId"] = "waystonesplayer"
         with self.assertRaises(ValueError):
             verify.validate_matrix_shape(matrix)
 

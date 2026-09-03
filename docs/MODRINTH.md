@@ -79,9 +79,9 @@ NeoForge keeps SERVER configuration and per-world override semantics. Fabric use
 
 ## License and attribution
 
-Original code is open source under the [MIT License](https://github.com/PalosJ/waystonesptpt/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the terms documented below.
+Original code is open source under the [MIT License](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the terms documented below.
 
-The existing project icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by [Joe Williamson (JoeCreates)](https://opengameart.org/content/roguelikerpg-items) under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Additional player imagery and complete terms are documented in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/waystonesptpt/blob/main/THIRD_PARTY_NOTICES.md).
+The existing project icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by [Joe Williamson (JoeCreates)](https://opengameart.org/content/roguelikerpg-items) under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Additional player imagery and complete terms are documented in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/THIRD_PARTY_NOTICES.md).
 
 Waystones Player-to-player TP is not endorsed by Twelve Iterations.
 

@@ -30,6 +30,10 @@ prepare_waystones_source = load_script("prepare-waystones-source.py")
 
 
 class ReleaseManifestPathTest(unittest.TestCase):
+    def test_matrix_identity_is_waystonesptpt(self):
+        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
+        self.assertEqual("waystonesptpt", matrix["modId"])
+
     def test_output_must_stay_under_build(self):
         expected = (ROOT / "build" / "evidence" / "manifest.json").resolve()
         self.assertEqual(
@@ -132,7 +136,7 @@ class BinaryEvidenceTest(unittest.TestCase):
         "id": "neoforge-1.21.1",
         "artifactFile": "waystonesptpt-neoforge-1.21.1-1.0.1.jar",
     }
-    MATRIX = {"modVersion": "1.0.1"}
+    MATRIX = {"modId": "waystonesptpt", "modVersion": "1.0.1"}
     COMMIT = "a" * 40
 
     def create_binary(self, directory: Path, commit: str | None = None) -> Path:

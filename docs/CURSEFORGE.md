@@ -46,9 +46,9 @@ NeoForge supports its SERVER config and per-world overrides. Fabric uses the sam
 
 There is no telemetry, advertising, analytics, or external upload. The only add-on payload contains the UUID selected from the current Minecraft server's listed-player data.
 
-Original code is open source under the [MIT License](https://github.com/PalosJ/waystonesptpt/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the separately documented terms.
+Original code is open source under the [MIT License](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the separately documented terms.
 
-The existing icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by Joe Williamson (JoeCreates), CC BY-SA 3.0. Complete attribution and the separate terms for player imagery are in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/waystonesptpt/blob/main/THIRD_PARTY_NOTICES.md).
+The existing icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by Joe Williamson (JoeCreates), CC BY-SA 3.0. Complete attribution and the separate terms for player imagery are in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/THIRD_PARTY_NOTICES.md).
 
 Waystones Player-to-player TP is not endorsed by Twelve Iterations.
 
