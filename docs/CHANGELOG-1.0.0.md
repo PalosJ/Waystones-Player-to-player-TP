@@ -1,4 +1,4 @@
-# Waystones Player 1.0.0
+# Waystones Player-to-player TP 1.0.0
 
 - Adds a live directory of other Minecraft-listed players to the Waystones Warp Stone screen.
 - Uses responsive full, compact, and avatar-only layouts while preserving the original Waystones controls.

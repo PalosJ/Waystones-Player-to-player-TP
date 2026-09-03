@@ -120,17 +120,17 @@ def verifyBinaryUnderTest = tasks.register('verifyBinaryUnderTest') {
         new java.util.jar.JarFile(binaryFile).withCloseable { jar ->
             def attributes = jar.manifest?.mainAttributes
             if (attributes?.getValue('Implementation-Version') != matrix.modVersion
-                    || attributes?.getValue('WaystonesPlayer-Target') != target.id
-                    || attributes?.getValue('WaystonesPlayer-Build-Stack') != 'minimum') {
+                    || attributes?.getValue('WaystonesPTPT-Target') != target.id
+                    || attributes?.getValue('WaystonesPTPT-Build-Stack') != 'minimum') {
                 throw new GradleException(
                         'Runtime smoke tests must use the unchanged minimum-built release JAR.')
             }
             if (expectedSourceCommit != null
-                    && attributes?.getValue('WaystonesPlayer-Source-Commit') != expectedSourceCommit) {
+                    && attributes?.getValue('WaystonesPTPT-Source-Commit') != expectedSourceCommit) {
                 throw new GradleException('Binary under test does not match the expected source commit.')
             }
             def staleEntries = [
-                    'com/palosj/waystonesplayer/teleport/TeleportArrivalVerifier$BlockTarget.class',
+                    'com/palosj/waystonesptpt/teleport/TeleportArrivalVerifier$BlockTarget.class',
             ].findAll { jar.getJarEntry(it) != null }
             if (!staleEntries.isEmpty()) {
                 throw new GradleException(

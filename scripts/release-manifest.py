@@ -95,14 +95,15 @@ def inspect_artifact(
         target: Dict[str, object],
         commit: str,
         mod_version: str,
-        icon_sha256: str) -> Dict[str, str]:
+        icon_sha256: str,
+        mod_id: str = "waystonesptpt") -> Dict[str, str]:
     required_entries: Set[str] = {
         "META-INF/MANIFEST.MF",
-        "waystonesplayer.png",
-        "waystonesplayer.mixins.json",
-        "waystonesplayer.network.json",
-        "assets/waystonesplayer/lang/en_us.json",
-        "assets/waystonesplayer/lang/zh_cn.json",
+        f"{mod_id}.png",
+        f"{mod_id}.mixins.json",
+        f"{mod_id}.network.json",
+        f"assets/{mod_id}/lang/en_us.json",
+        f"assets/{mod_id}/lang/zh_cn.json",
     }
     forbidden_prefixes = (
         "com/mojang/",
@@ -123,13 +124,17 @@ def inspect_artifact(
             raise ValueError(f"{path.name}: artifact contains a nested JAR")
         if any(name.startswith(forbidden_prefixes) for name in names):
             raise ValueError(f"{path.name}: artifact bundles game, loader, or dependency classes")
+        if any(name == "waystonesplayer.png" or name.startswith("waystonesplayer.")
+               or name.startswith("assets/waystonesplayer/")
+               or name.startswith("com/palosj/waystonesplayer/") for name in names):
+            raise ValueError(f"{path.name}: artifact contains legacy identity entries")
 
         attributes = manifest_attributes(archive)
         expected = {
             "Implementation-Version": mod_version,
-            "WaystonesPlayer-Target": target["id"],
-            "WaystonesPlayer-Build-Stack": "minimum",
-            "WaystonesPlayer-Source-Commit": commit,
+            "WaystonesPTPT-Target": target["id"],
+            "WaystonesPTPT-Build-Stack": "minimum",
+            "WaystonesPTPT-Source-Commit": commit,
         }
         for key, expected_value in expected.items():
             if attributes.get(key) != expected_value:
@@ -137,19 +142,19 @@ def inspect_artifact(
                     f"{path.name}: manifest {key} mismatch: "
                     f"{attributes.get(key)!r} != {expected_value!r}"
                 )
-        icon_bytes = archive.read("waystonesplayer.png")
+        icon_bytes = archive.read(f"{mod_id}.png")
         if hashlib.sha256(icon_bytes).hexdigest() != icon_sha256:
             raise ValueError(f"{path.name}: approved icon SHA-256 mismatch")
         source = target.get("waystonesSource")
         source_keys = {
-            "WaystonesPlayer-Upstream-Waystones-Commit",
-            "WaystonesPlayer-Upstream-Waystones-Patch-SHA256",
-            "WaystonesPlayer-Upstream-Waystones-JAR-SHA256",
+            "WaystonesPTPT-Upstream-Waystones-Commit",
+            "WaystonesPTPT-Upstream-Waystones-Patch-SHA256",
+            "WaystonesPTPT-Upstream-Waystones-JAR-SHA256",
         }
         if source:
             source_expected = {
-                "WaystonesPlayer-Upstream-Waystones-Commit": source["commit"],
-                "WaystonesPlayer-Upstream-Waystones-Patch-SHA256": source["patchSha256"],
+                "WaystonesPTPT-Upstream-Waystones-Commit": source["commit"],
+                "WaystonesPTPT-Upstream-Waystones-Patch-SHA256": source["patchSha256"],
             }
             for key, expected_value in source_expected.items():
                 if attributes.get(key) != expected_value:
@@ -157,7 +162,7 @@ def inspect_artifact(
                         f"{path.name}: manifest {key} mismatch: "
                         f"{attributes.get(key)!r} != {expected_value!r}"
                     )
-            upstream_sha = attributes.get("WaystonesPlayer-Upstream-Waystones-JAR-SHA256", "")
+            upstream_sha = attributes.get("WaystonesPTPT-Upstream-Waystones-JAR-SHA256", "")
             if re.fullmatch(r"[0-9a-f]{64}", upstream_sha) is None:
                 raise ValueError(f"{path.name}: manifest has no valid upstream Waystones JAR SHA-256")
         elif any(key in attributes for key in source_keys):
@@ -169,13 +174,14 @@ def target_entry(
         target: Dict[str, object],
         branch: str,
         commit: str,
+        mod_id: str,
         mod_version: str,
         icon_sha256: str,
         artifact_root: Path | None = None) -> Dict[str, object]:
     path = artifact_path(target, artifact_root)
     if not path.is_file():
         raise FileNotFoundError(f"missing minimum-built artifact: {path}")
-    attributes = inspect_artifact(path, target, commit, mod_version, icon_sha256)
+    attributes = inspect_artifact(path, target, commit, mod_version, icon_sha256, mod_id)
     entry = {
         "artifactFile": target["artifactFile"],
         "size": path.stat().st_size,
@@ -194,7 +200,7 @@ def target_entry(
     if target.get("waystonesSource"):
         entry["waystonesSource"] = {
             **target["waystonesSource"],
-            "artifactSha256": attributes["WaystonesPlayer-Upstream-Waystones-JAR-SHA256"],
+            "artifactSha256": attributes["WaystonesPTPT-Upstream-Waystones-JAR-SHA256"],
         }
     return entry
 
@@ -236,6 +242,7 @@ def main() -> int:
     artifact_root = resolve_artifact_root(args.artifact_root) if args.artifact_root else None
     manifest = {
         "schemaVersion": 2,
+        "modId": matrix["modId"],
         "modVersion": matrix["modVersion"],
         "branch": branch,
         "commit": commit,
@@ -245,6 +252,7 @@ def main() -> int:
                 target,
                 branch,
                 commit,
+                matrix["modId"],
                 matrix["modVersion"],
                 matrix["iconSha256"],
                 artifact_root,
