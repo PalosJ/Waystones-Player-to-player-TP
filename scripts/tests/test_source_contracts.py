@@ -1,3 +1,4 @@
+import json
 import pathlib
 import unittest
 
@@ -83,6 +84,20 @@ class NetworkAuthoritySourceContractTest(unittest.TestCase):
         self.assertGreater(service.index("runtime.restoreRotation"), service.index("runtime.tryTeleport"))
 
 class RuntimeWorkflowSourceContractTest(unittest.TestCase):
+    def test_main_build_dependency_stacks_match_the_target_matrix(self) -> None:
+        workflow = source(".github/workflows/build.yml")
+        if "name: NeoForge 1.21.1 (${{ matrix.stack }})" not in workflow:
+            self.skipTest("the unified branch workflow has target-specific dependency inputs")
+        matrix = json.loads(source("gradle/targets.json"))
+        target = next(target for target in matrix["targets"] if target["branch"] == "main")
+
+        for stack_name in ("minimum", "current"):
+            stack = target[stack_name]
+            self.assertIn(f"- stack: {stack_name}", workflow)
+            self.assertIn(f"neo-version: {stack['neoforge']}", workflow)
+            self.assertIn(f"waystones-version: {stack['waystones']}", workflow)
+            self.assertIn(f"balm-version: {stack['balm']}", workflow)
+
     def test_runtime_consumes_only_a_trusted_exact_build_artifact(self) -> None:
         workflow = source(".github/workflows/runtime-smoke.yml")
         fetcher = source("scripts/fetch-build-artifact.sh")
