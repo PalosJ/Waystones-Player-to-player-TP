@@ -124,9 +124,12 @@ def inspect_artifact(
             raise ValueError(f"{path.name}: artifact contains a nested JAR")
         if any(name.startswith(forbidden_prefixes) for name in names):
             raise ValueError(f"{path.name}: artifact bundles game, loader, or dependency classes")
-        if any(name == "waystonesplayer.png" or name.startswith("waystonesplayer.")
-               or name.startswith("assets/waystonesplayer/")
-               or name.startswith("com/palosj/waystonesplayer/") for name in names):
+        if any(
+                name == "waystonesplayer.png"
+                or name.startswith("waystonesplayer.")
+                or name.startswith("assets/waystonesplayer/")
+                or name.startswith("com/palosj/waystonesplayer/")
+                for name in names):
             raise ValueError(f"{path.name}: artifact contains legacy identity entries")
 
         attributes = manifest_attributes(archive)
