@@ -11,17 +11,23 @@ public final class LegacyConfigMigration {
     private LegacyConfigMigration() {
     }
 
-    public static boolean copyIfCurrentMissing(Path directory, String legacyFileName, String currentFileName)
-            throws IOException {
+    public static boolean copyIfCurrentMissing(
+            Path directory,
+            String legacyFileName,
+            String currentFileName) throws IOException {
         Path legacyFile = directory.resolve(legacyFileName);
         Path currentFile = directory.resolve(currentFileName);
         if (Files.exists(currentFile) || !Files.isRegularFile(legacyFile)) {
             return false;
         }
+
         Files.createDirectories(directory);
         Path temporaryFile = Files.createTempFile(directory, "." + currentFileName + ".", ".tmp");
         try {
-            Files.copy(legacyFile, temporaryFile, StandardCopyOption.REPLACE_EXISTING,
+            Files.copy(
+                    legacyFile,
+                    temporaryFile,
+                    StandardCopyOption.REPLACE_EXISTING,
                     StandardCopyOption.COPY_ATTRIBUTES);
             try {
                 Files.move(temporaryFile, currentFile, StandardCopyOption.ATOMIC_MOVE);

@@ -21,7 +21,9 @@ class LegacyConfigMigrationTest {
     void copiesLegacyConfigWithoutDeletingIt() throws Exception {
         Path legacyFile = temporaryDirectory.resolve(LEGACY_NAME);
         Files.writeString(legacyFile, "playerTeleportExperienceMode = \"ALWAYS\"\n");
-        assertTrue(LegacyConfigMigration.copyIfCurrentMissing(temporaryDirectory, LEGACY_NAME, CURRENT_NAME));
+
+        assertTrue(LegacyConfigMigration.copyIfCurrentMissing(
+                temporaryDirectory, LEGACY_NAME, CURRENT_NAME));
         assertEquals(Files.readString(legacyFile), Files.readString(temporaryDirectory.resolve(CURRENT_NAME)));
         assertTrue(Files.exists(legacyFile));
     }
@@ -30,13 +32,16 @@ class LegacyConfigMigrationTest {
     void existingCurrentConfigAlwaysWins() throws Exception {
         Files.writeString(temporaryDirectory.resolve(LEGACY_NAME), "legacy\n");
         Files.writeString(temporaryDirectory.resolve(CURRENT_NAME), "current\n");
-        assertFalse(LegacyConfigMigration.copyIfCurrentMissing(temporaryDirectory, LEGACY_NAME, CURRENT_NAME));
+
+        assertFalse(LegacyConfigMigration.copyIfCurrentMissing(
+                temporaryDirectory, LEGACY_NAME, CURRENT_NAME));
         assertEquals("current\n", Files.readString(temporaryDirectory.resolve(CURRENT_NAME)));
     }
 
     @Test
     void missingLegacyConfigDoesNothing() throws Exception {
-        assertFalse(LegacyConfigMigration.copyIfCurrentMissing(temporaryDirectory, LEGACY_NAME, CURRENT_NAME));
+        assertFalse(LegacyConfigMigration.copyIfCurrentMissing(
+                temporaryDirectory, LEGACY_NAME, CURRENT_NAME));
         assertFalse(Files.exists(temporaryDirectory.resolve(CURRENT_NAME)));
     }
 }
