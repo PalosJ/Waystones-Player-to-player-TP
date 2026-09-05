@@ -90,7 +90,7 @@ public class PlayerTeleportButton extends Button {
     }
 
     public void tickSkin() {
-        if (playerId == null || skinSource == null || skinTexture != null) {
+        if (playerId == null || skinSource == null) {
             return;
         }
         if (!skinRetry.advanceAndIsReady()) {
@@ -105,7 +105,7 @@ public class PlayerTeleportButton extends Button {
             if (skinTexture == null) {
                 skinRetry.delayAfterFailure();
             } else {
-                skinRetry.reset();
+                skinRetry.delayAfterFailure();
             }
         } catch (RuntimeException error) {
             skinTexture = null;

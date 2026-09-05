@@ -11,5 +11,7 @@
   "message.waystonesptpt.teleport_failed": "Teleport failed, please try again later.",
   "message.waystonesptpt.post_teleport_item_changed": "Teleport succeeded, but the bound Warp Stone changed before durability could be applied.",
   "message.waystonesptpt.post_teleport_destination_changed": "Teleport completed, but another mod changed the final destination or made the arrival unsafe.",
-  "message.waystonesptpt.teleport_cooling_down": "Teleport requests are too frequent, please try again later."
+  "message.waystonesptpt.teleport_cooling_down": "Teleport requests are too frequent, please try again later.",
+  "message.waystonesptpt.teleport_pending": "Your player teleport is still preparing.",
+  "message.waystonesptpt.teleport_cancelled": "Player teleport cancelled because the menu, player, item, or preparation time changed."
 }

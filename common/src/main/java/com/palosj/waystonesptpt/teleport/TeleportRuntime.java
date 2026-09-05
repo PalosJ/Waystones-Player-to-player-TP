@@ -2,6 +2,9 @@ package com.palosj.waystonesptpt.teleport;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BooleanSupplier;
 
 import com.palosj.waystonesptpt.PlayerTeleportExperienceMode;
 import com.palosj.waystonesptpt.compat.WaystonesCompat;
@@ -10,6 +13,7 @@ import com.palosj.waystonesptpt.compat.WaystonesTeleportCompat;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 public final class TeleportRuntime {
     private static final TeleportRuntimeBoundary LIVE = new LiveBoundary();
@@ -51,7 +55,7 @@ public final class TeleportRuntime {
         @Override
         public Optional<TargetPlayer> resolveOnlineTarget(ServerPlayer sender, UUID targetPlayerId) {
             ServerPlayer target = sender.level().getServer().getPlayerList().getPlayer(targetPlayerId);
-            if (target == null) {
+            if (target == null || target.isRemoved()) {
                 return Optional.empty();
             }
             return Optional.of(new TargetPlayer(target, target.getUUID()));
@@ -63,12 +67,45 @@ public final class TeleportRuntime {
         }
 
         @Override
-        public Optional<TeleportOutcome> tryTeleport(
+        public BooleanSupplier captureRequestValidity(
+                ServerPlayer sender, UUID targetId, WaystonesCompat.WarpStoneUse use) {
+            var server = sender.level().getServer();
+            var menu = sender.containerMenu;
+            ItemStack snapshot = use.stack().copy();
+            return () -> server != null && server.isSameThread()
+                    && server.getPlayerList().getPlayer(sender.getUUID()) == sender
+                    && sender.isAlive() && !sender.isRemoved()
+                    && sender.containerMenu == menu
+                    && WaystonesCompat.isWarpStoneUseBound(sender, use)
+                    && ItemStack.isSameItemSameComponents(snapshot, use.stack())
+                    && resolveOnlineTarget(sender, targetId).isPresent();
+        }
+
+        @Override
+        public boolean isSameSession(ServerPlayer sender) {
+            var server = sender.level().getServer();
+            return server != null && server.getPlayerList().getPlayer(sender.getUUID()) == sender;
+        }
+
+        @Override
+        public void executeOnServerThread(ServerPlayer sender, Runnable action) {
+            var server = sender.level().getServer();
+            if (server.isSameThread()) {
+                action.run();
+            } else {
+                server.execute(action);
+            }
+        }
+
+        @Override
+        public CompletionStage<Optional<TeleportOutcome>> tryTeleport(
                 ServerPlayer sender,
                 ServerPlayer target,
                 WaystonesCompat.WarpStoneUse warpStoneUse,
-                PlayerTeleportExperienceMode experienceMode) {
-            return WaystonesTeleportCompat.tryTeleport(sender, target, warpStoneUse, experienceMode);
+                PlayerTeleportExperienceMode experienceMode,
+                TeleportAttempt attempt) {
+            return CompletableFuture.completedFuture(
+                    WaystonesTeleportCompat.tryTeleport(sender, target, warpStoneUse, experienceMode, attempt));
         }
 
         @Override
@@ -82,8 +119,9 @@ public final class TeleportRuntime {
         public void damageWarpStone(
                 DurabilityTarget target,
                 ServerPlayer sender,
-                WaystonesCompat.WarpStoneUse warpStoneUse) {
-            DurabilityCompat.hurtAndBreak(target.stack(), sender, warpStoneUse.hand());
+                WaystonesCompat.WarpStoneUse warpStoneUse,
+                int damage) {
+            DurabilityCompat.hurtAndBreak(target.stack(), sender, warpStoneUse.hand(), damage);
         }
 
         @Override

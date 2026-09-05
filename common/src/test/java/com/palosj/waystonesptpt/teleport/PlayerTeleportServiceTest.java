@@ -7,6 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BooleanSupplier;
+import org.junit.jupiter.api.AfterEach;
 
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +23,9 @@ import net.minecraft.world.InteractionHand;
 class PlayerTeleportServiceTest {
     private static final UUID SENDER_ID = new UUID(0, 1);
     private static final UUID TARGET_ID = new UUID(0, 2);
+
+    @AfterEach
+    void cleanup() { PlayerTeleportService.clearCooldown(SENDER_ID); }
 
     @Test
     void rejectsInvalidMenuAndUnavailableOrSelfTargetsBeforeTeleporting() {
@@ -110,6 +117,63 @@ class PlayerTeleportServiceTest {
         assertEquals(List.of("message.waystonesptpt.teleport_cooling_down"), runtime.messages);
     }
 
+    @Test
+    void pendingRequestBlocksAnotherAfterRateLimitExpires() {
+        FakeRuntime runtime = new FakeRuntime();
+        runtime.delayed = true;
+        RequestRateLimiter limiter = new RequestRateLimiter(10);
+        PlayerTeleportService.handleRequest(null, TARGET_ID, PlayerTeleportExperienceMode.NEVER, runtime, limiter);
+        runtime.tick += 11;
+        PlayerTeleportService.handleRequest(null, TARGET_ID, PlayerTeleportExperienceMode.NEVER, runtime, limiter);
+        assertEquals(1, runtime.teleportCalls);
+        assertEquals(List.of("message.waystonesptpt.teleport_pending"), runtime.messages);
+        runtime.attempt.beginCommit(runtime.tick);
+        runtime.completion.complete(Optional.of(TeleportOutcome.SUCCESS));
+        assertEquals(1, runtime.damageCalls);
+    }
+
+    @Test
+    void closingMenuAndTimeoutFenceLateSuccessfulCallbacks() {
+        for (boolean timeout : List.of(false, true)) {
+            FakeRuntime runtime = new FakeRuntime();
+            runtime.delayed = true;
+            execute(runtime);
+            runtime.valid = timeout;
+            runtime.tick += timeout ? 200 : 1;
+            PlayerTeleportService.tickPendingRequests();
+            runtime.completion.complete(Optional.of(TeleportOutcome.SUCCESS));
+            assertEquals(TeleportAttempt.State.CANCELLED, runtime.attempt.state());
+            assertEquals(0, runtime.damageCalls);
+            assertEquals(0, runtime.closeCalls);
+            PlayerTeleportService.clearCooldown(SENDER_ID);
+        }
+    }
+
+    @Test
+    void logoutFencesOldSessionWithoutClosingAReopenedMenu() {
+        FakeRuntime old = new FakeRuntime();
+        old.delayed = true;
+        execute(old);
+        PlayerTeleportService.clearCooldown(SENDER_ID);
+        FakeRuntime replacement = new FakeRuntime();
+        execute(replacement);
+        old.completion.complete(Optional.of(TeleportOutcome.SUCCESS));
+        assertEquals(0, old.damageCalls);
+        assertEquals(0, old.closeCalls);
+        assertEquals(1, replacement.damageCalls);
+    }
+
+    @Test
+    void aCallbackCannotReportUncommittedMovementAsSuccess() {
+        FakeRuntime runtime = new FakeRuntime();
+        runtime.delayed = true;
+        execute(runtime);
+        runtime.completion.complete(Optional.of(TeleportOutcome.SUCCESS));
+        assertEquals(0, runtime.damageCalls);
+        assertEquals(0, runtime.closeCalls);
+        assertEquals(List.of("message.waystonesptpt.teleport_failed"), runtime.messages);
+    }
+
     private static void assertRejected(Optional<TeleportOutcome> outcome, String expectedMessage) {
         FakeRuntime runtime = new FakeRuntime();
         runtime.outcome = outcome;
@@ -138,6 +202,12 @@ class PlayerTeleportServiceTest {
         private Optional<TeleportOutcome> outcome = Optional.of(TeleportOutcome.SUCCESS);
         private Optional<DurabilityTarget> durabilityTarget = Optional.of(new DurabilityTarget(null));
         private final PlayerRotation rotation = new PlayerRotation(123.5f, -27.25f);
+        private int tick = 100;
+        private boolean valid = true;
+        private boolean sameSession = true;
+        private boolean delayed;
+        private final CompletableFuture<Optional<TeleportOutcome>> completion = new CompletableFuture<>();
+        private TeleportAttempt attempt;
         private int teleportCalls;
         private int captureRotationCalls;
         private int restoreRotationCalls;
@@ -149,7 +219,7 @@ class PlayerTeleportServiceTest {
 
         @Override
         public int currentTick(ServerPlayer sender) {
-            return 100;
+            return tick;
         }
 
         @Override
@@ -179,13 +249,30 @@ class PlayerTeleportServiceTest {
         }
 
         @Override
-        public Optional<TeleportOutcome> tryTeleport(
+        public BooleanSupplier captureRequestValidity(ServerPlayer sender, UUID targetId, WaystonesCompat.WarpStoneUse use) {
+            return () -> valid;
+        }
+
+        @Override
+        public boolean isSameSession(ServerPlayer sender) { return sameSession; }
+
+        @Override
+        public void executeOnServerThread(ServerPlayer sender, Runnable action) { action.run(); }
+
+        @Override
+        public CompletionStage<Optional<TeleportOutcome>> tryTeleport(
                 ServerPlayer sender,
                 ServerPlayer target,
                 WaystonesCompat.WarpStoneUse use,
-                PlayerTeleportExperienceMode experienceMode) {
+                PlayerTeleportExperienceMode experienceMode,
+                TeleportAttempt attempt) {
             teleportCalls++;
-            return outcome;
+            this.attempt = attempt;
+            if (delayed) { return completion; }
+            if (outcome.filter(value -> value == TeleportOutcome.SUCCESS || value == TeleportOutcome.MOVED_INCOMPATIBLY).isPresent()) {
+                attempt.beginCommit(tick);
+            }
+            return CompletableFuture.completedFuture(outcome);
         }
 
         @Override
@@ -199,7 +286,7 @@ class PlayerTeleportServiceTest {
         public void damageWarpStone(
                 DurabilityTarget target,
                 ServerPlayer sender,
-                WaystonesCompat.WarpStoneUse use) {
+                WaystonesCompat.WarpStoneUse use, int damage) {
             damageCalls++;
             damagedUse = use;
         }
