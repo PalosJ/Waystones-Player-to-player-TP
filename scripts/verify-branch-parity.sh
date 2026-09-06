@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Source parity is not gameplay, GUI, or adapter behavior acceptance. See docs/VALIDATION.md.
 readonly MODE="${1:-}"
 shift || true
 
 readonly BASELINE_FILE="gradle/canonical-main.properties"
 readonly -a GLOBAL_PATHS=(
   "core"
+  "common/src/main/java/com/palosj/waystonesptpt/client/widget/BasePlayerReceivingControl.java"
+  "common/src/main/java/com/palosj/waystonesptpt/network/ReceivingClientState.java"
+  "common/src/main/java/com/palosj/waystonesptpt/network/payload"
+  "common/src/main/java/com/palosj/waystonesptpt/teleport/PlayerReceivingService.java"
+  "common/src/main/java/com/palosj/waystonesptpt/teleport/PlayerTeleportService.java"
+  "common/src/main/java/com/palosj/waystonesptpt/teleport/TeleportRuntimeBoundary.java"
+  "common/src/test/java/com/palosj/waystonesptpt/network"
+  "common/src/test/java/com/palosj/waystonesptpt/teleport/PlayerReceivingDataTest.java"
+  "common/src/test/java/com/palosj/waystonesptpt/teleport/PlayerTeleportServiceTest.java"
+  "common/src/main/resources/waystonesptpt.network.json"
+  "common/src/main/resources/assets/waystonesptpt/lang"
   "common/src/main/resources/waystonesptpt.png"
   "gradle/targets.json"
   "scripts/verify-branch-parity.sh"
@@ -35,6 +47,7 @@ readonly -a UNIFIED_ADAPTER_PATHS=(
   "adapters/identifier"
   "adapters/network"
   "adapters/profile"
+  "adapters/saved-data"
   "adapters/screen"
   "adapters/teleport"
 )

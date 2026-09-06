@@ -11,7 +11,7 @@ import com.palosj.waystonesptpt.compat.WaystonesCompat;
 import com.palosj.waystonesptpt.network.payload.ReceivingDirectoryPayload;
 import com.palosj.waystonesptpt.network.payload.ReceivingStatePayload;
 import com.palosj.waystonesptpt.network.payload.UpdateReceivingPayload;
-import net.blay09.mods.balm.api.Balm;
+import com.palosj.waystonesptpt.network.ModNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -23,6 +23,11 @@ public final class PlayerReceivingService {
 
     public static boolean allows(MinecraftServer server, UUID targetId) {
         return PlayerReceivingData.get(server).allows(targetId);
+    }
+
+    public static boolean hasSession(ServerPlayer sender) {
+        Subscription subscription = SUBSCRIPTIONS.get(sender.getUUID());
+        return subscription != null && subscription.sender == sender && subscription.valid();
     }
 
     public static void requestDirectory(ServerPlayer sender, ReceivingDirectoryPayload payload) {
@@ -80,7 +85,7 @@ public final class PlayerReceivingService {
 
     private static void send(Subscription subscription, long acknowledgedChange,
             List<ReceivingStatePayload.Entry> entries) {
-        Balm.getNetworking().sendTo(subscription.sender, new ReceivingStatePayload(subscription.session,
+        ModNetworking.sendToClient(subscription.sender, new ReceivingStatePayload(subscription.session,
                 acknowledgedChange, allows(subscription.sender.level().getServer(), subscription.sender.getUUID()), entries));
     }
 

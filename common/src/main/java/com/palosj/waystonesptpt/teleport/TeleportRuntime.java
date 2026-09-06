@@ -49,6 +49,11 @@ public final class TeleportRuntime {
 
         @Override
         public Optional<WaystonesCompat.WarpStoneUse> resolveWarpStoneUse(ServerPlayer sender) {
+            // Older Balm API families cannot negotiate a network version. A protocol-2 menu
+            // subscription is required before accepting their UUID-only teleport request.
+            if (!PlayerReceivingService.hasSession(sender)) {
+                return Optional.empty();
+            }
             return WaystonesCompat.resolveWarpStoneUse(sender, sender.containerMenu);
         }
 
