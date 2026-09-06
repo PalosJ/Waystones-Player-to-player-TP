@@ -266,6 +266,7 @@ final class WaystonesTeleportEvaluator {
                 throw new TeleportRejectedException("experience changed before consumption");
             }
             validatedTarget = targetOf(teleportContext);
+            attempt.setDurabilityCost(WaystonesCompat.warpStoneDamage());
             attempt.beginCommit(sender.level().getServer().getTickCount());
             snapshot = ExperienceSnapshot.capture(sender);
             beforeExecution = positionOf(sender);
