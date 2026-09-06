@@ -82,7 +82,7 @@ flowchart LR
 
 ## 玩家目的地与结算
 
-服务端用 `TeleportAttempt` 管理 PREPARING、COMMITTING、SETTLED、CANCELLED。`PlayerTeleportService` 按发送者 UUID 保存唯一请求；重复、超时、菜单关闭、死亡或断线会拒绝／取消尚未提交的事务。旧回调不能清除新会话请求或继续移动、扣费。
+服务端用 `TeleportAttempt` 管理 PREPARING、COMMITTING、SETTLED、CANCELLED。`PlayerTeleportService` 按发送者 UUID 保存唯一请求；重复、超时、菜单关闭、死亡或断线会拒绝／取消尚未提交的事务。旧回调不能清除新会话请求或继续移动、扣费。生命周期检查由 MinecraftServer.tickServer 的服务端 TAIL Mixin 驱动，避免旧 Balm 将 NeoForge 抽象 ServerTickEvent 注册为监听器的运行时错误；不重复注册 Balm tick 回调。
 
 1. 限流，验证原菜单、实际 `WarpStoneItem`、使用手、原栈和协议 2 菜单订阅。
 2. 重新查询在线目标，拒绝本人及关闭接收的目标；listed 状态只决定客户端目录。
@@ -92,7 +92,7 @@ flowchart LR
 6. Waystones 执行原生移动、声音、效果及该版本实际提供的事件能力。确认成功后恢复朝向、清除坠落距离，结算一次原手绑定物品的原生损耗并关闭菜单。
 7. 未移动失败恢复本次消费前的经验；已移动但不符合最终目的地契约时保留已消费费用、结算并报告兼容性异常，避免免费移动。未开始消费的失败不覆盖等待期间从其他来源取得的经验。
 
-1.21.x 使用受保护的原生经验 requirement，保留上游取消与可用的重定向；目标或费用相关字段变化需要重新验证。创造模式也经过事务边界。26.x 使用受控 Shogi 执行器：完整读取 `warpSettings`（存在时）和 `warpRequirements`，允许合法条件与算术，校验实际消费金额的负数、非有限数和溢出。未知消费效果拒绝；有效零费用保留。请求内缓存解析结果，准备期间规则或 XP／耐久开关变化会在最终计算前使缓存失效。
+1.21.x 在最终消费前读取上游 enableDurability，关闭时损耗为零。1.21.x 使用受保护的原生经验 requirement，保留上游取消与可用的重定向；目标或费用相关字段变化需要重新验证。创造模式也经过事务边界。26.x 使用受控 Shogi 执行器：完整读取 `warpSettings`（存在时）和 `warpRequirements`，允许合法条件与算术，校验实际消费金额的负数、非有限数和溢出。未知消费效果拒绝；有效零费用保留。请求内缓存解析结果，准备期间规则或 XP／耐久开关变化会在最终计算前使缓存失效。
 
 26.x 的 `damage_item` 被转换为延迟损耗总额；成功后才由服务结算，避免上游与附属重复扣除。遵守耐久开关、创造豁免和原生附魔处理；一次结算不是固定 1 点。针对早期 Shogi 的副手上下文继承问题，Mixin 只影响标记的玩家传送上下文，显式嵌套物品覆盖及其他上游传送保持原行为。
 

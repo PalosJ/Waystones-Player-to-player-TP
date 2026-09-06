@@ -8,6 +8,7 @@ shift || true
 readonly BASELINE_FILE="gradle/canonical-main.properties"
 readonly -a GLOBAL_PATHS=(
   "core"
+  "common/src/main/java/com/palosj/waystonesptpt/mixin/ServerTickMixin.java"
   "common/src/main/java/com/palosj/waystonesptpt/client/widget/BasePlayerReceivingControl.java"
   "common/src/main/java/com/palosj/waystonesptpt/network/ReceivingClientState.java"
   "common/src/main/java/com/palosj/waystonesptpt/network/payload"

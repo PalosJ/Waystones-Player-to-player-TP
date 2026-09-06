@@ -3,6 +3,8 @@
 Version remains **1.0.1**. Client and server must both install this build: network protocol is now **2**, including older installations already labeled 1.0.1.
 
 - Adds the menu-only “Allow others to teleport to me” setting, enabled by default and saved by UUID in the server/world. Disabled targets stay listed; outgoing travel still works.
+- Avoids the legacy Balm/NeoForge abstract server tick listener failure; lifecycle checks run once on the server thread.
+- Honors the native 1.21.x durability switch as well as the 26.x damage rules.
 - Guards each player's teleport with one pending transaction, a 200-server-tick preparation limit, and final session, menu, item, target, preference, position, and payment checks. Late callbacks cannot revive cancelled requests.
 - Updates moving targets before execution and recalculates costs. Failed uncommitted requests do not overwrite experience earned while waiting.
 - Recognizes native Warp Stone item types, including the variants available in 26.x. Preserves applicable charge, durability, creative, and enchantment behavior.
