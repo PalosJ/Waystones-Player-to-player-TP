@@ -85,6 +85,22 @@ public final class WaystonesCompat {
         }
     }
 
+    /** Earlier 1.21 releases always damage once; later patches expose a native switch. */
+    public static int warpStoneDamage() {
+        Object teleports = net.blay09.mods.waystones.config.WaystonesConfig.getActive().teleports;
+        try {
+            Object enabled = teleports.getClass().getField("enableDurability").get(teleports);
+            if (!(enabled instanceof Boolean value)) {
+                throw new IllegalStateException("Unknown Waystones durability switch type");
+            }
+            return value ? 1 : 0;
+        } catch (NoSuchFieldException legacy) {
+            return 1;
+        } catch (IllegalAccessException error) {
+            throw new IllegalStateException("Could not read Waystones durability switch", error);
+        }
+    }
+
     public record WarpStoneUse(ItemStack stack, InteractionHand hand) {
     }
 }
