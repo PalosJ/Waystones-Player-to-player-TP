@@ -1,6 +1,9 @@
 {
   "gui.waystonesptpt.no_other_players": "No other online players",
   "gui.waystonesptpt.online_players": "Online players",
+  "gui.waystonesptpt.search_players": "Search players",
+  "gui.waystonesptpt.matching_players": "Matches: %s",
+  "gui.waystonesptpt.no_matching_players": "No matching players",
   "narration.waystonesptpt.online_players.empty": "Online players. No other online players.",
   "config.waystonesptpt.player_teleport_experience_mode": "Player Teleport Experience Mode",
   "message.waystonesptpt.invalid_context": "This teleport request is no longer valid.",
@@ -15,11 +18,8 @@
   "message.waystonesptpt.teleport_pending": "Your player teleport is still preparing.",
   "message.waystonesptpt.teleport_cancelled": "Player teleport cancelled because the menu, player, item, or preparation time changed.",
   "gui.waystonesptpt.receiving_pending": "Allow other players to teleport to me: waiting for server confirmation",
-  "gui.waystonesptpt.receiving_allowed": "Allow other players to teleport to me: enabled",
-  "gui.waystonesptpt.receiving_disabled": "Allow other players to teleport to me: disabled",
-  "gui.waystonesptpt.receiving_wait": "Waiting…",
-  "gui.waystonesptpt.receiving_on": "Incoming: on",
-  "gui.waystonesptpt.receiving_off": "Incoming: off",
+  "gui.waystonesptpt.receiving_allowed": "Allow other players to teleport to me: enabled\nClick to disable",
+  "gui.waystonesptpt.receiving_disabled": "Allow other players to teleport to me: disabled\nClick to enable",
   "gui.waystonesptpt.target_receiving_disabled": "This player has disabled incoming player teleportation",
   "message.waystonesptpt.target_receiving_disabled": "This player has disabled incoming player teleportation"
 }

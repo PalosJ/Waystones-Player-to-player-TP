@@ -13,15 +13,14 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
 public abstract class BasePlayerReceivingControl extends Button {
-    private final boolean avatarOnly;
     private Component description = Component.empty();
     private boolean displayedAllowed;
     private boolean displayedReady;
     private boolean initialized;
 
-    protected BasePlayerReceivingControl(int x, int y, int width, boolean avatarOnly) {
-        super(x, y, width, 20, Component.empty(), button -> submit(), DEFAULT_NARRATION);
-        this.avatarOnly = avatarOnly;
+    protected BasePlayerReceivingControl(int x, int y) {
+        super(x, y, PlayerToolbarLayout.BUTTON_SIZE, PlayerToolbarLayout.BUTTON_SIZE,
+                Component.empty(), button -> submit(), DEFAULT_NARRATION);
         ReceivingClientState.begin();
         tick();
     }
@@ -52,10 +51,11 @@ public abstract class BasePlayerReceivingControl extends Button {
         displayedReady = ready;
         description = Component.translatable(!ready ? "gui.waystonesptpt.receiving_pending"
                 : allowed ? "gui.waystonesptpt.receiving_allowed" : "gui.waystonesptpt.receiving_disabled");
-        setMessage(avatarOnly ? Component.literal(!ready ? "…" : allowed ? "+" : "−")
-                : Component.translatable(!ready ? "gui.waystonesptpt.receiving_wait"
-                        : allowed ? "gui.waystonesptpt.receiving_on" : "gui.waystonesptpt.receiving_off"));
         setTooltip(Tooltip.create(description));
+    }
+
+    protected boolean receivingAllowed() {
+        return displayedAllowed;
     }
 
     @Override
