@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.palosj.waystonesptpt.client.PlayerProfileCompat;
 import com.palosj.waystonesptpt.client.SkinRetryThrottle;
+import com.palosj.waystonesptpt.network.ReceivingClientState;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -45,7 +46,8 @@ public class PlayerTeleportButton extends Button {
         setMessage(name);
         setTooltip(Tooltip.create(name));
         visible = true;
-        active = true;
+        active = ReceivingClientState.allows(playerId);
+        updateReceivingTooltip();
     }
 
     @Override
@@ -93,8 +95,19 @@ public class PlayerTeleportButton extends Button {
         guiGraphics.drawString(font, name.getString(), textX, textY, color, false);
     }
 
+    private void updateReceivingTooltip() {
+        Component text = active ? getMessage() : getMessage().copy().append("\n")
+                .append(Component.translatable("gui.waystonesptpt.target_receiving_disabled"));
+        setTooltip(Tooltip.create(text));
+    }
+
     public void tickSkin() {
-        if (playerId == null || skinSource == null || skin != null) {
+        boolean allowed = playerId != null && ReceivingClientState.allows(playerId);
+        if (active != allowed) {
+            active = allowed;
+            updateReceivingTooltip();
+        }
+        if (playerId == null || skinSource == null) {
             return;
         }
         if (!skinRetry.advanceAndIsReady()) {
@@ -109,7 +122,7 @@ public class PlayerTeleportButton extends Button {
             if (skin == null) {
                 skinRetry.delayAfterFailure();
             } else {
-                skinRetry.reset();
+                skinRetry.delayAfterFailure();
             }
         } catch (RuntimeException error) {
             skin = null;

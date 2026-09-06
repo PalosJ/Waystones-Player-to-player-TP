@@ -9,7 +9,7 @@ public final class DurabilityCompat {
     private DurabilityCompat() {
     }
 
-    public static void hurtAndBreak(ItemStack stack, ServerPlayer player, InteractionHand hand) {
-        stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+    public static void hurtAndBreak(ItemStack stack, ServerPlayer player, InteractionHand hand, int damage) {
+        stack.hurtAndBreak(damage, player, LivingEntity.getSlotForHand(hand));
     }
 }

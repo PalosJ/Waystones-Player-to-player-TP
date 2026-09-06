@@ -16,6 +16,8 @@ import com.palosj.waystonesptpt.WaystonesPTPT;
 import com.palosj.waystonesptpt.client.PlayerDirectoryRefreshPolicy;
 import com.palosj.waystonesptpt.client.PlayerPanelLifecycle;
 import com.palosj.waystonesptpt.client.widget.PlayerDestinationList;
+import com.palosj.waystonesptpt.client.widget.PlayerReceivingControl;
+import com.palosj.waystonesptpt.network.ReceivingClientState;
 import com.palosj.waystonesptpt.compat.WaystonesCompat;
 import com.palosj.waystonesptpt.mixin.client.AbstractContainerScreenAccessor;
 import com.palosj.waystonesptpt.network.payload.RequestPlayerTeleportPayload;
@@ -162,6 +164,7 @@ public final class WaystonePlayerScreenInjector {
     }
 
     public static void onScreenClosed(Screen candidate) {
+        ReceivingClientState.clear();
         PANELS.detach(candidate);
         if (candidate instanceof WaystoneSelectionScreenBase screen) {
             ACTIVE_LAYOUTS.remove(screen);
@@ -347,6 +350,7 @@ public final class WaystonePlayerScreenInjector {
         private final int width;
         private final int height;
         private final boolean avatarOnly;
+        private PlayerReceivingControl receivingControl;
         private PlayerPanelLabels labels;
         private PlayerDestinationList list;
 
@@ -360,6 +364,9 @@ public final class WaystonePlayerScreenInjector {
         }
 
         private void attach(Screen screen) {
+            receivingControl = new PlayerReceivingControl(x, y + HEADER_HEIGHT - 24, width, avatarOnly);
+            ClientBalmCompat.addRenderableWidget(screen, receivingControl);
+            receivingControl.updateDirectory(initialPlayers.stream().map(PlayerProfileCompat::id).toList(), true);
             labels = new PlayerPanelLabels(x, y, width, height, initialPlayers.size(), avatarOnly);
             ClientBalmCompat.addRenderableWidget(screen, labels);
             list = new PlayerDestinationList(
@@ -374,11 +381,13 @@ public final class WaystonePlayerScreenInjector {
         }
 
         private void refresh(List<PlayerInfo> players) {
+            receivingControl.updateDirectory(players.stream().map(PlayerProfileCompat::id).toList(), false);
             list.updatePlayers(players);
             labels.setPlayerCount(players.size());
         }
 
         private void tick() {
+            receivingControl.tick();
             list.tickVisibleEntries();
         }
     }

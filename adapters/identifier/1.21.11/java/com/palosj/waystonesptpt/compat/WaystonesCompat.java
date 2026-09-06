@@ -12,6 +12,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.blay09.mods.waystones.item.WarpStoneItem;
 
 public final class WaystonesCompat {
     private static final AtomicBoolean MENU_COMPAT_FAILURE_LOGGED = new AtomicBoolean();
@@ -24,7 +25,7 @@ public final class WaystonesCompat {
     }
 
     public static boolean isWarpStone(ItemStack stack) {
-        return !stack.isEmpty() && WARP_STONE_ID.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+        return !stack.isEmpty() && stack.getItem() instanceof WarpStoneItem;
     }
 
     public static void stopUsingWarpStone(Player player) {

@@ -1,141 +1,87 @@
 # Waystones Player-to-player TP
 
-把传送石变成一条直达队友的路。
-
-Waystones Player-to-player TP 是 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的非官方附属模组。完成 Warp Stone 蓄力后，原界面左侧会实时显示当前连接中可列出的其他玩家；选择玩家即可经 Waystones 的传送管线前往对方附近。
+Waystones 的非官方附属模组：在传送石（Warp Stone）菜单左侧显示在线玩家，点击即可传送到对方附近。无需 OP 权限、命令或额外道具。
 
 [简体中文](#简体中文) · [English](#english)
 
 ## 简体中文
 
-### 功能
+### 安装
 
-- 玩家目录始终位于左侧：宽屏显示 164px 完整名单，中等空间收窄至 128px，继续不足时改为 36px 可点击头像栏；只有必要时才把 Waystones 原界面整体右移。
-- 名单复用 Minecraft 已同步的 listed 玩家数据，不增加第二套名单协议；每 5 个客户端 tick 刷新一次，连接变化时立即刷新。稳定目录只做线性精确比较，加入、离开或改名时才排序，并按 UUID 复用行、保留可见锚点；焦点玩家退出时回退到邻近行。Waystones 自身搜索框只筛选 Waystones，不会隐藏玩家目录。
-- 客户端只发送目标 UUID。客户端目录复用 Minecraft 的 listed 玩家流；服务端独立解析当前在线玩家，并重新验证菜单、打开菜单的确切 Warp Stone 与使用手、费用和最终移动。
-- 传送进入 Waystones 的可取消事件、声音、效果和原生落点流程；Waystones 优先使用相邻空位，并在没有相邻候选时回退到目标方块中心。事件可以观察、取消或重定向，但不能替换已锁定费用。
-- 每次确认成功后才重新定位原手中的当前 Warp Stone，并结算 1 点原生耐久；失败不扣耐久，经验会恢复且界面保持打开。若第三方模组在移动后彻底移除该物品，不会损坏无关物品或回滚已经完成的移动。
-- 若玩家已经移动，但最终位置不再匹配事件后验证的目标，传送仍按已发生移动结算且不会退还经验，同时显示兼容性警告。
-- 三种经验模式：免费、跟随 Waystones 总开关，或始终计算 Waystones 当前的经验点数/等级公式。
+客户端和服务端都要安装与游戏版本、加载器匹配的本模组、[Waystones](https://modrinth.com/mod/waystones) 和 [Balm](https://modrinth.com/mod/balm)。Fabric 另需 [Fabric API](https://modrinth.com/mod/fabric-api)，26.x 另需对应 Shogi。1.21.x 使用 Java 21，26.x 使用 Java 25。不支持 Forge。
 
-玩家目的地不提供安全落点保证：目标可能位于空中、危险流体、悬崖或方块内部；Waystones 找不到相邻空位时会回退到目标方块中心。
+当前维护版本为 **1.0.1**。本次新增接收设置，客户端与服务端须一起更新；较早的 1.0.1 文件也不能混用。升级旧模组 ID 时先删除 `waystonesplayer` JAR，避免新旧模组同时加载。
 
-### 安装与支持范围
+### 使用
 
-Waystones Player-to-player TP、Waystones 和 Balm 必须同时安装在客户端与服务端，并使用与 Minecraft 小版本及加载器匹配的 JAR；26.x 目标还必须安装对应版本的 Shogi。Fabric 目标另需对应 Fabric API，NeoForge 目标不需要 Fabric API。1.21.x 使用 Java 21，26.x 使用 Java 25；模组版本始终为 `1.0.1`。
+1. 手持该版本 Waystones 的任意原生传送石并完成蓄力，主手和副手均可。
+2. 在原菜单左侧选择玩家。目录会随玩家加入、离开而更新，并根据窗口空间显示姓名列表或头像栏。
+3. 在目录顶部切换“允许他人传送到我”。默认允许；关闭后别人仍能看到你，但不能点击传送。你仍可以前往其他允许接收的玩家。
 
-从旧模组 ID 升级时，请先删除 `waystonesplayer` JAR，不能让新旧两个 JAR同时加载。新模组会在 `waystonesptpt-server.toml` 不存在时复制旧 `waystonesplayer-server.toml`；旧文件不会被删除，已存在的新配置始终优先。
+接收设置按玩家 UUID 保存在当前服务器／世界中，重连、死亡、换维度和正常重启后保留。正常注册的假人默认允许接收。菜单保留 Waystones 的搜索、排序、分页、滚动和筛选功能。
 
-| 分支 | 加载器 | Minecraft | 可上传 JAR |
-|---|---|---|---:|
-| `main` | NeoForge | 1.21.1 | 1 |
-| `neoforge/1.21.x` | NeoForge | 1.21.2–1.21.11 | 9 |
-| `fabric/1.21.x` | Fabric | 1.21.1–1.21.11 | 10 |
-| `neoforge/26.x` | NeoForge | 26.1、26.1.1、26.1.2、26.2 | 4 |
-| `fabric/26.x` | Fabric | 26.1、26.1.1、26.1.2、26.2 | 4 |
+传送采用 Waystones 的声音、效果及适用版本的事件。目标走动时会在执行前更新位置；优先落在目标相邻位置，四周封闭时回退目标方块中心。目标可能位于空中、流体、悬崖或方块内，请自行判断是否前往。
 
-1.21.2 与 1.21.3 在每个加载器共用一份经两版分别验收的 JAR；26.x 的四个游戏版本始终独立编译、独立发布，不跨补丁版本复用二进制。部分 NeoForge 运行栈使用官方 beta，发布资料会如实标注。Forge 不在支持范围内。
+### 经验与传送石
 
-机器可读的全部最低/当前依赖与精确文件名位于 [gradle/targets.json](gradle/targets.json)，人类可读说明见 [COMPATIBILITY.md](docs/COMPATIBILITY.md)。
-
-### 使用与服务端规则
-
-1. 手持 Waystones 的 Warp Stone 并完成蓄力。
-2. 在左侧玩家目录选择一名当前可列出的在线玩家。
-3. 服务端验证本次菜单仍绑定同一个主手或副手物品，并重新查询目标。
-4. Waystones 执行事件、效果和落点流程；只有服务器确认发送者实际移动后，才结算费用、耐久并关闭界面。
-
-客户端只展示原版 listed 玩家流中的目标；服务端收到 UUID 后独立解析当前在线玩家。客户端隐藏状态不是服务端传送权限，本模组不承诺阻止通过自定义数据包猜测第三方隐藏玩家 UUID。玩家目的地不会写入 Waystones 数据库，不会继承物品费用、冷却或非经验 requirement。
-
-### 经验配置
-
-配置键为 `playerTeleportExperienceMode`，默认值为 `NEVER`。
+配置文件为 `waystonesptpt-server.toml`，键为 `playerTeleportExperienceMode`：
 
 | 模式 | 行为 |
 |---|---|
-| `NEVER` | 默认。玩家目的地不消耗经验。 |
-| `FOLLOW_WAYSTONES` | 仅当 Waystones 开启费用时，使用其经验点数/等级、距离、跨维度和上下限规则。 |
-| `ALWAYS` | 忽略 Waystones 的费用总开关，但仍使用其当前经验规则。 |
+| `NEVER` | 默认；玩家传送不消耗经验。 |
+| `FOLLOW_WAYSTONES` | Waystones 开启经验费用时，使用其当前经验点数／等级、距离、跨维度及上下限规则。 |
+| `ALWAYS` | 忽略 Waystones 的经验总开关，始终使用其经验规则。 |
 
-只选择 Waystones 自带且可验证的经验点数和经验等级 requirement；物品、冷却及其他费用不会被应用。合法零费用保留，但非空规则解析为空、未知第三方类型、负数、非有限数、溢出或事件替换费用都会拒绝整次传送，不会静默变成免费。
+传送石保留对应版本的原生蓄力与耐久行为；26.x 使用适用的损耗规则和耐久开关，成功后只结算一次。普通石碑、卷轴和 Warp Plate 不受玩家目录或个人接收设置影响。
 
-- NeoForge 使用 SERVER 配置：全局默认位于 `config/waystonesptpt-server.toml`，世界可在 `world/serverconfig` 或单人世界的 `saves/<世界名>/serverconfig` 覆盖，并保留重载语义。
-- Fabric 使用同名 `config/waystonesptpt-server.toml`、同一键和默认值，但它是实例全局配置，不声称支持 NeoForge 的按世界覆盖。
+NeoForge 使用 SERVER 配置，保留全局默认、世界 `serverconfig` 覆盖和重载。Fabric 使用同名文件、同一键和默认值，但它是实例全局配置，修改后重启读取。接收设置在两加载器上均按世界保存，不受这一配置差异影响。旧配置仅在新文件不存在时复制，原文件保留。损坏的附属费用配置回退到 `NEVER` 并记录日志；有效收费配置中的规则解析错误会拒绝本次传送。
 
-### 隐私、许可与声明
+### 发布与验收状态
 
-本模组没有遥测、广告、分析服务或外部数据上传。玩家选择只向当前连接的 Minecraft 服务端发送目标 UUID。
+[正式 Modrinth 页面](https://modrinth.com/mod/waystonesplayerptpt) 当前公开文件为 1.0.0 的 NeoForge／Fabric 1.21.1。以下是 **1.0.1 维护矩阵**，不是全部玩法验收通过的声明：
 
-原创代码依据 [MIT License](LICENSE) 开源，可在保留版权与许可声明的条件下使用、修改和再分发。项目图标中的第三方素材不属于 MIT 授权范围，继续遵循各自条款。项目不打包 Waystones、Balm 或 Shogi 的代码或 JAR。
+| 维护分支 | Minecraft | JAR 数 | 1.0.1 玩法状态 |
+|---|---|---:|---|
+| `main` | NeoForge 1.21.1 | 1 | 新改动待完整验收；原版本有用户基本实测 |
+| `fabric/1.21.x` | Fabric 1.21.1–1.21.11 | 10 | 待完整验收；1.21.1 原版本有用户基本实测 |
+| `neoforge/1.21.x` | NeoForge 1.21.2–1.21.11 | 9 | 待完整验收 |
+| `fabric/26.x` | Fabric 26.1、26.1.1、26.1.2、26.2 | 4 | 待完整验收 |
+| `neoforge/26.x` | NeoForge 26.1、26.1.1、26.1.2、26.2 | 4 | 待完整验收 |
 
-现有项目图标保持不变。其 Warp Stone 与玩家头像素材的来源、修改和适用条款见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。Waystones Player-to-player TP 不是 Twelve Iterations 官方项目，也不是 Minecraft 官方产品，未经 Mojang 或 Microsoft 批准或关联。
+28 份 JAR 对应 30 个游戏版本／加载器组合；1.21.2／1.21.3 的共用文件仍需分别验收。26.1.1 依赖固定源码构建的上游 JAR，在公开安装条件闭合前不进入上传清单。精确依赖见 [目标矩阵](gradle/targets.json)，证据与门禁见 [验收状态](docs/VALIDATION.md)。
 
-### 开发
+### 许可与开发
 
-`main` 的模块是 `core + common + neoforge`：
+原创代码使用 [MIT License](LICENSE)。原图标未修改，其第三方素材的署名和条款见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。本模组无遥测、广告或外部上传；目录与个人接收状态只在当前 Minecraft 连接中同步。
 
-- `core`：纯 Java 业务规则、布局计算、差分和单元测试，不得链接 Minecraft、Waystones、Balm、Mixin 或加载器 API。
-- `common`：按目标 Minecraft 重新编译的业务、协议、兼容层、客户端控件、资源和 Mixin，不得导入 Fabric/NeoForge API。
-- 加载器模块：入口、配置、元数据、网络桥接和最终 JAR；统一分支用显式目标工程隔离各 Minecraft/API 断点。
-
-```bash
-JAVA_HOME=/path/to/jdk-21 ./gradlew clean test build --no-build-cache
-```
-
-主线产物为 `neoforge/build/libs/waystonesptpt-neoforge-1.21.1-1.0.1.jar`。构建会检查模块边界、28 产物矩阵、Mixin/网络契约、许可证、原图标以及未捆绑上游依赖。26.x 分支使用 JDK 25；26.1.1 的缺失 Waystones 二进制由固定官方提交在忽略的 `build/` 下重建，既不提交也不嵌入。设计与维护细节见 [ARCHITECTURE.md](docs/ARCHITECTURE.md)、[COMPATIBILITY.md](docs/COMPATIBILITY.md) 和 [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md)。
-
----
+开发者请阅读 [架构](docs/ARCHITECTURE.md)、[兼容性](docs/COMPATIBILITY.md)、[网络契约](docs/NETWORK.md) 和 [发布清单](docs/RELEASE_CHECKLIST.md)。项目不打包 Waystones、Balm、Shogi 或其他前置。
 
 ## English
 
-Turn a Warp Stone into a direct route to your teammates.
+An unofficial [Waystones](https://modrinth.com/mod/waystones) add-on that adds an online-player directory to the Warp Stone menu, enabling player-to-player teleportation without commands, operator permissions, or extra items.
 
-Waystones Player-to-player TP is an unofficial add-on for [Waystones](https://modrinth.com/mod/waystones). After a Warp Stone finishes charging, a live directory of other listed players appears to the left of the original destination screen.
+### Install and play
 
-### Features
+Install matching copies of this mod, Waystones, and Balm on both client and server. Fabric also requires Fabric API; 26.x also requires matching Shogi. Use Java 21 for 1.21.x and Java 25 for 26.x. Forge is not supported.
 
-- A responsive player directory: 164px full list, 128–163px narrowed list, or a 36px clickable avatar rail. The Waystones UI moves right only when required.
-- Updates from Minecraft's existing listed-player data every five client ticks, with immediate refresh on connection changes. Stable directories use a linear exact comparison; sorting happens only after a join, leave, rename, or identity replacement. Rows are reused by UUID, visible anchors are preserved, and removed focus falls back to a nearby row. The Waystones search field filters only Waystones, never the player directory.
-- Server-authoritative validation of the menu, exact Warp Stone and hand, online target UUID, cost, and confirmed movement.
-- Waystones' cancellable events, sound, effects, and native destination resolution: an adjacent opening is preferred, with the target block center as the fallback. Events may observe, cancel, or redirect, but cannot replace the locked cost.
-- One point of native Warp Stone durability only after confirmed success and re-resolving the original hand/reference; failures restore experience, preserve durability, and keep the menu open.
-- Confirmed movement to a destination that no longer matches the post-event validation keeps the consumed experience and durability settlement but reports a compatibility warning.
-- `NEVER`, `FOLLOW_WAYSTONES`, and `ALWAYS` experience modes.
+Charge any native Warp Stone available in your version, in either hand, then select a player in the directory on the left. The directory adapts to the window width while keeping Waystones' own controls available.
 
-Player destinations carry no safety guarantee. They may be in mid-air, dangerous fluids, cliffs, or blocks; if Waystones finds no adjacent opening, it falls back to the target block center.
+The menu's **Allow others to teleport to me** setting defaults to enabled. Turning it off keeps your row visible but unavailable to others; you can still travel to players who allow incoming teleports. This UUID-based setting is saved in the server/world and survives reconnects, death, dimension changes, and normal restarts. Normally registered fake players default to enabled.
 
-### Installation and supported targets
+Destinations follow the target's position before execution. An adjacent position is preferred; if none is available, the target block center is used. Targets may be inside blocks, in mid-air, in fluids, or near cliffs.
 
-Install matching Waystones Player-to-player TP, Waystones, and Balm JARs on both client and server. The 26.x targets also require matching Shogi; Fabric targets require the matching Fabric API. The 1.21.x line uses Java 21 and the 26.x line uses Java 25. Every project artifact remains version `1.0.1`.
+### Configuration
 
-When upgrading from the legacy mod ID, remove the `waystonesplayer` JAR first; the old and new JARs cannot be loaded together. If `waystonesptpt-server.toml` is absent, the new mod copies the legacy `waystonesplayer-server.toml` without deleting it, while an existing new configuration always wins.
+`playerTeleportExperienceMode` in `waystonesptpt-server.toml` defaults to `NEVER` (no experience cost). `FOLLOW_WAYSTONES` uses Waystones' experience rules when its cost switch is enabled; `ALWAYS` uses those rules regardless of the switch. Warp Stones retain the applicable native charge and durability behavior, including 26.x damage rules and the durability switch; successful travel settles damage once.
 
-| Branch | Loader | Minecraft | Uploadable JARs |
-|---|---|---|---:|
-| `main` | NeoForge | 1.21.1 | 1 |
-| `neoforge/1.21.x` | NeoForge | 1.21.2–1.21.11 | 9 |
-| `fabric/1.21.x` | Fabric | 1.21.1–1.21.11 | 10 |
-| `neoforge/26.x` | NeoForge | 26.1, 26.1.1, 26.1.2, 26.2 | 4 |
-| `fabric/26.x` | Fabric | 26.1, 26.1.1, 26.1.2, 26.2 | 4 |
+NeoForge keeps SERVER configuration, world overrides, and reloads. Fabric uses an instance-wide configuration read on restart. Receiving preferences are world-specific on both loaders. Corrupt add-on cost configuration falls back to `NEVER` with a log message; invalid active cost rules reject the teleport.
 
-Minecraft 1.21.2 and 1.21.3 share one separately runtime-tested JAR per loader. Every 26.x patch target is compiled and published independently. Some supported NeoForge stacks use official beta builds; this is disclosed in their file metadata. Forge is not supported.
+### Release status
 
-The exact minimum/current dependency suites and canonical filenames are in [gradle/targets.json](gradle/targets.json).
+The [public Modrinth page](https://modrinth.com/mod/waystonesplayerptpt) currently offers the older 1.0.0 files for NeoForge and Fabric 1.21.1. The 1.0.1 maintenance matrix has 28 artifacts for 30 combinations across 1.21.1–1.21.11 and 26.1/26.1.1/26.1.2/26.2. Build or startup success does not mean gameplay acceptance. See [validation status](docs/VALIDATION.md) before treating a target as ready to upload. The shared 1.21.2/1.21.3 file needs separate acceptance on both versions; 26.1.1 remains excluded from upload readiness while public dependency installation is unresolved.
 
-### Rules and configuration
+This update remains **1.0.1**, but both sides must update together, including installations already labeled 1.0.1, because receiving preferences require network protocol 2.
 
-The client displays players from Minecraft's listed-player stream. It sends a UUID, and the server independently resolves the corresponding currently online player. Client-side listing state is not server-side teleport authorization, and this add-on does not promise to prevent custom packets from guessing a third-party-hidden player's UUID. A player destination is transient and is never stored as a Waystone.
+Original code is available under the [MIT License](LICENSE); third-party icon terms remain in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). There is no telemetry, advertising, or external upload.
 
-`playerTeleportExperienceMode` defaults to `NEVER`. Only verifiable built-in experience-point and experience-level requirements are selected; item costs, cooldowns, and unrelated requirements are ignored. A non-empty rule that parses empty, an unknown third-party type, a negative/non-finite/overflowing value, or an event cost replacement rejects the teleport instead of becoming free. NeoForge keeps SERVER config and per-world override semantics. Fabric uses the same `config/waystonesptpt-server.toml`, key, and default as a global instance configuration, without claiming per-world overrides.
-
-### Privacy, license, and development
-
-The mod has no telemetry, advertising, analytics, or external uploads. It sends only the chosen target UUID to the Minecraft server already in use.
-
-Original code is open source under the [MIT License](LICENSE), permitting use, modification, and redistribution while retaining the copyright and license notice. Third-party material in the existing icon is outside the MIT grant and remains subject to the separate terms in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-`main` uses `core + common + neoforge`. The pure-Java core is loader- and Minecraft-free; common is recompiled for each target and cannot import loader APIs; target modules contain only loader/version bridges and packaging. Use JDK 21 for 1.21.x and JDK 25 for 26.x.
-
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md), [COMPATIBILITY.md](docs/COMPATIBILITY.md), and [RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for architecture, dependency, and release evidence.
-
-NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
+This is not a Twelve Iterations project. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.

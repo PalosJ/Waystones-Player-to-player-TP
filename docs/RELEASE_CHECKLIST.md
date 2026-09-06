@@ -72,8 +72,18 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 - [ ] 非空费用规则解析为空、负数、NaN、无穷、缩放/组合溢出、未知第三方 requirement 和事件替换费用均在扣费/移动前拒绝；合法零费用保留，创造模式不能绕过锁。
 - [ ] 同维度、跨维度、相邻落点、目标移动和 post-move 异常符合确认成功语义；已移动但最终位置不匹配验证目标时不退费、结算一次耐久并显示兼容性警告。
 - [ ] 四周封堵时由 Waystones 原生回退到目标方块中心；目标位于方块、空中、流体或悬崖时本附属不拒绝，也不把这些位置写成安全保证。
-- [ ] 每次确认成功只结算 1 点原生耐久；创造豁免，附魔/损坏使用原生行为。
+- [ ] 每次确认成功只结算一次该版本适用的原生耐久；26.x 按损耗规则总额及耐久开关处理；创造豁免，附魔/损坏使用原生行为。
 - [ ] 成功移动后物品仍在原手、被同组件替换、原引用移到其他槽位及被第三方彻底移除四种耐久路径均符合语义；不得损坏无关物品或回滚已完成移动。
+
+- [ ] 本人接收默认允许，关闭后目录行禁用且有 tooltip／键盘叙述，本人仍可向外传送。
+- [ ] 接收设置经重连、死亡、换维度、正常重启后保留，不同世界独立；正常假人默认允许。
+- [ ] 设置只允许本人提交，确认等待、旧会话包、超长列表和准备期间关闭接收均验证。
+- [ ] 全部原生 Warp Stone、完整 minimum／关键断点／current 默认规则、warpSettings、合法算术、耐久开关、附魔和创造模式均覆盖。
+- [ ] 延迟 Future、后台完成、重复请求、200 tick 超时、关菜单、断线重连及目标走动不产生迟到扣费或移动。
+- [ ] 26.x 分页与滚动列表的搜索、排序、删除、筛选和动态重建持续对齐，不移动第三方控件。
+- [ ] 320、416／426、480、854 等逻辑宽度和不同 GUI 缩放通过；连续打开／关闭／缩放 100 次无偏移或残留。
+- [ ] 普通石碑、卷轴、Warp Plate 及其他模组传送不受个人设置或新增事务规则影响。
+- [ ] 50／200／1000 玩家目录记录同机基线与新版本帧时间、刷新耗时、分配及关闭后的对象释放；纯算法计时不能替代真实帧时间。
 
 ## 6. 配置验收
 
@@ -81,6 +91,10 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 - [ ] Fabric 生成同名文件、同键/注释/默认值，重启读取实测。
 - [ ] Fabric 文档和平台页面没有声称按世界覆盖或热重载。
 - [ ] 非法枚举值/损坏文件的失败或回退行为已记录。
+
+- [ ] 新旧配置并存时新文件优先；旧文件迁移不删除原文件，世界覆盖和重载保留。
+- [ ] 迁移本模组配置不触发其他模组 SERVER 配置卸载／重载。
+- [ ] 附属费用配置损坏回退 NEVER 并明确日志，合法收费配置的规则错误拒绝本次传送。
 
 ## 7. JAR内容与可重现性
 
@@ -95,6 +109,10 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 - [ ] `unzip -t` 或等价 ZIP 完整性检查通过。
 
 ## 8. 平台文件
+
+- [ ] 每目标构建、启动、玩法、GUI、性能、公开安装六类证据均齐全，绑定源码提交、minimum SHA 和前置组合；缺证据不标记发布就绪。
+- [ ] Modrinth 保留 `waystonesplayerptpt` 地址；修正旧源码链接与旧 Fabric 文件的缺失前置。26.1.1 未解决公开安装前不上传。
+- [ ] 版本 1.0.1 与网络协议 2 的双方同时升级要求已说明。
 
 - [ ] Modrinth：客户端 Required、服务端 Required、正确游戏版本/Loader、Waystones/Balm Required；26.x 另有 Shogi Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它。
 - [ ] CurseForge：英文描述、正确 Game Version/Mod Loader、Waystones/Balm Required；26.x 另有 Shogi Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它，Release 类型。
@@ -116,7 +134,7 @@ python3 scripts/release-manifest.py --output build/release-manifest.json
 
 - [ ] 审查完整 diff、暂存清单、敏感信息和大文件；不提交 JAR、缓存、日志或本地运行文件。
 - [ ] 先提交 canonical `main`，再按已确认基线移植两条 1.21.x 和两条 26.x 统一分支。
-- [ ] core、完整 common、目标矩阵、运行脚本、文档、许可证与既有图标和统一分支记录的 canonical 提交逐文件一致。
+- [ ] core、1.21.x 完整 common、26.x 共享业务与同系列适配语义、目标矩阵、运行脚本、文档、许可证与既有图标和统一分支记录的 canonical 提交逐文件一致。
 - [ ] 普通推送，不强推，不创建 PR、标签、GitHub Release，也不代为上传平台。
 - [ ] 本地 HEAD、`origin/<branch>` 和 GitHub 远端提交一致。
 - [ ] 五条分支 GitHub Actions 全绿，main/统一分支共享漂移门禁通过；两条 26.x 的 common 与非加载器适配源一致。
