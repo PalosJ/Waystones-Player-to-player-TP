@@ -7,7 +7,8 @@
     "WarpStoneItemMixin",
     "WaystoneSelectionMenuMixin",
     "PlayerTeleportPreparationMixin",
-    "PlayerTeleportShogiContextMixin"
+    "PlayerTeleportShogiContextMixin",
+    "ServerTickMixin"
   ],
   "client": [
     "client.AbstractContainerScreenAccessor",
