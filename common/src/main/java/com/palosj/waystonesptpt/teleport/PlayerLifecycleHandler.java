@@ -8,6 +8,9 @@ public final class PlayerLifecycleHandler {
 
     public static void register() {
         ServerPlayerCallback.Leave.EVENT.register(
-                player -> PlayerTeleportService.clearCooldown(player.getUUID()));
+                player -> {
+                    PlayerTeleportService.clearCooldown(player.getUUID());
+                    PlayerReceivingService.logout(player.getUUID());
+                });
     }
 }
