@@ -1,6 +1,9 @@
 {
   "gui.waystonesptpt.no_other_players": "当前没有其他在线玩家",
   "gui.waystonesptpt.online_players": "在线玩家",
+  "gui.waystonesptpt.search_players": "搜索玩家",
+  "gui.waystonesptpt.matching_players": "匹配玩家：%s",
+  "gui.waystonesptpt.no_matching_players": "没有匹配的玩家",
   "narration.waystonesptpt.online_players.empty": "在线玩家。当前没有其他在线玩家。",
   "config.waystonesptpt.player_teleport_experience_mode": "玩家间传送经验模式",
   "message.waystonesptpt.invalid_context": "当前传送请求已失效。",
@@ -15,11 +18,8 @@
   "message.waystonesptpt.teleport_pending": "玩家传送正在准备中。",
   "message.waystonesptpt.teleport_cancelled": "玩家传送已取消：菜单、玩家、物品状态已改变或准备超时。",
   "gui.waystonesptpt.receiving_pending": "允许他人传送到我：等待服务器确认",
-  "gui.waystonesptpt.receiving_allowed": "允许他人传送到我：已开启",
-  "gui.waystonesptpt.receiving_disabled": "允许他人传送到我：已关闭",
-  "gui.waystonesptpt.receiving_wait": "等待确认…",
-  "gui.waystonesptpt.receiving_on": "接收：开启",
-  "gui.waystonesptpt.receiving_off": "接收：关闭",
+  "gui.waystonesptpt.receiving_allowed": "允许他人传送到我：已开启\n点击关闭",
+  "gui.waystonesptpt.receiving_disabled": "允许他人传送到我：已关闭\n点击开启",
   "gui.waystonesptpt.target_receiving_disabled": "对方已关闭玩家传送",
   "message.waystonesptpt.target_receiving_disabled": "对方已关闭玩家传送"
 }
