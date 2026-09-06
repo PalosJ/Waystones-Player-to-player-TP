@@ -17,6 +17,8 @@ import com.palosj.waystonesptpt.client.PlayerDirectoryRefreshPolicy;
 import com.palosj.waystonesptpt.client.PlayerPanelLifecycle;
 import com.palosj.waystonesptpt.client.widget.PlayerDestinationList;
 import com.palosj.waystonesptpt.client.widget.PlayerReceivingControl;
+import com.palosj.waystonesptpt.client.widget.PlayerSearchBox;
+import com.palosj.waystonesptpt.client.widget.PlayerToolbarLayout;
 import com.palosj.waystonesptpt.network.ReceivingClientState;
 import com.palosj.waystonesptpt.compat.WaystonesCompat;
 import com.palosj.waystonesptpt.mixin.client.AbstractContainerScreenAccessor;
@@ -71,6 +73,8 @@ public final class WaystonePlayerScreenInjector {
     }
 
     public static void onScreenInit(Screen candidate) {
+        PlayerPanel previousPanel = PANELS.get(candidate);
+        String previousQuery = previousPanel == null ? "" : previousPanel.playerList.searchQuery();
         PANELS.detach(candidate);
         if (candidate instanceof WaystoneSelectionScreenBase prior) {
             ACTIVE_LAYOUTS.remove(prior);
@@ -120,7 +124,7 @@ public final class WaystonePlayerScreenInjector {
             }
 
             PlayerPanel panel = new PlayerPanel(
-                    players, layout.panelX(), guiTop, layout.panelWidth(), panelHeight, layout.avatarOnly());
+                    players, layout.panelX(), guiTop, layout.panelWidth(), panelHeight, layout.avatarOnly(), previousQuery);
             panel.attach(screen);
             PANELS.attach(screen, panel);
         } catch (Exception error) {
@@ -350,111 +354,139 @@ public final class WaystonePlayerScreenInjector {
         private final int width;
         private final int height;
         private final boolean avatarOnly;
+        private final String initialQuery;
         private PlayerReceivingControl receivingControl;
         private PlayerPanelLabels labels;
-        private PlayerDestinationList list;
+        private PlayerDestinationList playerList;
 
-        private PlayerPanel(List<PlayerInfo> players, int x, int y, int width, int height, boolean avatarOnly) {
-            initialPlayers = players;
+        private PlayerPanel(List<PlayerInfo> onlinePlayers, int x, int y, int width, int height,
+                            boolean avatarOnly, String initialQuery) {
+            this.initialPlayers = onlinePlayers;
             this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;
             this.avatarOnly = avatarOnly;
+            this.initialQuery = avatarOnly ? "" : initialQuery;
         }
 
         private void attach(Screen screen) {
-            receivingControl = new PlayerReceivingControl(x, y + HEADER_HEIGHT - 24, width, avatarOnly);
+            int listHeight = height - HEADER_HEIGHT - FOOTER_HEIGHT;
+            playerList = new PlayerDestinationList(
+                    x, y + HEADER_HEIGHT, width, listHeight, initialPlayers, avatarOnly, targetPlayerId -> {
+                ClientBalmCompat.sendToServer(new RequestPlayerTeleportPayload(targetPlayerId));
+            });
+            PlayerToolbarLayout toolbar = PlayerToolbarLayout.resolve(playerList.getRowLeft(),
+                    playerList.getRowWidth(), avatarOnly);
+            int toolbarY = y + HEADER_HEIGHT - 24;
+            if (!avatarOnly) {
+                PlayerSearchBox searchBox = new PlayerSearchBox(Minecraft.getInstance().font,
+                        toolbar.left(), toolbarY, toolbar.searchWidth());
+                searchBox.setValue(initialQuery);
+                searchBox.setResponder(query -> {
+                    playerList.setSearchQuery(query);
+                    updateLabels();
+                });
+                ClientBalmCompat.addRenderableWidget(screen, searchBox);
+            }
+            receivingControl = new PlayerReceivingControl(toolbar.receivingX(), toolbarY);
             ClientBalmCompat.addRenderableWidget(screen, receivingControl);
-            receivingControl.updateDirectory(initialPlayers.stream().map(PlayerProfileCompat::id).toList(), true);
+            receivingControl.updateDirectory(initialPlayers.stream().map(info -> PlayerProfileCompat.id(info)).toList(), true);
             labels = new PlayerPanelLabels(x, y, width, height, initialPlayers.size(), avatarOnly);
             ClientBalmCompat.addRenderableWidget(screen, labels);
-            list = new PlayerDestinationList(
-                    x,
-                    y + HEADER_HEIGHT,
-                    width,
-                    height - HEADER_HEIGHT - FOOTER_HEIGHT,
-                    initialPlayers,
-                    avatarOnly,
-                    id -> ClientBalmCompat.sendToServer(new RequestPlayerTeleportPayload(id)));
-            ClientBalmCompat.addRenderableWidget(screen, list);
+
+            playerList.setSearchQuery(initialQuery);
+            updateLabels();
+            ClientBalmCompat.addRenderableWidget(screen, playerList);
         }
 
-        private void refresh(List<PlayerInfo> players) {
-            receivingControl.updateDirectory(players.stream().map(PlayerProfileCompat::id).toList(), false);
-            list.updatePlayers(players);
-            labels.setPlayerCount(players.size());
+        private void refresh(List<PlayerInfo> currentPlayers) {
+            receivingControl.updateDirectory(currentPlayers.stream().map(info -> PlayerProfileCompat.id(info)).toList(), false);
+            playerList.updatePlayers(currentPlayers);
+            updateLabels();
+        }
+
+        private void updateLabels() {
+            labels.setPlayerCount(playerList.visiblePlayerCount(), !playerList.searchQuery().isEmpty());
         }
 
         private void tick() {
             receivingControl.tick();
-            list.tickVisibleEntries();
+            playerList.tickVisibleEntries();
         }
     }
 
     private static final class PlayerPanelLabels extends AbstractWidget {
         private boolean empty;
+        private boolean searching;
         private final boolean avatarOnly;
-        private int count;
+        private int playerCount;
         private final int panelHeight;
+        private final int panelY;
         private final Component title = Component.translatable("gui.waystonesptpt.online_players");
-        private final Component emptyMessage = Component.translatable("gui.waystonesptpt.no_other_players")
-                .copy()
-                .withStyle(ChatFormatting.RED);
+        private Component heading;
+        private Component emptyMessage;
 
-        private PlayerPanelLabels(int x, int y, int width, int height, int count, boolean avatarOnly) {
-            super(x, y, width, HEADER_HEIGHT, narrationMessage(count));
+        private PlayerPanelLabels(int x, int y, int width, int height, int playerCount, boolean avatarOnly) {
+            super(x, y + TITLE_Y, width, Minecraft.getInstance().font.lineHeight, narrationMessage(playerCount));
+            this.empty = playerCount == 0;
             this.avatarOnly = avatarOnly;
+            this.playerCount = playerCount;
             this.panelHeight = height;
-            updateState(count);
+            this.panelY = y;
+            active = false;
+            updateState(playerCount, false);
         }
 
-        private void setPlayerCount(int count) {
-            if (this.count != count) {
-                updateState(count);
+        private void setPlayerCount(int playerCount, boolean searching) {
+            if (this.playerCount != playerCount || this.searching != searching) {
+                updateState(playerCount, searching);
             }
         }
 
-        private void updateState(int count) {
-            this.count = count;
-            empty = count == 0;
-            setMessage(narrationMessage(count));
+        private void updateState(int playerCount, boolean searching) {
+            this.playerCount = playerCount;
+            this.empty = playerCount == 0;
+            this.searching = searching;
+            emptyMessage = Component.translatable(searching ? "gui.waystonesptpt.no_matching_players"
+                    : "gui.waystonesptpt.no_other_players").withStyle(ChatFormatting.RED);
+            setMessage(searching ? Component.translatable("gui.waystonesptpt.matching_players", playerCount)
+                    : narrationMessage(playerCount));
+            heading = avatarOnly ? Component.literal(Integer.toString(playerCount))
+                    : searching ? getMessage() : title;
             setTooltip(avatarOnly ? Tooltip.create(getMessage()) : null);
         }
 
         @Override
-        protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
             var font = Minecraft.getInstance().font;
-            Component heading = avatarOnly ? Component.literal(Integer.toString(count)) : title;
-            graphics.drawCenteredString(font, heading, getX() + width / 2, getY() + TITLE_Y, 0xFFFFFFFF);
+            guiGraphics.drawCenteredString(font, heading, getX() + width / 2, getY(), 0xFFFFFFFF);
             if (empty && !avatarOnly) {
-                graphics.drawCenteredString(font, emptyMessage, getX() + width / 2,
-                        getY() + panelHeight / 2 + EMPTY_STATE_Y_OFFSET, 0xFFFFFFFF);
+                guiGraphics.drawCenteredString(font, emptyMessage, getX() + width / 2,
+                        panelY + panelHeight / 2 + EMPTY_STATE_Y_OFFSET, 0xFFFFFFFF);
             }
-        }
-
-        @Override
-        public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-            return false;
         }
 
         @Override
         public NarratableEntry.NarrationPriority narrationPriority() {
-            return isFocused() ? NarratableEntry.NarrationPriority.FOCUSED : NarratableEntry.NarrationPriority.NONE;
+            return isFocused()
+                    ? NarratableEntry.NarrationPriority.FOCUSED
+                    : NarratableEntry.NarrationPriority.NONE;
         }
 
         @Override
-        protected void updateWidgetNarration(NarrationElementOutput output) {
-            output.add(NarratedElementType.TITLE, getMessage());
+        protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+            narrationElementOutput.add(NarratedElementType.TITLE, getMessage());
         }
 
-        private static Component narrationMessage(int count) {
-            if (count == 0) {
+        private static Component narrationMessage(int playerCount) {
+            if (playerCount == 0) {
                 return Component.translatable("narration.waystonesptpt.online_players.empty");
             }
+
             return Component.translatable("gui.waystonesptpt.online_players")
                     .append(": ")
-                    .append(Integer.toString(count));
+                    .append(Integer.toString(playerCount));
         }
     }
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.palosj.waystonesptpt.client.PlayerDirectoryEntry;
+import com.palosj.waystonesptpt.client.PlayerDirectorySearch;
 import com.palosj.waystonesptpt.client.PlayerListRefresh;
 
 import net.minecraft.client.Minecraft;
@@ -23,6 +24,8 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
     private final int rowWidth;
     private final Consumer<UUID> onPlayerSelected;
     private List<PlayerDirectoryEntry> players = List.of();
+    private List<PlayerDirectoryEntry> visiblePlayers = List.of();
+    private String searchQuery = "";
     private List<PlayerInfo> sourcePlayers = List.of();
     private Map<UUID, PlayerEntry> entriesById = Map.of();
 
@@ -77,19 +80,9 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
             return;
         }
 
-        double previousScrollAmount = getScrollAmount();
-        UUID previousFocus = focusedPlayerId();
-        List<PlayerDirectoryEntry> previous = players;
         players = List.copyOf(current);
-
         Map<UUID, PlayerEntry> previousEntries = new HashMap<>(entriesById);
         Map<UUID, PlayerEntry> currentEntries = new HashMap<>();
-        PlayerEntry focusedEntry = getFocused();
-        if (focusedEntry != null) {
-            focusedEntry.clearButtonFocus();
-        }
-        setFocused(null);
-        clearEntries();
         for (PlayerInfo playerInfo : onlinePlayers) {
             UUID playerId = playerInfo.getProfile().getId();
             PlayerEntry entry = previousEntries.remove(playerId);
@@ -99,16 +92,52 @@ public final class PlayerDestinationList extends ContainerObjectSelectionList<Pl
                 entry.bind(playerInfo);
             }
             currentEntries.put(playerId, entry);
-            addEntry(entry);
         }
         entriesById = Map.copyOf(currentEntries);
+        refreshVisiblePlayers(false);
+    }
 
-        setScrollAmount(PlayerListRefresh.restoreScrollAmount(
+    public String searchQuery() {
+        return searchQuery;
+    }
+
+    public int visiblePlayerCount() {
+        return visiblePlayers.size();
+    }
+
+    public void setSearchQuery(String query) {
+        if (!searchQuery.equals(query)) {
+            searchQuery = query;
+            refreshVisiblePlayers(true);
+        }
+    }
+
+    private void refreshVisiblePlayers(boolean queryChanged) {
+        List<PlayerDirectoryEntry> filtered = PlayerDirectorySearch.filter(players, searchQuery);
+        if (!queryChanged && filtered.equals(visiblePlayers)) {
+            return;
+        }
+        double previousScrollAmount = getScrollAmount();
+        UUID previousFocus = focusedPlayerId();
+        List<PlayerDirectoryEntry> previous = visiblePlayers;
+        visiblePlayers = filtered;
+        PlayerEntry focusedEntry = getFocused();
+        if (focusedEntry != null) {
+            focusedEntry.clearButtonFocus();
+        }
+        setFocused(null);
+        clearEntries();
+        for (PlayerDirectoryEntry player : visiblePlayers) {
+            addEntry(entriesById.get(player.id()));
+        }
+
+        setScrollAmount(queryChanged ? 0 : PlayerListRefresh.restoreScrollAmount(
                 previous,
-                players,
+                visiblePlayers,
                 previousScrollAmount,
                 ENTRY_HEIGHT));
-        UUID restoredFocus = PlayerListRefresh.restoreFocusedPlayer(previousFocus, previous, players);
+        UUID restoredFocus = queryChanged ? null
+                : PlayerListRefresh.restoreFocusedPlayer(previousFocus, previous, visiblePlayers);
         if (restoredFocus != null) {
             for (PlayerEntry entry : children()) {
                 if (entry.playerId().equals(restoredFocus)) {

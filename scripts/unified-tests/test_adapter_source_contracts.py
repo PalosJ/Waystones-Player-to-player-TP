@@ -41,7 +41,7 @@ class UnifiedScreenFamilySourceContractTest(unittest.TestCase):
                 self.assertIn("previousEntries.remove(playerId)", player_list)
                 self.assertIn("entry.bind(playerInfo)", player_list)
                 self.assertIn("tickVisibleEntries", player_list)
-                self.assertIn("restoreFocusedPlayer(previousFocus, previous, players)", player_list)
+                self.assertIn("restoreFocusedPlayer(previousFocus, previous, visiblePlayers)", player_list)
                 self.assertIn("clearButtonFocus", player_list)
                 self.assertIn("setFocused(null)", player_list)
 
