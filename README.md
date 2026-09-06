@@ -16,7 +16,8 @@ Waystones 的非官方附属模组：在传送石（Warp Stone）菜单左侧显
 
 1. 手持该版本 Waystones 的任意原生传送石并完成蓄力，主手和副手均可。
 2. 在原菜单左侧选择玩家。目录会随玩家加入、离开而更新，并根据窗口空间显示姓名列表或头像栏。
-3. 在目录顶部切换“允许他人传送到我”。默认允许；关闭后别人仍能看到你，但不能点击传送。你仍可以前往其他允许接收的玩家。
+3. 在目录顶部搜索玩家名字，支持不区分大小写的部分匹配。输入会即时筛选，显示匹配人数；清空后恢复全部玩家。窗口缩到头像栏时会隐藏搜索框并清空筛选，关闭菜单也会清空。
+4. 搜索框右侧的小按钮控制“允许他人传送到我”：绿色勾为允许、红色叉为关闭，悬停查看说明；灰色表示等待服务器确认。默认允许；关闭后别人仍能看到你，但不能点击传送。你仍可以前往其他允许接收的玩家。头像栏保留此开关。
 
 接收设置按玩家 UUID 保存在当前服务器／世界中，重连、死亡、换维度和正常重启后保留。正常注册的假人默认允许接收。菜单保留 Waystones 的搜索、排序、分页、滚动和筛选功能。
 
@@ -66,7 +67,9 @@ Install matching copies of this mod, Waystones, and Balm on both client and serv
 
 Charge any native Warp Stone available in your version, in either hand, then select a player in the directory on the left. The directory adapts to the window width while keeping Waystones' own controls available.
 
-The menu's **Allow others to teleport to me** setting defaults to enabled. Turning it off keeps your row visible but unavailable to others; you can still travel to players who allow incoming teleports. This UUID-based setting is saved in the server/world and survives reconnects, death, dimension changes, and normal restarts. Normally registered fake players default to enabled.
+Search player names above the directory using case-insensitive partial matches. Results and their count update as you type; clearing the field restores the full list. The search is cleared when the menu closes or the window shrinks to the avatar-only layout, where the search field is hidden.
+
+The small button beside the search field controls **Allow others to teleport to me**: a green check means enabled, a red cross means disabled, and gray means waiting for server confirmation. Hover for details. The setting defaults to enabled, and its button remains available in the avatar-only layout. Turning it off keeps your row visible but unavailable to others; you can still travel to players who allow incoming teleports. This UUID-based setting is saved in the server/world and survives reconnects, death, dimension changes, and normal restarts. Normally registered fake players default to enabled.
 
 Destinations follow the target's position before execution. An adjacent position is preferred; if none is available, the target block center is used. Targets may be inside blocks, in mid-air, in fluids, or near cliffs.
 
