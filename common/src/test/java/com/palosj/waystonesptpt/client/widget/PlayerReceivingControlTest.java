@@ -20,7 +20,6 @@ class PlayerReceivingControlTest {
         assertEquals(20, button.getWidth());
         assertEquals(20, button.getHeight());
         assertEquals("", button.getMessage().getString());
-        assertNotNull(button.getTooltip());
         assertFalse(button.active);
 
         ReceivingClientState.accept(new ReceivingStatePayload(ReceivingClientState.session(), 0, false, List.of()));

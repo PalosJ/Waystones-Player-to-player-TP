@@ -22,14 +22,14 @@ class PlayerDestinationListSearchTest {
     }
 
     @Test
-    void clearingSearchRestoresTheSameRowsAndResetsScroll() {
+    void clearingSearchRestoresTheSameRowsAndResetsScroll() throws ReflectiveOperationException {
         PlayerDestinationList list = directory();
         var original = List.copyOf(list.children());
         list.setScrollAmount(22);
-        assertTrue(list.getScrollAmount() > 0);
+        assertTrue(WidgetTestCompat.scrollAmount(list) > 0);
         list.setSearchQuery("ALICE");
         assertEquals(2, list.visiblePlayerCount());
-        assertEquals(0, list.getScrollAmount());
+        assertEquals(0, WidgetTestCompat.scrollAmount(list));
         assertSame(original.getFirst(), list.children().getFirst());
         list.setSearchQuery("no match");
         assertEquals(0, list.visiblePlayerCount());
@@ -56,8 +56,8 @@ class PlayerDestinationListSearchTest {
     @Test
     void filteringDoesNotDropReceivingStatesAndDisabledPlayersStillMatch() {
         UUID session = ReceivingClientState.begin();
-        UUID bobId = bob.getProfile().getId();
-        ReceivingClientState.setDirectory(List.of(alice.getProfile().getId(), bobId, bot.getProfile().getId()));
+        UUID bobId = new UUID(0, 2);
+        ReceivingClientState.setDirectory(List.of(new UUID(0, 1), bobId, new UUID(0, 3)));
         ReceivingClientState.accept(new ReceivingStatePayload(session, 0, true,
                 List.of(new ReceivingStatePayload.Entry(bobId, false))));
         PlayerDestinationList list = directory();

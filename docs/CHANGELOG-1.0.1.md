@@ -3,6 +3,7 @@
 Version remains **1.0.1**. Client and server must both install this build: network protocol is now **2**, including older installations already labeled 1.0.1.
 
 - Adds the menu-only “Allow others to teleport to me” setting, enabled by default and saved by UUID in the server/world. Disabled targets stay listed; outgoing travel still works.
+- Adds a short player-name search field beside a native 20×20 receiving toggle. Green checks and red crosses show the confirmed state; hover for details. Search filters the existing directory without losing hidden rows' receiving state or skin cache, and clears when entering the avatar-only layout or closing the menu.
 - Avoids the legacy Balm/NeoForge abstract server tick listener failure; lifecycle checks run once on the server thread.
 - Honors the native 1.21.x durability switch as well as the 26.x damage rules.
 - Guards each player's teleport with one pending transaction, a 200-server-tick preparation limit, and final session, menu, item, target, preference, position, and payment checks. Late callbacks cannot revive cancelled requests.

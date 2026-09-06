@@ -22,6 +22,8 @@ An unofficial [Waystones](https://modrinth.com/mod/waystones) add-on for travell
 
 The player directory updates as players join and leave, adapts to the window width, and keeps Waystones' own search, sorting, paging, scrolling, and filtering controls available. Native Warp Stones available in each supported version retain their applicable charge and durability behavior.
 
+Use the short search field above the player directory to find part or all of a player's name. The small button beside it shows a green check when incoming player teleportation is allowed, or a red cross when disabled; hover for details. In the narrow avatar layout, the search is cleared and hidden while the toggle stays available.
+
 The menu includes **Allow others to teleport to me**, enabled by default. Turn it off to keep your row visible but unavailable as a destination; you can still travel to other players. The setting is saved in the server/world and survives reconnects, death, dimension changes, and normal restarts.
 
 Travel prefers an adjacent position and falls back to the target block center when surrounded. Targets may be inside blocks, in mid-air, in fluids, or near cliffs.
@@ -41,6 +43,8 @@ Not endorsed by Twelve Iterations. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROV
 在 Waystones 的传送石菜单中加入在线玩家目录，实现玩家间传送，无需命令、OP 权限或额外道具。
 
 完成传送石蓄力后，点击左侧玩家即可前往对方附近。目录实时更新，并根据窗口空间显示姓名列表或头像栏，保留原生搜索、排序、分页、滚动和筛选。“允许他人传送到我”默认开启；关闭后别人仍能看到你，但不能点击传送，你仍可前往其他允许接收的玩家。设置随当前服务器／世界保存，重连、死亡、换维度和正常重启后保留。
+
+目录上方的短搜索框支持按部分或完整玩家名查找。右侧小按钮用绿勾表示允许接收、红叉表示关闭，悬停查看说明。窗口缩到头像栏时清空并隐藏搜索，保留小开关。
 
 传送相邻位置优先，封闭时回退目标方块中心；目标可能位于方块、空中、流体或悬崖。传送石继承该版本适用的原生蓄力与耐久，成功后一次结算；经验默认免费，也可跟随或始终使用 Waystones 经验规则。
 
