@@ -76,6 +76,11 @@ public final class PlayerTeleportService {
             return;
         }
 
+        if (!runtime.allowsReceiving(target.player())) {
+            runtime.displayMessage(sender, "message.waystonesptpt.target_receiving_disabled");
+            return;
+        }
+
         TeleportRuntimeBoundary.PlayerRotation originalRotation = runtime.captureRotation(sender);
         WaystonesCompat.WarpStoneUse boundUse = warpStoneUse.orElseThrow();
         TeleportAttempt attempt = new TeleportAttempt(runtime.currentTick(sender),

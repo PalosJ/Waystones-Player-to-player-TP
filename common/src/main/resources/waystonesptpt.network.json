@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "networkVersion": "1",
+  "networkVersion": "2",
   "payloads": [
     {
       "id": "waystonesptpt:request_player_teleport",
@@ -13,12 +13,91 @@
       ],
       "serverChecks": [
         "rate_limit",
+        "single_pending_transaction",
         "warp_stone_menu",
         "bound_item_identity_and_hand",
-        "listed_online_target",
+        "online_target",
         "not_self",
+        "target_receiving_allowed",
+        "preparation_deadline",
+        "final_session_menu_item_target_and_fee_validation",
         "experience_requirement",
-        "waystones_result_and_actual_movement"
+        "waystones_result_and_commit_local_movement"
+      ]
+    },
+    {
+      "id": "waystonesptpt:receiving_directory",
+      "direction": "client_to_server",
+      "fields": [
+        {
+          "name": "session",
+          "type": "uuid"
+        },
+        {
+          "name": "replace",
+          "type": "boolean"
+        },
+        {
+          "name": "playerIds",
+          "type": "uuid_list_max_512"
+        }
+      ],
+      "serverChecks": [
+        "warp_stone_menu",
+        "sender_session",
+        "online_requested_ids_only"
+      ]
+    },
+    {
+      "id": "waystonesptpt:update_receiving",
+      "direction": "client_to_server",
+      "fields": [
+        {
+          "name": "session",
+          "type": "uuid"
+        },
+        {
+          "name": "changeId",
+          "type": "long"
+        },
+        {
+          "name": "allowed",
+          "type": "boolean"
+        }
+      ],
+      "serverChecks": [
+        "warp_stone_menu",
+        "sender_session",
+        "own_preference_only",
+        "rate_limit",
+        "world_persistence"
+      ]
+    },
+    {
+      "id": "waystonesptpt:receiving_state",
+      "direction": "server_to_client",
+      "fields": [
+        {
+          "name": "session",
+          "type": "uuid"
+        },
+        {
+          "name": "acknowledgedChange",
+          "type": "long"
+        },
+        {
+          "name": "ownAllowed",
+          "type": "boolean"
+        },
+        {
+          "name": "entries",
+          "type": "uuid_boolean_list_max_512"
+        }
+      ],
+      "clientChecks": [
+        "current_menu_session",
+        "existing_directory_only",
+        "matching_change_acknowledgement"
       ]
     }
   ]

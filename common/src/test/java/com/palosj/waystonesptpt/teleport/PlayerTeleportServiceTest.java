@@ -174,6 +174,41 @@ class PlayerTeleportServiceTest {
         assertEquals(List.of("message.waystonesptpt.teleport_failed"), runtime.messages);
     }
 
+    @Test
+    void disabledReceiverRejectsNewRequestsAndCancelsPreparingRequests() {
+        FakeRuntime disabled = new FakeRuntime();
+        disabled.receivingAllowed = false;
+        execute(disabled);
+        assertEquals(0, disabled.teleportCalls);
+        assertEquals(List.of("message.waystonesptpt.target_receiving_disabled"), disabled.messages);
+        FakeRuntime pending = new FakeRuntime();
+        pending.delayed = true;
+        execute(pending);
+        pending.receivingAllowed = false;
+        PlayerTeleportService.tickPendingRequests();
+        pending.completion.complete(Optional.of(TeleportOutcome.SUCCESS));
+        assertEquals(TeleportAttempt.State.CANCELLED, pending.attempt.state());
+        assertEquals(0, pending.damageCalls);
+    }
+
+    @Test
+    void backgroundCompletionSettlesOnlyAfterTheServerRunsItsQueuedAction() throws InterruptedException {
+        FakeRuntime runtime = new FakeRuntime();
+        runtime.delayed = true;
+        runtime.queueCompletion = true;
+        execute(runtime);
+        runtime.attempt.beginCommit(runtime.tick);
+        Thread completionThread = new Thread(() -> runtime.completion.complete(Optional.of(TeleportOutcome.SUCCESS)));
+        completionThread.start();
+        completionThread.join();
+        assertEquals(0, runtime.damageCalls);
+        assertEquals(0, runtime.closeCalls);
+        assertEquals(1, runtime.serverActions.size());
+        runtime.serverActions.remove().run();
+        assertEquals(1, runtime.damageCalls);
+        assertEquals(1, runtime.closeCalls);
+    }
+
     private static void assertRejected(Optional<TeleportOutcome> outcome, String expectedMessage) {
         FakeRuntime runtime = new FakeRuntime();
         runtime.outcome = outcome;
@@ -204,6 +239,9 @@ class PlayerTeleportServiceTest {
         private final PlayerRotation rotation = new PlayerRotation(123.5f, -27.25f);
         private int tick = 100;
         private boolean valid = true;
+        private boolean receivingAllowed = true;
+        private boolean queueCompletion;
+        private final java.util.Queue<Runnable> serverActions = new java.util.concurrent.ConcurrentLinkedQueue<>();
         private boolean sameSession = true;
         private boolean delayed;
         private final CompletableFuture<Optional<TeleportOutcome>> completion = new CompletableFuture<>();
@@ -243,6 +281,9 @@ class PlayerTeleportServiceTest {
         }
 
         @Override
+        public boolean allowsReceiving(ServerPlayer target) { return receivingAllowed; }
+
+        @Override
         public PlayerRotation captureRotation(ServerPlayer player) {
             captureRotationCalls++;
             return rotation;
@@ -250,14 +291,16 @@ class PlayerTeleportServiceTest {
 
         @Override
         public BooleanSupplier captureRequestValidity(ServerPlayer sender, UUID targetId, WaystonesCompat.WarpStoneUse use) {
-            return () -> valid;
+            return () -> valid && receivingAllowed;
         }
 
         @Override
         public boolean isSameSession(ServerPlayer sender) { return sameSession; }
 
         @Override
-        public void executeOnServerThread(ServerPlayer sender, Runnable action) { action.run(); }
+        public void executeOnServerThread(ServerPlayer sender, Runnable action) {
+            if (queueCompletion) { serverActions.add(action); } else { action.run(); }
+        }
 
         @Override
         public CompletionStage<Optional<TeleportOutcome>> tryTeleport(

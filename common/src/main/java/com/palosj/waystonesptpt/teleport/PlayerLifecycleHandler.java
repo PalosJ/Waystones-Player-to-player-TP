@@ -10,8 +10,14 @@ public final class PlayerLifecycleHandler {
     }
 
     public static void register(BalmEvents events) {
-        events.onTickEvent(TickType.Server, TickPhase.End, server -> PlayerTeleportService.tickPendingRequests());
+        events.onTickEvent(TickType.Server, TickPhase.End, server -> {
+            PlayerTeleportService.tickPendingRequests();
+            PlayerReceivingService.tick(server);
+        });
         events.onEvent(PlayerLogoutEvent.class,
-                event -> PlayerTeleportService.clearCooldown(event.getPlayer().getUUID()));
+                event -> {
+                    PlayerTeleportService.clearCooldown(event.getPlayer().getUUID());
+                    PlayerReceivingService.logout(event.getPlayer().getUUID());
+                });
     }
 }

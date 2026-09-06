@@ -13,5 +13,13 @@
   "message.waystonesptpt.post_teleport_destination_changed": "Teleport completed, but another mod changed the final destination or made the arrival unsafe.",
   "message.waystonesptpt.teleport_cooling_down": "Teleport requests are too frequent, please try again later.",
   "message.waystonesptpt.teleport_pending": "Your player teleport is still preparing.",
-  "message.waystonesptpt.teleport_cancelled": "Player teleport cancelled because the menu, player, item, or preparation time changed."
+  "message.waystonesptpt.teleport_cancelled": "Player teleport cancelled because the menu, player, item, or preparation time changed.",
+  "gui.waystonesptpt.receiving_pending": "Allow other players to teleport to me: waiting for server confirmation",
+  "gui.waystonesptpt.receiving_allowed": "Allow other players to teleport to me: enabled",
+  "gui.waystonesptpt.receiving_disabled": "Allow other players to teleport to me: disabled",
+  "gui.waystonesptpt.receiving_wait": "Waiting…",
+  "gui.waystonesptpt.receiving_on": "Incoming: on",
+  "gui.waystonesptpt.receiving_off": "Incoming: off",
+  "gui.waystonesptpt.target_receiving_disabled": "This player has disabled incoming player teleportation",
+  "message.waystonesptpt.target_receiving_disabled": "This player has disabled incoming player teleportation"
 }

@@ -62,6 +62,11 @@ public final class TeleportRuntime {
         }
 
         @Override
+        public boolean allowsReceiving(ServerPlayer target) {
+            return PlayerReceivingService.allows(target.level().getServer(), target.getUUID());
+        }
+
+        @Override
         public PlayerRotation captureRotation(ServerPlayer player) {
             return new PlayerRotation(player.getYRot(), player.getXRot());
         }
@@ -78,7 +83,8 @@ public final class TeleportRuntime {
                     && sender.containerMenu == menu
                     && WaystonesCompat.isWarpStoneUseBound(sender, use)
                     && ItemStack.isSameItemSameComponents(snapshot, use.stack())
-                    && resolveOnlineTarget(sender, targetId).isPresent();
+                    && resolveOnlineTarget(sender, targetId).isPresent()
+                    && PlayerReceivingService.allows(server, targetId);
         }
 
         @Override

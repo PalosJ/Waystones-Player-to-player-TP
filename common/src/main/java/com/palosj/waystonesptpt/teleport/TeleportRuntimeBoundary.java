@@ -22,6 +22,8 @@ interface TeleportRuntimeBoundary {
 
     Optional<TargetPlayer> resolveOnlineTarget(ServerPlayer sender, UUID targetPlayerId);
 
+    boolean allowsReceiving(ServerPlayer target);
+
     PlayerRotation captureRotation(ServerPlayer player);
 
     BooleanSupplier captureRequestValidity(ServerPlayer sender, UUID targetId, WaystonesCompat.WarpStoneUse use);
