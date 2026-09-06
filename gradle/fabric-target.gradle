@@ -473,11 +473,11 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
             String networkContract = zip.getInputStream(zip.getEntry('waystonesptpt.network.json'))
                     .getText('UTF-8')
             def parsedNetworkContract = new groovy.json.JsonSlurper().parseText(networkContract)
-            if (parsedNetworkContract.networkVersion != '1'
-                    || parsedNetworkContract.payloads*.id != ['waystonesptpt:request_player_teleport']
-                    || parsedNetworkContract.payloads*.direction != ['client_to_server']) {
+            if (parsedNetworkContract.networkVersion != '2'
+                    || parsedNetworkContract.payloads*.id != ['waystonesptpt:request_player_teleport', 'waystonesptpt:receiving_directory', 'waystonesptpt:update_receiving', 'waystonesptpt:receiving_state']
+                    || parsedNetworkContract.payloads*.direction != ['client_to_server', 'client_to_server', 'client_to_server', 'server_to_client']) {
                 throw new GradleException(
-                        'Release JAR network contract does not match protocol version 1.')
+                        'Release JAR network contract does not match protocol version 2.')
             }
         }
     }

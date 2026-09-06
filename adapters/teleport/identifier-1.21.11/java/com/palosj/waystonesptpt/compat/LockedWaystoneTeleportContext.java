@@ -73,7 +73,7 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
 
     @Override
     public WaystoneTeleportContext setFromWaystone(Waystone fromWaystone) {
-        delegate.setFromWaystone(fromWaystone);
+        if (locked) { replacementAttempted = true; } else { delegate.setFromWaystone(fromWaystone); }
         return this;
     }
 
@@ -84,7 +84,7 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
 
     @Override
     public WaystoneTeleportContext setWarpItem(ItemStack warpItem) {
-        delegate.setWarpItem(warpItem);
+        if (locked) { replacementAttempted = true; } else { delegate.setWarpItem(warpItem); }
         return this;
     }
 
@@ -95,6 +95,7 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
 
     @Override
     public WaystoneTeleportContext setWarpHand(InteractionHand warpHand) {
+        if (locked) { replacementAttempted = true; return this; }
         delegate.setWarpHand(warpHand);
         return this;
     }
@@ -148,24 +149,25 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
 
     @Override
     public WaystoneTeleportContext setAppliesModifiers(boolean appliesModifiers) {
+        if (locked) { replacementAttempted = true; return this; }
         delegate.setAppliesModifiers(appliesModifiers);
         return this;
     }
 
     @Override
     public Set<Identifier> getFlags() {
-        return delegate.getFlags();
+        return locked ? Set.copyOf(delegate.getFlags()) : delegate.getFlags();
     }
 
     @Override
     public WaystoneTeleportContext addFlag(Identifier flag) {
-        delegate.addFlag(flag);
+        if (locked) { replacementAttempted = true; } else { delegate.addFlag(flag); }
         return this;
     }
 
     @Override
     public WaystoneTeleportContext removeFlag(Identifier flag) {
-        delegate.removeFlag(flag);
+        if (locked) { replacementAttempted = true; } else { delegate.removeFlag(flag); }
         return this;
     }
 }

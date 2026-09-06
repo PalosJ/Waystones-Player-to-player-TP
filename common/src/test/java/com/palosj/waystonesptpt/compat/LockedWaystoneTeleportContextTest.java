@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,25 @@ import net.blay09.mods.waystones.requirement.ExperiencePointsRequirement;
 import net.blay09.mods.waystones.requirement.NoRequirement;
 
 class LockedWaystoneTeleportContextTest {
+    @Test
+    void locksFeeInputsAndDoesNotExposeAMutableFlagSet() {
+        for (Consumer<LockedWaystoneTeleportContext> mutation : java.util.List.<Consumer<LockedWaystoneTeleportContext>>of(
+                context -> context.setWarpItem(null),
+                context -> context.setWarpHand(null),
+                context -> context.setFromWaystone(null),
+                context -> context.setAppliesModifiers(true),
+                context -> context.addFlag(null),
+                context -> context.removeFlag(null))) {
+            LockedWaystoneTeleportContext context = new LockedWaystoneTeleportContext(delegate(new AtomicReference<>()));
+            context.lockRequirements(NoRequirement.INSTANCE);
+            mutation.accept(context);
+            assertTrue(context.replacementAttempted());
+        }
+        LockedWaystoneTeleportContext context = new LockedWaystoneTeleportContext(delegate(new AtomicReference<>()));
+        context.lockRequirements(NoRequirement.INSTANCE);
+        assertThrows(UnsupportedOperationException.class, () -> context.getFlags().clear());
+    }
+
     @Test
     void keepsTheLockedRequirementAndRecordsReplacementAttempts() {
         AtomicReference<WarpRequirement> activeRequirement = new AtomicReference<>();
@@ -57,6 +78,9 @@ class LockedWaystoneTeleportContextTest {
                     }
                     if (method.getName().equals("getRequirements")) {
                         return activeRequirement.get();
+                    }
+                    if (method.getName().equals("getFlags")) {
+                        return Set.of();
                     }
                     if (method.getReturnType().isInstance(proxy)) {
                         return proxy;

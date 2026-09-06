@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.palosj.waystonesptpt.PlayerTeleportExperienceMode;
 import com.palosj.waystonesptpt.WaystonesPTPT;
 import com.palosj.waystonesptpt.teleport.TeleportOutcome;
+import com.palosj.waystonesptpt.teleport.TeleportAttempt;
 
 import net.minecraft.server.level.ServerPlayer;
 
@@ -19,9 +20,10 @@ public final class WaystonesTeleportCompat {
             ServerPlayer sender,
             ServerPlayer target,
             WaystonesCompat.WarpStoneUse warpStoneUse,
-            PlayerTeleportExperienceMode mode) {
+            PlayerTeleportExperienceMode mode,
+            TeleportAttempt attempt) {
         try {
-            return Optional.of(WaystonesTeleportEvaluator.tryTeleport(sender, target, warpStoneUse, mode));
+            return Optional.of(WaystonesTeleportEvaluator.tryTeleport(sender, target, warpStoneUse, mode, attempt));
         } catch (LinkageError | RuntimeException error) {
             if (COMPAT_FAILURE_LOGGED.compareAndSet(false, true)) {
                 WaystonesPTPT.LOGGER.warn(

@@ -11,5 +11,15 @@
   "message.waystonesptpt.teleport_failed": "传送失败，请稍后再试。",
   "message.waystonesptpt.post_teleport_item_changed": "传送已完成，但绑定的传送石在耐久结算前发生变化。",
   "message.waystonesptpt.post_teleport_destination_changed": "传送已完成，但其他模组改变了最终目标或使实际落点变得不安全。",
-  "message.waystonesptpt.teleport_cooling_down": "传送请求过快，请稍后再试。"
+  "message.waystonesptpt.teleport_cooling_down": "传送请求过快，请稍后再试。",
+  "message.waystonesptpt.teleport_pending": "玩家传送正在准备中。",
+  "message.waystonesptpt.teleport_cancelled": "玩家传送已取消：菜单、玩家、物品状态已改变或准备超时。",
+  "gui.waystonesptpt.receiving_pending": "允许他人传送到我：等待服务器确认",
+  "gui.waystonesptpt.receiving_allowed": "允许他人传送到我：已开启",
+  "gui.waystonesptpt.receiving_disabled": "允许他人传送到我：已关闭",
+  "gui.waystonesptpt.receiving_wait": "等待确认…",
+  "gui.waystonesptpt.receiving_on": "接收：开启",
+  "gui.waystonesptpt.receiving_off": "接收：关闭",
+  "gui.waystonesptpt.target_receiving_disabled": "对方已关闭玩家传送",
+  "message.waystonesptpt.target_receiving_disabled": "对方已关闭玩家传送"
 }

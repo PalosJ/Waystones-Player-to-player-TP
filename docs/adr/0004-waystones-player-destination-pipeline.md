@@ -1,5 +1,7 @@
 # ADR 0004：玩家目的地接入 Waystones 传送管线
 
+后续调整见 [ADR 0006](0006-player-teleport-transactions-and-receiving.md)；以下保留原决策背景。
+
 - 状态：Accepted
 - 日期：2026-08-12
 
