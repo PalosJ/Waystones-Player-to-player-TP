@@ -92,7 +92,7 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
 
     @Override
     public WaystoneTeleportContext setFromWaystone(Waystone fromWaystone) {
-        delegate.setFromWaystone(fromWaystone);
+        if (locked) { replacementAttempted = true; } else { delegate.setFromWaystone(fromWaystone); }
         return this;
     }
 
@@ -103,7 +103,7 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
 
     @Override
     public WaystoneTeleportContext setWarpItem(ItemStack warpItem) {
-        delegate.setWarpItem(warpItem);
+        if (locked) { replacementAttempted = true; } else { delegate.setWarpItem(warpItem); }
         return this;
     }
 
@@ -115,6 +115,7 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
     }
 
     public WaystoneTeleportContext setWarpHand(InteractionHand warpHand) {
+        if (locked) { replacementAttempted = true; return this; }
         if (SET_WARP_HAND != null) {
             invokeOptional(SET_WARP_HAND, warpHand);
         }
@@ -168,24 +169,25 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
     }
 
     public WaystoneTeleportContext setAppliesModifiers(boolean appliesModifiers) {
+        if (locked) { replacementAttempted = true; return this; }
         invokeOptional(SET_APPLIES_MODIFIERS, appliesModifiers);
         return this;
     }
 
     @Override
     public Set<ResourceLocation> getFlags() {
-        return delegate.getFlags();
+        return locked ? Set.copyOf(delegate.getFlags()) : delegate.getFlags();
     }
 
     @Override
     public WaystoneTeleportContext addFlag(ResourceLocation flag) {
-        delegate.addFlag(flag);
+        if (locked) { replacementAttempted = true; } else { delegate.addFlag(flag); }
         return this;
     }
 
     @Override
     public WaystoneTeleportContext removeFlag(ResourceLocation flag) {
-        delegate.removeFlag(flag);
+        if (locked) { replacementAttempted = true; } else { delegate.removeFlag(flag); }
         return this;
     }
 

@@ -3,6 +3,7 @@ package com.palosj.waystonesptpt.client.widget;
 import java.util.UUID;
 
 import com.palosj.waystonesptpt.client.SkinRetryThrottle;
+import com.palosj.waystonesptpt.network.ReceivingClientState;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -44,7 +45,8 @@ public final class PlayerTeleportButton extends Button {
         setMessage(name);
         setTooltip(Tooltip.create(name));
         visible = true;
-        active = true;
+        active = ReceivingClientState.allows(playerId);
+        updateReceivingTooltip();
     }
 
     @Override
@@ -53,6 +55,7 @@ public final class PlayerTeleportButton extends Button {
             int mouseX,
             int mouseY,
             float partialTick) {
+        extractDefaultSprite(graphics);
         Font font = Minecraft.getInstance().font;
         boolean hasFace = false;
         if (skin != null) {
@@ -100,8 +103,19 @@ public final class PlayerTeleportButton extends Button {
         graphics.text(font, name, textX, textY, color, false);
     }
 
+    private void updateReceivingTooltip() {
+        Component text = active ? getMessage() : getMessage().copy().append("\n")
+                .append(Component.translatable("gui.waystonesptpt.target_receiving_disabled"));
+        setTooltip(Tooltip.create(text));
+    }
+
     public void tickSkin() {
-        if (playerId == null || skinSource == null || skin != null) {
+        boolean allowed = playerId != null && ReceivingClientState.allows(playerId);
+        if (active != allowed) {
+            active = allowed;
+            updateReceivingTooltip();
+        }
+        if (playerId == null || skinSource == null) {
             return;
         }
         if (!skinRetry.advanceAndIsReady()) {
@@ -112,7 +126,7 @@ public final class PlayerTeleportButton extends Button {
             if (skin == null) {
                 skinRetry.delayAfterFailure();
             } else {
-                skinRetry.reset();
+                skinRetry.delayAfterFailure();
             }
         } catch (RuntimeException error) {
             skin = null;

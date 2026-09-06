@@ -1,0 +1,13 @@
+package com.palosj.waystonesptpt.client.widget;
+
+public final class PlayerReceivingControl extends BasePlayerReceivingControl {
+    public PlayerReceivingControl(int x, int y, int width, boolean avatarOnly) {
+        super(x, y, width, avatarOnly);
+    }
+
+    @Override
+    protected void extractContents(net.minecraft.client.gui.GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        extractDefaultSprite(graphics);
+        extractDefaultLabel(graphics.textRenderer());
+    }
+}

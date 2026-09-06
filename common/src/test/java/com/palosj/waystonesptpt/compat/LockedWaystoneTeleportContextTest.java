@@ -32,7 +32,7 @@ class LockedWaystoneTeleportContextTest {
         context.setRequirements(Either.left(List.of("replacement")));
         assertTrue(context.wasModified());
         assertThrows(TeleportRejectedException.class, context::requireUnmodified);
-        assertThrows(TeleportRejectedException.class, context::getRequirements);
+        assertTrue(context.getRequirements().right().isPresent());
     }
 
     @Test

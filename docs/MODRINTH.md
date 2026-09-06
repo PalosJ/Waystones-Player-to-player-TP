@@ -1,120 +1,60 @@
-# Modrinth 发布材料
+# Modrinth 发布材料（待上传）
 
-本文件提供项目页面文案与上传元数据模板。每个文件的精确游戏版本和文件名从 [gradle/targets.json](../gradle/targets.json) 读取，不手工扩大兼容范围。
+正式页面保留 [waystonesplayerptpt](https://modrinth.com/mod/waystonesplayerptpt)，不改 slug。本文件是可审阅材料，不代表已修改平台或已经上传 1.0.1。
 
-## 项目设置
+## 现有页面修正清单
 
-| 字段 | 值 |
-|---|---|
-| Title | Waystones Player-to-player TP |
-| Slug | `waystonesptpt` |
-| Client side | Required |
-| Server side | Required |
-| Project license | MIT |
-| Required dependencies | Waystones、Balm；Fabric 文件另需 Fabric API |
-| Unsupported loader | Forge |
-| Version number | 所有文件均为 `1.0.1` |
+- 名称：Waystones Player-to-player TP；源码链接：https://github.com/PalosJ/Waystones-Player-to-player-TP 。
+- 客户端与服务端均 Required，原创代码 MIT，图标署名与第三方条款保留。
+- 当前公开的 1.0.0 Fabric 1.21.1 文件补齐 Required dependencies：Waystones、Balm、Fabric API；NeoForge 文件需要 Waystones、Balm。
+- 正文同时说明 Fabric 和 NeoForge；仅把实际已上传且完成验收的文件列为发布支持。
+- 1.0.1 双方必须一起更新，即使原文件也叫 1.0.1；协议已升级为 2。
 
-每个上传文件：
+## English summary
 
-- Release type：Release。
-- Game versions：仅选择矩阵中该 JAR的 `minecraft` 列表。
-- Loaders：只选择该 JAR的 NeoForge 或 Fabric。
-- Dependencies：Waystones 与 Balm 均标记 Required；Fabric 文件另外将 Fabric API 标记 Required，NeoForge 文件不添加 Fabric API。
-- 1.21.2/1.21.3 共用 JAR同时选择两个游戏版本；其他文件只选择一个。
-- NeoForge 1.21.2、1.21.6、1.21.7、1.21.9 的 changelog 增加“requires an official beta NeoForge build”提示。
-- 上传前核对 SHA-256 与最终交付清单；不要上传 `-sources`、`-dev`、缓存或当前套件重编译产物。
+Adds an online-player directory to the Waystones Warp Stone menu, enabling player-to-player teleportation without commands or extra items.
 
-## English
-
-### Summary
-
-Adds a live online-player directory to the Waystones Warp Stone menu, with server-authoritative costs, durability, events, and responsive layout.
-
-### Description
+## English description draft
 
 # Waystones Player-to-player TP
 
-Sometimes the person you are looking for matters more than the place.
+An unofficial [Waystones](https://modrinth.com/mod/waystones) add-on for travelling directly to other players. Charge a Warp Stone, choose a player in the menu on the left, and teleport to their location. No commands, operator permissions, or extra items are needed.
 
-Waystones Player-to-player TP is an unofficial add-on that brings other listed players into the [Waystones](https://modrinth.com/mod/waystones) Warp Stone menu. Choose a player and travel through Waystones' normal event, sound, effect, and adjacent-destination pipeline—without commands, operator permissions, or a second confirmation screen.
+The player directory updates as players join and leave, adapts to the window width, and keeps Waystones' own search, sorting, paging, scrolling, and filtering controls available. Native Warp Stones available in each supported version retain their applicable charge and durability behavior.
 
-## Features
+The menu includes **Allow others to teleport to me**, enabled by default. Turn it off to keep your row visible but unavailable as a destination; you can still travel to other players. The setting is saved in the server/world and survives reconnects, death, dimension changes, and normal restarts.
 
-- A live player directory based on Minecraft's existing listed-player data.
-- A responsive 164px full list, 128–163px compact list, or 36px clickable avatar rail.
-- Server-side validation of the exact Warp Stone and hand, online target UUID, experience requirement, and confirmed movement.
-- Waystones-compatible cancellable events, sound, effects, and native adjacent-or-target-block destination placement.
-- Exactly one point of native Warp Stone durability after confirmed success.
-- Free, follow-Waystones, or always-evaluate-Waystones experience modes.
-- No telemetry, advertising, analytics, or external uploads.
+Travel prefers an adjacent position and falls back to the target block center when surrounded. Targets may be inside blocks, in mid-air, in fluids, or near cliffs.
 
-The client sends only the selected target UUID. The server independently resolves the corresponding currently online player; client listing state is not server-side teleport authorization. This add-on does not promise to prevent custom packets from guessing a third-party-hidden player's UUID. Player destinations are transient and are not stored as Waystones.
+Install the matching mod on **both client and server**, together with [Waystones](https://modrinth.com/mod/waystones) and [Balm](https://modrinth.com/mod/balm). Fabric additionally requires [Fabric API](https://modrinth.com/mod/fabric-api); 26.x additionally requires matching Shogi. Use Java 21 for 1.21.x and Java 25 for 26.x. Choose a file listed for your exact Minecraft version and loader. Forge is not supported.
 
-Player destinations carry no safety guarantee. They may be inside blocks, in mid-air, in dangerous fluids, or near cliffs; Waystones falls back to the target block center when no adjacent opening exists.
+Experience defaults to free. Set `playerTeleportExperienceMode` in `waystonesptpt-server.toml` to `NEVER`, `FOLLOW_WAYSTONES`, or `ALWAYS` to keep travel free, follow Waystones' experience switch, or always apply its experience rules. Native durability is settled once after success. NeoForge keeps world configuration overrides; Fabric uses an instance-wide configuration read on restart. Receiving preferences are saved per world on both loaders.
 
-## Compatibility
+**1.0.1 update:** install this build on both sides, including installations already labeled 1.0.1. Receiving preferences use network protocol 2.
 
-Waystones Player-to-player TP must be installed on both client and server together with matching [Waystones](https://modrinth.com/mod/waystones) and [Balm](https://modrinth.com/mod/balm) files. Fabric files additionally require the matching [Fabric API](https://modrinth.com/mod/fabric-api); NeoForge files do not.
+There is no telemetry, advertising, or external upload. Original code uses the [MIT License](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/LICENSE). The unchanged icon contains third-party material under separate terms: Warp Stone artwork adapted from Joe Williamson (JoeCreates), Roguelike/RPG Items, CC BY-SA 3.0; complete attribution is in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/THIRD_PARTY_NOTICES.md).
 
-- NeoForge: Minecraft 1.21.1–1.21.11.
-- Fabric: Minecraft 1.21.1–1.21.11.
-- Minecraft 1.21.2 and 1.21.3 share one separately tested file per loader.
-- Java 21.
-- Forge is not supported.
+Not endorsed by Twelve Iterations. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 
-Use the file whose loader and Minecraft version exactly match the instance. Some supported NeoForge lines use official beta NeoForge builds; those files disclose this in their changelog.
+## 中文摘要与说明草稿
 
-## Configuration
+在 Waystones 的传送石菜单中加入在线玩家目录，实现玩家间传送，无需命令、OP 权限或额外道具。
 
-`playerTeleportExperienceMode` defaults to `NEVER`:
+完成传送石蓄力后，点击左侧玩家即可前往对方附近。目录实时更新，并根据窗口空间显示姓名列表或头像栏，保留原生搜索、排序、分页、滚动和筛选。“允许他人传送到我”默认开启；关闭后别人仍能看到你，但不能点击传送，你仍可前往其他允许接收的玩家。设置随当前服务器／世界保存，重连、死亡、换维度和正常重启后保留。
 
-- `NEVER`: player destinations do not consume experience.
-- `FOLLOW_WAYSTONES`: use Waystones experience rules only while its global cost switch is enabled.
-- `ALWAYS`: evaluate the same Waystones experience rules regardless of that switch.
+传送相邻位置优先，封闭时回退目标方块中心；目标可能位于方块、空中、流体或悬崖。传送石继承该版本适用的原生蓄力与耐久，成功后一次结算；经验默认免费，也可跟随或始终使用 Waystones 经验规则。
 
-Only experience-point and experience-level requirements are selected. Item costs, cooldowns, and unrelated requirements are not inherited.
+客户端和服务端须同时安装本模组、Waystones、Balm；Fabric 另需 Fabric API，26.x 另需 Shogi。1.21.x 使用 Java 21，26.x 使用 Java 25，不支持 Forge。以实际文件的游戏版本和加载器标注为准。此次 1.0.1 使用协议 2，即使原文件同为 1.0.1 也须双方同时更新。
 
-NeoForge keeps SERVER configuration and per-world override semantics. Fabric uses the same `config/waystonesptpt-server.toml` name, key, and default as a global instance configuration, without per-world overrides.
+## 每文件上传门禁
 
-## License and attribution
+从 [targets.json](../gradle/targets.json) 读取游戏版本、加载器和完整依赖，使用 [CHANGELOG-1.0.1.md](CHANGELOG-1.0.1.md) 并附该目标依赖块。
 
-Original code is open source under the [MIT License](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/LICENSE). Use, modification, redistribution, and commercial use are permitted while retaining the copyright and license notice. Third-party icon material is excluded from the MIT grant and remains under the terms documented below.
+- 只选择完成 [VALIDATION.md](VALIDATION.md) 所列门禁的 minimum JAR；Release 类型。未验收目标继续维护，不上传。
+- Required dependencies：Waystones、Balm；Fabric 另有 Fabric API；26.x 另有 Shogi。
+- 1.21.2／1.21.3 共用文件同时勾选两版，且两版必须分别有证据；其他文件只选对应版本。
+- 使用官方 beta NeoForge 的组合如实在 changelog 披露。
+- 26.1.1 在公开前置安装条件闭合前排除。
+- 记录目标、分支、源码提交、SHA-256、大小、前置组合、游戏版本、加载器和逐项验收证据；current 重编译、dev、sources、前置和缓存均不上传。
 
-The existing project icon is unchanged. Warp Stone artwork is adapted from **Roguelike/RPG Items** by [Joe Williamson (JoeCreates)](https://opengameart.org/content/roguelikerpg-items) under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). Additional player imagery and complete terms are documented in [THIRD_PARTY_NOTICES.md](https://github.com/PalosJ/Waystones-Player-to-player-TP/blob/main/THIRD_PARTY_NOTICES.md).
-
-Waystones Player-to-player TP is not endorsed by Twelve Iterations.
-
-NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
-
----
-
-## 简体中文
-
-### 摘要
-
-在 Waystones 的传送石菜单中加入实时在线玩家目录，并提供服务端权威费用、耐久、事件兼容和响应式布局。
-
-### 描述
-
-# Waystones Player-to-player TP
-
-有时候，你想找的不是某一座石碑，而是正在世界另一头冒险的朋友。
-
-Waystones Player-to-player TP 会把当前连接中可列出的其他玩家加入 [Waystones（传送石碑）](https://modrinth.com/mod/waystones) 的 Warp Stone 菜单。选择玩家后，传送会进入 Waystones 的事件、声音、效果与相邻落点流程，不需要命令、OP 权限或第二次确认。
-
-玩家目录会实时更新，并按界面空间显示完整名单、收窄名单或可点击头像栏。客户端复用 listed 玩家流并只发送目标 UUID；服务端独立解析当前在线玩家，再检查确切物品、使用手、经验和实际移动。客户端隐藏状态不构成服务端传送权限，本模组不承诺阻止自定义数据包猜测第三方隐藏玩家 UUID。确认成功后才损耗 1 点原生耐久；失败恢复经验、保留耐久并保持界面打开。
-
-玩家目的地不提供安全落点保证：目标可能位于方块、空中、危险流体或悬崖；Waystones 找不到相邻空位时会回退到目标方块中心。
-
-本模组需要在客户端和服务端同时安装，并配套安装对应版本的 Waystones 与 Balm；Fabric 文件还需要对应版本的 Fabric API，NeoForge 文件不需要 Fabric API：
-
-- NeoForge：Minecraft 1.21.1–1.21.11。
-- Fabric：Minecraft 1.21.1–1.21.11。
-- 1.21.2 与 1.21.3 在每个加载器共用一份分别测试的文件。
-- Java 21。
-- 不支持 Forge。
-
-原创代码依据 MIT License 开源；在保留版权与许可声明的条件下允许使用、修改、再分发和商业使用。现有图标中的第三方素材不属于 MIT 授权范围，完整署名和条款见项目的 `THIRD_PARTY_NOTICES.md`。
-
-本项目是未经 Twelve Iterations 背书的非官方 Waystones 附属，也不是 Minecraft 官方产品。
+实际平台修改和上传另行执行。本轮上传就绪清单只收录证据完整的目标，不能从“28 个构建目标”直接生成 28 个上传任务。

@@ -157,6 +157,7 @@ sourceSets {
         ])
     }
     test {
+        resources.srcDir(rootProject.file('common/src/test/resources'))
         java.setSrcDirs([
                 rootProject.file('common/src/test/java'),
                 rootProject.file('fabric/src/test/java'),
@@ -270,6 +271,7 @@ dependencies {
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-core:5.20.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Later 26.x Shogi releases publish the public API only as jar-in-jar. Loom does
@@ -406,6 +408,9 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
                 'com/palosj/waystonesptpt/teleport/TeleportArrivalVerifier.class',
                 'com/palosj/waystonesptpt/mixin/WarpStoneItemMixin.class',
                 'com/palosj/waystonesptpt/mixin/WaystoneSelectionMenuMixin.class',
+                'com/palosj/waystonesptpt/mixin/PlayerTeleportPreparationMixin.class',
+                'com/palosj/waystonesptpt/mixin/PlayerTeleportShogiContextMixin.class',
+                'com/palosj/waystonesptpt/mixin/client/WaystoneListLayoutMixin.class',
                 'com/palosj/waystonesptpt/mixin/client/AbstractContainerScreenAccessor.class',
                 'com/palosj/waystonesptpt/fabric/FabricWaystonesPTPT.class',
                 'com/palosj/waystonesptpt/fabric/FabricWaystonesPTPTConfig.class',
@@ -546,9 +551,9 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
             String mixinConfig = zip.getInputStream(zip.getEntry('waystonesptpt.mixins.json'))
                     .getText('UTF-8')
             def parsedMixinConfig = new groovy.json.JsonSlurper().parseText(mixinConfig)
-            def requiredCommonMixins = ['WarpStoneItemMixin', 'WaystoneSelectionMenuMixin'] as Set
+            def requiredCommonMixins = ['WarpStoneItemMixin', 'WaystoneSelectionMenuMixin', 'PlayerTeleportPreparationMixin', 'PlayerTeleportShogiContextMixin'] as Set
             if ((parsedMixinConfig.mixins as Set) != requiredCommonMixins
-                    || parsedMixinConfig.client != ['client.AbstractContainerScreenAccessor']) {
+                    || parsedMixinConfig.client != ['client.AbstractContainerScreenAccessor', 'client.WaystoneListLayoutMixin']) {
                 throw new GradleException(
                         'Release JAR mixin configuration does not contain the required server-safe and client-only mixins.')
             }
@@ -556,11 +561,11 @@ def verifyReleaseJarContents = tasks.register('verifyReleaseJarContents') {
             String networkContract = zip.getInputStream(zip.getEntry('waystonesptpt.network.json'))
                     .getText('UTF-8')
             def parsedNetworkContract = new groovy.json.JsonSlurper().parseText(networkContract)
-            if (parsedNetworkContract.networkVersion != '1'
-                    || parsedNetworkContract.payloads*.id != ['waystonesptpt:request_player_teleport']
-                    || parsedNetworkContract.payloads*.direction != ['client_to_server']) {
+            if (parsedNetworkContract.networkVersion != '2'
+                    || parsedNetworkContract.payloads*.id != ['waystonesptpt:request_player_teleport', 'waystonesptpt:receiving_directory', 'waystonesptpt:update_receiving', 'waystonesptpt:receiving_state']
+                    || parsedNetworkContract.payloads*.direction != ['client_to_server', 'client_to_server', 'client_to_server', 'server_to_client']) {
                 throw new GradleException(
-                        'Release JAR network contract does not match protocol version 1.')
+                        'Release JAR network contract does not match protocol version 2.')
             }
         }
     }

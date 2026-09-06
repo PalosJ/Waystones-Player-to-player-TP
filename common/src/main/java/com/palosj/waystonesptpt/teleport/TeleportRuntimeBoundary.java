@@ -3,6 +3,7 @@ package com.palosj.waystonesptpt.teleport;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BooleanSupplier;
 
 import com.palosj.waystonesptpt.PlayerTeleportExperienceMode;
 import com.palosj.waystonesptpt.compat.WaystonesCompat;
@@ -21,15 +22,22 @@ interface TeleportRuntimeBoundary {
 
     Optional<TargetPlayer> resolveOnlineTarget(ServerPlayer sender, UUID targetPlayerId);
 
+    boolean allowsReceiving(ServerPlayer target);
+
     PlayerRotation captureRotation(ServerPlayer player);
+
+    BooleanSupplier captureRequestValidity(ServerPlayer sender, UUID targetId, WaystonesCompat.WarpStoneUse use);
+
+    boolean isSameSession(ServerPlayer sender);
+
+    void executeOnServerThread(ServerPlayer sender, Runnable action);
 
     CompletionStage<Optional<TeleportOutcome>> tryTeleport(
             ServerPlayer sender,
             ServerPlayer target,
             WaystonesCompat.WarpStoneUse warpStoneUse,
-            PlayerTeleportExperienceMode experienceMode);
-
-    void executeOnServerThread(ServerPlayer sender, Runnable action);
+            PlayerTeleportExperienceMode experienceMode,
+            TeleportAttempt attempt);
 
     Optional<DurabilityTarget> resolveDurabilityTarget(
             ServerPlayer sender,
@@ -38,7 +46,8 @@ interface TeleportRuntimeBoundary {
     void damageWarpStone(
             DurabilityTarget target,
             ServerPlayer sender,
-            WaystonesCompat.WarpStoneUse warpStoneUse);
+            WaystonesCompat.WarpStoneUse warpStoneUse,
+            int damage);
 
     void resetFallDistance(ServerPlayer sender);
 

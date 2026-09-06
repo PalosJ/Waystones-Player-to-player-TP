@@ -1,12 +1,15 @@
 package com.palosj.waystonesptpt.compat;
 
 import java.util.List;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import net.blay09.mods.waystones.api.TeleportDestination;
 import net.blay09.mods.waystones.api.Waystone;
+import net.blay09.mods.waystones.api.WaystonesAPI;
 import net.blay09.mods.waystones.api.WaystoneKinds;
 import net.blay09.mods.waystones.api.WaystoneOrigin;
 import net.blay09.mods.waystones.api.WaystoneVisibility;
@@ -23,6 +26,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 final class PlayerDestinationWaystone implements Waystone {
+    private static final Method DEFAULT_RESOLVER = findDefaultResolver();
     private static final List<Direction> DIRECTIONS = List.of(
             Direction.NORTH,
             Direction.EAST,
@@ -109,6 +113,17 @@ final class PlayerDestinationWaystone implements Waystone {
         if (!isValidInLevel(level)) {
             return Optional.empty();
         }
+        if (DEFAULT_RESOLVER != null) {
+            try {
+                Object result = DEFAULT_RESOLVER.invoke(null, level, this);
+                if (result instanceof Optional<?> optional && optional.orElse(null) instanceof TeleportDestination destination) {
+                    return Optional.of(destination);
+                }
+                throw new IllegalStateException("Waystones default destination resolver returned an unexpected result");
+            } catch (IllegalAccessException | InvocationTargetException error) {
+                throw new IllegalStateException("Could not resolve the native player destination", error);
+            }
+        }
         for (Direction direction : DIRECTIONS) {
             BlockPos body = position.relative(direction);
             BlockPos head = body.above();
@@ -120,7 +135,9 @@ final class PlayerDestinationWaystone implements Waystone {
                         direction));
             }
         }
-        return Optional.empty();
+        return Optional.of(new TeleportDestination(level,
+                new Vec3(position.getX() + 0.5, position.getY() + 0.5, position.getZ() + 0.5),
+                Direction.NORTH));
     }
 
     @Override
@@ -137,17 +154,29 @@ final class PlayerDestinationWaystone implements Waystone {
         return Set.of();
     }
 
-    Optional<ServerPlayer> liveTarget() {
+    private static Method findDefaultResolver() {
+        try {
+            return WaystonesAPI.class.getMethod("resolveDefaultDestination", ServerLevel.class, Waystone.class);
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        }
+    }
+
+    Optional<ServerPlayer> onlineTarget() {
         if (server == null) {
             return Optional.empty();
         }
-        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-        if (player == null
-                || player.isRemoved()
-                || !dimension.equals(player.level().dimension())
-                || !position.equals(player.blockPosition())) {
-            return Optional.empty();
-        }
-        return Optional.of(player);
+        return Optional.ofNullable(server.getPlayerList().getPlayer(playerId))
+                .filter(player -> !player.isRemoved());
+    }
+
+    boolean hasMoved() {
+        return onlineTarget().filter(player -> !dimension.equals(player.level().dimension())
+                || !position.equals(player.blockPosition())).isPresent();
+    }
+
+    Optional<ServerPlayer> liveTarget() {
+        return onlineTarget().filter(player -> dimension.equals(player.level().dimension())
+                && position.equals(player.blockPosition()));
     }
 }

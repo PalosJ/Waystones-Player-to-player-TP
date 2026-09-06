@@ -1,5 +1,7 @@
 # ADR 0002：main 共享语义源与双向漂移门禁
 
+后续调整见 [ADR 0006](0006-player-teleport-transactions-and-receiving.md)；以下保留原决策背景。
+
 - 状态：Accepted
 - 日期：2026-08-12
 

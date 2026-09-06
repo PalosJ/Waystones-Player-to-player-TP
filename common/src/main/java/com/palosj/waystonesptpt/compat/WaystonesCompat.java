@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.palosj.waystonesptpt.WaystonesPTPT;
+import net.blay09.mods.waystones.item.WarpStoneItem;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -27,7 +28,7 @@ public final class WaystonesCompat {
         if (stack.isEmpty()) {
             return false;
         }
-        return WARP_STONE_ID.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+        return stack.getItem() instanceof WarpStoneItem;
     }
 
     public static void stopUsingWarpStone(Player player) {
