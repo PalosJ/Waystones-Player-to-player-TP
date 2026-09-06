@@ -8,14 +8,11 @@ import com.palosj.waystonesptpt.WaystonesPTPT;
 import com.palosj.waystonesptpt.config.LegacyConfigMigration;
 
 import net.minecraft.world.level.storage.LevelResource;
-import net.neoforged.bus.api.EventPriority;
+import net.minecraft.server.MinecraftServer;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.config.ConfigTracker;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.ModConfigSpec;
-import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 
 public final class NeoForgeConfig {
     private static final String LEGACY_FILE_NAME = "waystonesplayer-server.toml";
@@ -40,20 +37,16 @@ public final class NeoForgeConfig {
     public static void register(ModContainer modContainer) {
         migrateDirectory(FMLPaths.CONFIGDIR.get());
         modContainer.registerConfig(ModConfig.Type.SERVER, SPEC, FILE_NAME);
-        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, ServerAboutToStartEvent.class,
-                NeoForgeConfig::migrateWorldConfig);
     }
 
     public static PlayerTeleportExperienceMode experienceMode() {
         return PLAYER_TELEPORT_EXPERIENCE_MODE.get();
     }
 
-    private static void migrateWorldConfig(ServerAboutToStartEvent event) {
-        Path serverConfigDirectory = event.getServer().getWorldPath(SERVER_CONFIG_DIRECTORY);
-        if (migrateDirectory(serverConfigDirectory)) {
-            ConfigTracker.INSTANCE.unloadConfigs(ModConfig.Type.SERVER);
-            ConfigTracker.INSTANCE.loadConfigs(ModConfig.Type.SERVER, FMLPaths.CONFIGDIR.get(), serverConfigDirectory);
-        }
+    public static void migrateWorldConfig(MinecraftServer server) {
+        // Called before NeoForge chooses the world/global config path. Its normal loader owns
+        // initialization, watchers and reload events; migrating this file must not reload other mods.
+        migrateDirectory(server.getWorldPath(SERVER_CONFIG_DIRECTORY));
     }
 
     private static boolean migrateDirectory(Path directory) {

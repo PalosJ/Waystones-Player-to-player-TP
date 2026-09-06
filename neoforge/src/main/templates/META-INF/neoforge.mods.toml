@@ -18,6 +18,9 @@ features={java_version="${java_version_range}"}
 [[mixins]]
 config="waystonesptpt.mixins.json"
 
+[[mixins]]
+config="waystonesptpt.neoforge.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="waystonesplayer"
     type="incompatible"

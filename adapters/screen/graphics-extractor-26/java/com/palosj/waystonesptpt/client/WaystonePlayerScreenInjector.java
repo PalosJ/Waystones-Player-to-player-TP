@@ -12,7 +12,10 @@ import java.util.WeakHashMap;
 
 import com.palosj.waystonesptpt.WaystonesPTPT;
 import com.palosj.waystonesptpt.client.widget.PlayerDestinationList;
+import com.palosj.waystonesptpt.client.widget.PlayerReceivingControl;
+import com.palosj.waystonesptpt.network.ReceivingClientState;
 import com.palosj.waystonesptpt.compat.WaystonesCompat;
+import com.palosj.waystonesptpt.compat.WaystoneScreenControls;
 import com.palosj.waystonesptpt.mixin.client.AbstractContainerScreenAccessor;
 import com.palosj.waystonesptpt.network.payload.RequestPlayerTeleportPayload;
 
@@ -89,7 +92,8 @@ public final class WaystonePlayerScreenInjector {
             }
 
             PlayerPanelLayout layout = PlayerPanelLayout.resolve(screen.width, anchor.x(), anchor.width());
-            moveWaystonesLayout(screen, anchor, layout.waystonesX() - anchor.x());
+            int deltaX = layout.waystonesX() - anchor.x();
+            moveWaystonesLayout(screen, anchor, deltaX);
 
             PlayerPanel panel = new PlayerPanel(
                     onlinePlayers,
@@ -98,6 +102,7 @@ public final class WaystonePlayerScreenInjector {
                     layout.panelWidth(),
                     panelHeight,
                     layout.avatarOnly());
+            panel.paginationDeltaX = WaystoneScreenControls.hasPagination(screen) ? deltaX : 0;
             panel.attach(screen);
             PANELS.attach(screen, panel);
         } catch (RuntimeException error) {
@@ -136,6 +141,7 @@ public final class WaystonePlayerScreenInjector {
     }
 
     public static void onScreenClosed(Screen candidate) {
+        ReceivingClientState.clear();
         PANELS.detach(candidate);
         FAILED_SCREENS.remove(candidate);
         if (PANELS.isEmpty()) {
@@ -193,15 +199,16 @@ public final class WaystonePlayerScreenInjector {
 
     private static LayoutAnchor findLayoutAnchor(AbstractContainerScreen<?> screen) {
         AbstractWidget waystoneList = null;
-        EditBox searchBox = null;
+        EditBox searchBox = WaystoneScreenControls.searchBox(screen);
         int maximumBottom = 0;
+        List<AbstractWidget> ownedControls = WaystoneScreenControls.ownedControls(screen);
         for (GuiEventListener listener : screen.children()) {
             if (listener instanceof AbstractWidget widget) {
-                maximumBottom = Math.max(maximumBottom, widget.getBottom());
+                if (isWaystonesWidget(widget) || ownedControls.contains(widget)) {
+                    maximumBottom = Math.max(maximumBottom, widget.getBottom());
+                }
                 if (isClassOrSuperclassNamed(widget, "net.blay09.mods.waystones.client.gui.widget.AbstractWaystoneList")) {
                     waystoneList = widget;
-                } else if (listener instanceof EditBox editBox) {
-                    searchBox = editBox;
                 }
             }
         }
@@ -244,23 +251,38 @@ public final class WaystonePlayerScreenInjector {
         AbstractContainerScreenAccessor layout = (AbstractContainerScreenAccessor) screen;
         layout.waystonesptpt$setLeftPos(layout.waystonesptpt$getLeftPos() + deltaX);
 
-        int minimumX = anchor.x() - PlayerPanelLayout.WAYSTONES_SIDE_BUTTON_LEFT_OFFSET;
-        int maximumX = anchor.x() + anchor.width() + PlayerPanelLayout.WAYSTONES_SIDE_BUTTON_LEFT_OFFSET;
-        int maximumY = anchor.y() + anchor.height();
+        List<AbstractWidget> ownedControls = WaystoneScreenControls.ownedControls(screen);
         for (GuiEventListener listener : screen.children()) {
             if (listener instanceof AbstractWidget widget
-                    && (widget.getClass().getName().startsWith("net.blay09.mods.waystones.")
-                    || intersects(widget, minimumX, maximumX, anchor.y(), maximumY))) {
+                    && (isWaystonesWidget(widget) || ownedControls.contains(widget))) {
                 widget.setX(widget.getX() + deltaX);
             }
         }
     }
 
-    private static boolean intersects(AbstractWidget widget, int minimumX, int maximumX, int minimumY, int maximumY) {
-        return widget.getRight() > minimumX
-                && widget.getX() < maximumX
-                && widget.getBottom() > minimumY
-                && widget.getY() < maximumY;
+    private static boolean isWaystonesWidget(AbstractWidget widget) {
+        return widget.getClass().getName().startsWith("net.blay09.mods.waystones.client.gui.widget.");
+    }
+
+    /** Called immediately after upstream replaces pagination rows, before the next render/input event. */
+    public static void onWaystonesListUpdated(Screen screen) {
+        PlayerPanel panel = PANELS.get(screen);
+        if (panel == null || panel.paginationDeltaX == 0) {
+            return;
+        }
+        for (GuiEventListener listener : screen.children()) {
+            if (listener instanceof AbstractWidget widget) {
+                String name = widget.getClass().getName();
+                int offset;
+                switch (name) {
+                    case "net.blay09.mods.waystones.client.gui.widget.WaystoneButton" -> offset = -100;
+                    case "net.blay09.mods.waystones.client.gui.widget.SortWaystoneButton" -> offset = 108;
+                    case "net.blay09.mods.waystones.client.gui.widget.RemoveWaystoneButton" -> offset = 122;
+                    default -> { continue; }
+                }
+                widget.setX(screen.width / 2 + offset + panel.paginationDeltaX);
+            }
+        }
     }
 
     private static void failScreen(Screen screen, String message, RuntimeException error) {
@@ -284,6 +306,8 @@ public final class WaystonePlayerScreenInjector {
         private final int width;
         private final int height;
         private final boolean avatarOnly;
+        private int paginationDeltaX;
+        private PlayerReceivingControl receivingControl;
         private PlayerPanelLabels labels;
         private PlayerDestinationList playerList;
 
@@ -298,6 +322,9 @@ public final class WaystonePlayerScreenInjector {
         }
 
         private void attach(Screen screen) {
+            receivingControl = new PlayerReceivingControl(x, y + HEADER_HEIGHT - 24, width, avatarOnly);
+            BalmScreenUtils.addRenderableWidget(screen, receivingControl);
+            receivingControl.updateDirectory(initialPlayers.stream().map(info -> info.getProfile().id()).toList(), true);
             labels = new PlayerPanelLabels(x, y, width, height, initialPlayers.size(), avatarOnly);
             BalmScreenUtils.addRenderableWidget(screen, labels);
 
@@ -315,11 +342,13 @@ public final class WaystonePlayerScreenInjector {
         }
 
         private void refresh(List<PlayerInfo> currentPlayers) {
+            receivingControl.updateDirectory(currentPlayers.stream().map(info -> info.getProfile().id()).toList(), false);
             playerList.updatePlayers(currentPlayers);
             labels.setPlayerCount(currentPlayers.size());
         }
 
         private void tick() {
+            receivingControl.tick();
             playerList.tickVisibleEntries();
         }
     }

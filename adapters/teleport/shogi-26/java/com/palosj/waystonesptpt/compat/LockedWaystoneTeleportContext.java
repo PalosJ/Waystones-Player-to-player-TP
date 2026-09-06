@@ -20,7 +20,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
-final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
+final class LockedWaystoneTeleportContext implements WaystoneTeleportContext, PlayerTeleportShogiContext {
     @FunctionalInterface
     interface RequirementEvaluator {
         Either<List<Object>, List<Object>> evaluate(LockedWaystoneTeleportContext context);
@@ -48,6 +48,9 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
         warpHand = delegate.getWarpHand();
         executor = new LockedShogiExecutor(beforeExecute, () -> executorOverrideAttempted = true);
     }
+
+    @Override
+    public boolean waystonesptpt$isPlayerTeleport() { return true; }
 
     void lock(RequirementEvaluator evaluator) {
         if (locked) {
@@ -205,8 +208,13 @@ final class LockedWaystoneTeleportContext implements WaystoneTeleportContext {
         if (!locked || evaluator == null) {
             return delegate.getRequirements();
         }
-        requireUnmodified();
-        return evaluator.evaluate(this);
+        try {
+            requireUnmodified();
+            return evaluator.evaluate(this);
+        } catch (TeleportRejectedException | IllegalArgumentException error) {
+            // Expected rejection must be a native missing requirement, never an async exception.
+            return Either.right(List.of(error.getMessage() == null ? "Invalid player teleport" : error.getMessage()));
+        }
     }
 
     @Override

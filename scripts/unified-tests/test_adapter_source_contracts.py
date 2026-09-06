@@ -95,7 +95,10 @@ class UnifiedNetworkFamilySourceContractTest(unittest.TestCase):
                 networking = source(path)
                 self.assertIn("registerServerboundPacket", networking)
                 self.assertIn("PlayerTeleportService.handleRequest", networking)
-                self.assertNotIn("registerClientboundPacket", networking)
+                self.assertIn("registerClientboundPacket", networking)
+                self.assertIn("PlayerReceivingService::requestDirectory", networking)
+                self.assertIn("PlayerReceivingService::updateOwnPreference", networking)
+                self.assertIn("ReceivingClientState.accept", networking)
 
 
 class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):

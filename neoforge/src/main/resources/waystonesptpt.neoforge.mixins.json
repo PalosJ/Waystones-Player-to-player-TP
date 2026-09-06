@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.palosj.waystonesptpt.neoforge.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": ["ServerConfigMigrationMixin"],
+  "injectors": {"defaultRequire": 1}
+}

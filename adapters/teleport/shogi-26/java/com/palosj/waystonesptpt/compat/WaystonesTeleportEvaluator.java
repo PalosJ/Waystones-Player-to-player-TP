@@ -13,6 +13,7 @@ import com.palosj.waystonesptpt.PlayerTeleportExperienceMode;
 import com.palosj.waystonesptpt.WaystonesPTPT;
 import com.palosj.waystonesptpt.teleport.TeleportArrivalVerifier;
 import com.palosj.waystonesptpt.teleport.TeleportOutcome;
+import com.palosj.waystonesptpt.teleport.TeleportAttempt;
 import com.palosj.waystonesptpt.teleport.TeleportRuntime;
 
 import net.blay09.mods.waystones.api.WaystoneTeleportContext;
@@ -33,8 +34,13 @@ final class WaystonesTeleportEvaluator {
             ServerPlayer sender,
             ServerPlayer target,
             WaystonesCompat.WarpStoneUse warpStoneUse,
-            PlayerTeleportExperienceMode mode) {
-        TeleportArrivalVerifier.Position before = positionOf(sender);
+            PlayerTeleportExperienceMode mode, TeleportAttempt attempt) {
+        return tryTeleport(sender, target, warpStoneUse, mode, attempt, 0);
+    }
+
+    private static CompletionStage<TeleportOutcome> tryTeleport(
+            ServerPlayer sender, ServerPlayer target, WaystonesCompat.WarpStoneUse warpStoneUse,
+            PlayerTeleportExperienceMode mode, TeleportAttempt attempt, int retries) {
         PlayerDestinationWaystone targetWaystone = new PlayerDestinationWaystone(target);
         TransactionState transaction = new TransactionState(sender);
         LockedWaystoneTeleportContext[] holder = new LockedWaystoneTeleportContext[1];
@@ -49,22 +55,18 @@ final class WaystonesTeleportEvaluator {
                     .addFlag(WaystonesPTPT.id("player_destination"));
             LockedWaystoneTeleportContext context = new LockedWaystoneTeleportContext(
                     baseContext,
-                    () -> beforeExecute(sender, warpStoneUse, targetWaystone, holder[0], transaction));
+                    () -> beforeExecute(sender, warpStoneUse, targetWaystone, holder[0], transaction, attempt));
             holder[0] = context;
 
-            boolean evaluateExperience = mode.shouldEvaluateWaystonesExperience(
-                    WaystonesConfig.getActive().rules.enableXpCosts);
-            ShogiExperienceRuleSafety.CompiledRules compiledRules = evaluateExperience
-                    ? ShogiExperienceRuleSafety.compile(
-                            sender,
-                            WaystonesConfig.getActive().rules.warpRequirements)
-                    : null;
+            ShogiExperienceRuleSafety.RuleCache rules = new ShogiExperienceRuleSafety.RuleCache(
+                    net.minecraft.resources.RegistryOps.create(
+                            com.mojang.serialization.JsonOps.INSTANCE, sender.registryAccess()));
             context.lock(locked -> evaluateRequirements(
                     sender,
                     warpStoneUse,
                     targetWaystone,
                     locked,
-                    compiledRules));
+                    rules.get(WaystonesConfig.getActive().rules, mode), attempt));
 
             Either<List<Object>, List<Object>> initialRequirements = context.getRequirements();
             if (initialRequirements.right().isPresent()) {
@@ -77,10 +79,20 @@ final class WaystonesTeleportEvaluator {
                             sender,
                             () -> finishTeleport(
                                     sender,
-                                    before,
                                     context,
                                     transaction,
-                                    completion)));
+                                    completion)))
+                    .thenCompose(outcome -> {
+                        if (outcome == TeleportOutcome.FAILED && retries < 200
+                                && attempt.validatePreparation(sender.level().getServer().getTickCount())
+                                && targetWaystone.hasMoved()) {
+                            ServerPlayer currentTarget = targetWaystone.onlineTarget().orElse(null);
+                            if (currentTarget != null) {
+                                return tryTeleport(sender, currentTarget, warpStoneUse, mode, attempt, retries + 1);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(outcome);
+                    });
         } catch (TeleportRejectedException | IllegalArgumentException error) {
             WaystonesPTPT.LOGGER.debug("Rejected player-destination teleport: {}", error.getMessage());
             transaction.restore();
@@ -96,14 +108,15 @@ final class WaystonesTeleportEvaluator {
             WaystonesCompat.WarpStoneUse warpStoneUse,
             PlayerDestinationWaystone targetWaystone,
             LockedWaystoneTeleportContext context,
-            ShogiExperienceRuleSafety.CompiledRules compiledRules) {
+            ShogiExperienceRuleSafety.CompiledRules compiledRules, TeleportAttempt attempt) {
+        if (!attempt.validatePreparation(sender.level().getServer().getTickCount())) {
+            return Either.right(List.of("Player teleport request is no longer valid"));
+        }
         validateBeforeConsumption(sender, warpStoneUse, targetWaystone, context);
         boolean creative = sender.getAbilities().instabuild;
-        if (compiledRules == null) {
-            context.resetExecutor(creative);
-            return Either.left(List.of());
-        }
-        return compiledRules.evaluate(context, creative);
+        Either<List<Object>, List<Object>> result = compiledRules.evaluate(context, creative);
+        attempt.setDurabilityCost(creative ? 0 : compiledRules.damage().value());
+        return result;
     }
 
     private static void beforeExecute(
@@ -111,8 +124,9 @@ final class WaystonesTeleportEvaluator {
             WaystonesCompat.WarpStoneUse warpStoneUse,
             PlayerDestinationWaystone targetWaystone,
             LockedWaystoneTeleportContext context,
-            TransactionState transaction) {
+            TransactionState transaction, TeleportAttempt attempt) {
         validateBeforeConsumption(sender, warpStoneUse, targetWaystone, context);
+        attempt.beginCommit(sender.level().getServer().getTickCount());
         transaction.capture(targetOf(targetWaystone));
     }
 
@@ -157,11 +171,11 @@ final class WaystonesTeleportEvaluator {
 
     private static TeleportOutcome finishTeleport(
             ServerPlayer sender,
-            TeleportArrivalVerifier.Position before,
             LockedWaystoneTeleportContext context,
             TransactionState transaction,
             ApiCompletion completion) {
-        boolean moved = TeleportArrivalVerifier.hasMoved(before, positionOf(sender));
+        TeleportArrivalVerifier.Position before = transaction.beforeExecution;
+        boolean moved = before != null && TeleportArrivalVerifier.hasMoved(before, positionOf(sender));
         if (completion.error() != null) {
             if (moved) {
                 WaystonesPTPT.LOGGER.warn(
@@ -180,7 +194,7 @@ final class WaystonesTeleportEvaluator {
         boolean apiReportedSender = apiResult != null
                 && apiResult.left().map(value -> value instanceof List<?> entities
                         && entities.stream().anyMatch(entity -> entity == sender)).orElse(false);
-        if (!TeleportArrivalVerifier.succeeded(apiReportedSender, before, positionOf(sender))) {
+        if (before == null || !TeleportArrivalVerifier.succeeded(apiReportedSender, before, positionOf(sender))) {
             transaction.restore();
             return TeleportOutcome.FAILED;
         }
@@ -282,6 +296,7 @@ final class WaystonesTeleportEvaluator {
     private static final class TransactionState {
         private final ServerPlayer player;
         private ExperienceSnapshot experienceSnapshot;
+        private TeleportArrivalVerifier.Position beforeExecution;
         private TeleportArrivalVerifier.Target validatedTarget;
 
         private TransactionState(ServerPlayer player) {
@@ -292,6 +307,7 @@ final class WaystonesTeleportEvaluator {
             if (experienceSnapshot != null) {
                 throw new TeleportRejectedException("Waystones attempted to consume requirements more than once");
             }
+            beforeExecution = positionOf(player);
             experienceSnapshot = ExperienceSnapshot.capture(player);
             validatedTarget = target;
         }
@@ -301,7 +317,7 @@ final class WaystonesTeleportEvaluator {
         }
 
         private void restore() {
-            if (experienceSnapshot != null) {
+            if (experienceSnapshot != null && !TeleportArrivalVerifier.hasMoved(beforeExecution, positionOf(player))) {
                 experienceSnapshot.restore();
                 experienceSnapshot = null;
             }

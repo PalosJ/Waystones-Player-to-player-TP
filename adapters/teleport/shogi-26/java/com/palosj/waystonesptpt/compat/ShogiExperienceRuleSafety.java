@@ -17,6 +17,8 @@ import com.mojang.serialization.JsonOps;
 import net.blay09.mods.shogi.common.effect.compose.AggregateEffect;
 import net.blay09.mods.shogi.common.parse.ShogiRuleParser;
 import net.blay09.mods.shogi.effect.ShogiEffect;
+import net.blay09.mods.shogi.effect.EmptyEffect;
+import net.blay09.mods.shogi.context.ShogiContext;
 import net.blay09.mods.waystones.config.WaystonesRules;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
@@ -29,14 +31,13 @@ final class ShogiExperienceRuleSafety {
             "shogi:xp_points_cost",
             "shogi:xp_level_cost");
     private static final Set<String> EXCLUDED_COST_EFFECTS = Set.of(
-            "shogi:damage_item",
             "shogi:item_cost",
             "shogi:health_cost",
             "shogi:hunger_cost",
             "shogi:cooldown_cost",
             "shogi:add_cooldown");
     private static final Set<String> SAFE_SHOGI_EFFECTS = Set.of(
-            "constant", "empty", "aggregate", "and", "any", "not", "if",
+            "constant", "empty", "noop", "aggregate", "and", "any", "not", "if",
             "any_hand", "with_context", "off_hand",
             "has_entity_tag", "has_mob_effect", "is_on_any_vehicle", "is_on_vehicle", "is_player",
             "has_enchantment", "is_item", "has_item", "is_in_team", "lookup_team",
@@ -57,13 +58,73 @@ final class ShogiExperienceRuleSafety {
             "is_with_passengers", "is_with_leashed", "is_ruined_sharestone", "is_copper_sharestone",
             "is_prismarine_sharestone", "is_gold_sharestone", "is_diamond_sharestone",
             "is_amethyst_sharestone", "is_lapis_sharestone", "is_emerald_sharestone",
-            "is_redstone_sharestone");
+            "is_redstone_sharestone", "is_fleeting_memorial", "is_portal_scroll", "is_warp_portal", "is_twinbound");
 
     private ShogiExperienceRuleSafety() {
     }
 
+    static List<String> rulesWithSettings(net.blay09.mods.waystones.config.WaystonesConfig.Rules config) {
+        List<String> rules = new ArrayList<>();
+        try {
+            Object settings = config.getClass().getField("warpSettings").get(config);
+            if (!(settings instanceof List<?> values)) {
+                throw new IllegalArgumentException("Waystones warpSettings must be a rule list");
+            }
+            for (Object value : values) {
+                if (!(value instanceof String rule)) {
+                    throw new IllegalArgumentException("Waystones warpSettings contains a non-string rule");
+                }
+                rules.add(rule);
+            }
+        } catch (NoSuchFieldException ignored) {
+            // Minimum versions keep their variable definitions directly in warpRequirements.
+        } catch (IllegalAccessException error) {
+            throw new IllegalArgumentException("Could not read Waystones warpSettings", error);
+        }
+        rules.addAll(config.warpRequirements);
+        return List.copyOf(rules);
+    }
+
+    /** A request-local cache; a reload invalidates the prepared costs before final evaluation. */
+    static final class RuleCache {
+        private final RegistryOps<JsonElement> registryOps;
+        private List<String> rules;
+        private boolean experienceEnabled;
+        private boolean durabilityEnabled;
+        private CompiledRules compiled;
+
+        RuleCache(RegistryOps<JsonElement> registryOps) {
+            this.registryOps = registryOps;
+        }
+
+        CompiledRules get(net.blay09.mods.waystones.config.WaystonesConfig.Rules config,
+                com.palosj.waystonesptpt.PlayerTeleportExperienceMode mode) {
+            List<String> currentRules = rulesWithSettings(config);
+            boolean currentExperience = mode.shouldEvaluateWaystonesExperience(config.enableXpCosts);
+            if (compiled == null || !currentRules.equals(rules)
+                    || currentExperience != experienceEnabled || config.enableDurability != durabilityEnabled) {
+                CompiledRules replacement = compile(registryOps, currentRules, currentExperience, config.enableDurability);
+                rules = currentRules;
+                experienceEnabled = currentExperience;
+                durabilityEnabled = config.enableDurability;
+                compiled = replacement;
+            }
+            return compiled;
+        }
+    }
+
     static CompiledRules compile(ServerPlayer sender, List<String> configuredRules) {
-        var registryOps = RegistryOps.create(JsonOps.INSTANCE, sender.registryAccess());
+        return compile(sender, configuredRules, true, true);
+    }
+
+    static CompiledRules compile(ServerPlayer sender, List<String> configuredRules,
+            boolean experienceEnabled, boolean durabilityEnabled) {
+        return compile(RegistryOps.create(JsonOps.INSTANCE, sender.registryAccess()), configuredRules,
+                experienceEnabled, durabilityEnabled);
+    }
+
+    static CompiledRules compile(RegistryOps<JsonElement> registryOps, List<String> configuredRules,
+            boolean experienceEnabled, boolean durabilityEnabled) {
         List<ShogiEffect<?>> accepted = new ArrayList<>();
         for (String configuredRule : configuredRules) {
             if (configuredRule == null || configuredRule.isBlank()) {
@@ -75,7 +136,7 @@ final class ShogiExperienceRuleSafety {
             if (classification.unknownEffects()) {
                 throw new IllegalArgumentException("Unknown or stateful Shogi effect in Waystones XP rule: " + configuredRule);
             }
-            if (classification.excludedCosts() && classification.experienceCosts()) {
+            if (classification.excludedCosts() && classification.controlledCosts()) {
                 throw new IllegalArgumentException("Waystones XP rule mixes experience with another cost: " + configuredRule);
             }
             if (!classification.excludedCosts()) {
@@ -88,7 +149,9 @@ final class ShogiExperienceRuleSafety {
         if (aggregateClassification.unknownEffects() || aggregateClassification.excludedCosts()) {
             throw new IllegalArgumentException("Compiled Waystones XP rules contain an unsupported terminal effect");
         }
-        return new CompiledRules(aggregate);
+        DamageTotal damage = new DamageTotal();
+        return new CompiledRules((AggregateEffect) protectCosts(aggregate, damage,
+                experienceEnabled, durabilityEnabled), damage);
     }
 
     @SuppressWarnings("unchecked")
@@ -113,12 +176,13 @@ final class ShogiExperienceRuleSafety {
                 continue;
             }
             String identifier = effect.identifier().toString();
-            if (isExperienceEffect(effect.identifier())) {
+            if (isExperienceEffect(effect.identifier()) || identifier.equals("shogi:damage_item")) {
                 xp = true;
             } else if (isExcludedCostEffect(effect.identifier())) {
                 excluded = true;
-            } else if (!isKnownPureEffect(effect.identifier())) {
-                unknown = true;
+            } else if (!identifier.equals("shogi:damage_item") && !isKnownPureEffect(effect.identifier())) {
+                throw new IllegalArgumentException("Unsupported Shogi effect: " + identifier
+                        + " (" + effect.getClass().getName() + ")");
             }
             pending.addAll(nestedEffects(effect));
         }
@@ -197,13 +261,9 @@ final class ShogiExperienceRuleSafety {
             } catch (NumberFormatException error) {
                 throw new IllegalArgumentException("Invalid numeric literal in Waystones XP rule", error);
             }
-            if (value.signum() < 0 || value.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) > 0) {
+            if (value.abs().compareTo(BigDecimal.valueOf(Double.MAX_VALUE)) > 0) {
                 throw new IllegalArgumentException("Waystones XP rule number is outside the supported range: " + value);
             }
-        }
-        String withoutArrow = unquoted.replace("->", "");
-        if (withoutArrow.indexOf('-') >= 0) {
-            throw new IllegalArgumentException("Subtraction is not accepted in Waystones player XP rules");
         }
     }
 
@@ -232,11 +292,13 @@ final class ShogiExperienceRuleSafety {
         return result.toString();
     }
 
-    record CompiledRules(AggregateEffect aggregate) {
+    record CompiledRules(AggregateEffect aggregate, DamageTotal damage) {
         Either<List<Object>, List<Object>> evaluate(
                 LockedWaystoneTeleportContext context,
                 boolean creative) {
             context.resetExecutor(creative);
+            damage.value = 0;
+            damage.expectedStack = context.getWarpItem();
             Either<? extends List<Object>, ?> result = aggregate.apply(context);
             if (result.left().isPresent()) {
                 return Either.left(List.copyOf(result.left().orElseThrow()));
@@ -266,8 +328,115 @@ final class ShogiExperienceRuleSafety {
         }
     }
 
+    // Rebuild only the admitted upstream record tree, after auto-applied costs have been added.
+    // Wrapping cost arguments preserves predicates and arithmetic while validating before coercion.
+    private static ShogiEffect<?> protectCosts(ShogiEffect<?> effect, DamageTotal damage,
+            boolean experienceEnabled, boolean durabilityEnabled) {
+        String id = effect.identifier().toString();
+        boolean xp = isExperienceEffect(effect.identifier());
+        boolean itemDamage = id.equals("shogi:damage_item");
+        if ((xp && !experienceEnabled) || (itemDamage && !durabilityEnabled)) {
+            return EmptyEffect.INSTANCE;
+        }
+        if (!effect.getClass().isRecord()) {
+            if (!nestedEffects(effect).isEmpty() || xp || itemDamage) {
+                throw new IllegalArgumentException("Unsupported composite Shogi implementation: " + id);
+            }
+            return effect;
+        }
+        try {
+            RecordComponent[] components = effect.getClass().getRecordComponents();
+            Object[] arguments = new Object[components.length];
+            Class<?>[] types = new Class<?>[components.length];
+            for (int index = 0; index < components.length; index++) {
+                types[index] = components[index].getType();
+                Object value = components[index].getAccessor().invoke(effect);
+                if (value instanceof ShogiEffect<?> child) {
+                    ShogiEffect<?> protectedChild = protectCosts(child, damage, experienceEnabled, durabilityEnabled);
+                    arguments[index] = xp || itemDamage ? new CheckedAmount(protectedChild) : protectedChild;
+                } else if (value instanceof List<?> list) {
+                    arguments[index] = list.stream().map(child -> child instanceof ShogiEffect<?> nested
+                            ? protectCosts(nested, damage, experienceEnabled, durabilityEnabled) : child).toList();
+                } else {
+                    arguments[index] = value;
+                }
+            }
+            if (itemDamage) {
+                if (arguments.length != 1 || !(arguments[0] instanceof ShogiEffect<?> amount)) {
+                    throw new IllegalArgumentException("Unsupported damage_item arguments");
+                }
+                return new DeferredDamage(amount, damage);
+            }
+            return (ShogiEffect<?>) effect.getClass().getDeclaredConstructor(types).newInstance(arguments);
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalArgumentException("Could not protect Shogi cost tree: " + id, error);
+        }
+    }
+
+    static int checkedAmount(Object value) {
+        if (value instanceof com.google.gson.JsonPrimitive primitive) {
+            if (primitive.isNumber()) {
+                value = primitive.getAsNumber();
+            } else if (primitive.isString()) {
+                value = primitive.getAsString();
+            } else if (primitive.isBoolean()) {
+                return primitive.getAsBoolean() ? 1 : 0;
+            }
+        }
+        if (value instanceof String text) {
+            // The native integer coercion accepts integer strings, but cannot validate before narrowing.
+            try {
+                int cost = Integer.parseInt(text);
+                if (cost < 0) { throw new IllegalArgumentException("Negative Shogi cost"); }
+                return cost;
+            } catch (NumberFormatException error) {
+                throw new IllegalArgumentException("Invalid integer Shogi cost", error);
+            }
+        }
+        if (!(value instanceof Number number)) {
+            throw new IllegalArgumentException("A Shogi cost must evaluate to a number, got "
+                    + (value == null ? "null" : value.getClass().getName()));
+        }
+        double cost = number.doubleValue();
+        if (!Double.isFinite(cost) || cost < 0 || cost > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("A Shogi cost must be finite, non-negative and within integer range");
+        }
+        // Upstream NON_NEGATIVE_INT truncates fractional costs; preserve that behavior.
+        return (int) cost;
+    }
+
+    private record CheckedAmount(ShogiEffect<?> delegate) implements ShogiEffect<Integer> {
+        public Identifier identifier() { return delegate.identifier(); }
+        public Either<Integer, ?> apply(ShogiContext context) {
+            return delegate.apply(context).mapLeft(ShogiExperienceRuleSafety::checkedAmount);
+        }
+    }
+
+    private record DeferredDamage(ShogiEffect<?> amount, DamageTotal total) implements ShogiEffect<Boolean> {
+        public Identifier identifier() { return Identifier.fromNamespaceAndPath("shogi", "damage_item"); }
+        public Either<Boolean, ?> apply(ShogiContext context) {
+            return amount.apply(context).mapLeft(value -> {
+                if (context.itemStack() != total.expectedStack) {
+                    throw new IllegalArgumentException("damage_item changed the bound Warp Stone context");
+                }
+                int damage = checkedAmount(value);
+                if (damage == 0 || context.itemStack().isEmpty() || !context.itemStack().isDamageableItem()) {
+                    return false;
+                }
+                total.value = Math.addExact(total.value, damage);
+                return true;
+            });
+        }
+    }
+
+    static final class DamageTotal {
+        private int value;
+        private net.minecraft.world.item.ItemStack expectedStack;
+        int value() { return value; }
+    }
+
     private record Classification(
-            boolean experienceCosts,
+            boolean controlledCosts,
             boolean excludedCosts,
             boolean unknownEffects) {
     }
