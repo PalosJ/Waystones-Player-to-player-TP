@@ -3,7 +3,7 @@ plugins {
 }
 
 def matrix = new groovy.json.JsonSlurper().parse(rootProject.file('gradle/targets.json'))
-def targetId = providers.gradleProperty('runtimeTarget').getOrElse('neoforge-1.21.2-1.21.3')
+def targetId = providers.gradleProperty('runtimeTarget').getOrElse('neoforge-1.21.11')
 def stackName = providers.gradleProperty('runtimeStack').getOrElse('minimum')
 if (!(stackName in ['minimum', 'key', 'current'])) {
     throw new GradleException("runtimeStack must be minimum, key, or current, got ${stackName}.")

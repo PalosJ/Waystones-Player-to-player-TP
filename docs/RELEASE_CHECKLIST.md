@@ -36,7 +36,6 @@
 - [ ] warning 已审查，未忽略 Mixin target/refmap、弃用 API 或元数据问题。
 - [ ] 上传候选保留最低套件生成的 JAR；当前套件 JAR不覆盖它。
 - [ ] JAR 清单的 `WaystonesPTPT-Target`、`WaystonesPTPT-Build-Stack` 与 `WaystonesPTPT-Source-Commit` 分别匹配目标、`minimum` 和精确源码提交；运行器拒绝 current、提交不明或身份不明的二进制。
-- [ ] 26.1.1 从固定官方提交和 SHA 锁定补丁重建；Build/Runtime 上游 JAR SHA 一致，清单记录上游提交、补丁 SHA、闭包和 JAR SHA。
 
 ## 4. 同一发行 JAR运行
 
@@ -52,7 +51,6 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 
 - [ ] 专用服务器到达 `Done`，无客户端类、客户端 Mixin或 GUI 类加载。
 - [ ] 客户端完成资源重载、GUI atlas 创建、入口和 Mixin 注册启动信号；这项脚本检查不等同于进入世界或实际玩法验收。
-- [ ] 1.21.2/1.21.3 共用 JAR在两个 Minecraft 版本分别执行。
 - [ ] 每个运行使用隔离的新目录、配置和世界。
 - [ ] 退出方式和退出码已记录；Ctrl-C 启动冒烟不能写成优雅关服。
 - [ ] Runtime workflow 的每个 job 记录 Build run ID；artifact 与当前分支精确 HEAD、文件名、target、版本、minimum 栈、manifest 提交和 SHA-256 全部一致，期间没有重建 JAR。
@@ -113,14 +111,13 @@ python3 scripts/runtime-matrix.py --target <target-id> \
 ## 8. 平台文件
 
 - [ ] 每目标构建、启动、玩法、GUI、性能、公开安装六类证据均齐全，绑定源码提交、minimum SHA 和前置组合；缺证据不标记发布就绪。
-- [ ] Modrinth 保留 `waystonesplayerptpt` 地址；修正旧源码链接与旧 Fabric 文件的缺失前置。26.1.1 未解决公开安装前不上传。
+- [ ] Modrinth 保留 `waystonesplayerptpt` 地址；修正旧源码链接与旧 Fabric 文件的缺失前置。只上传当前八目标中已完成验收的文件。
 - [ ] 版本 1.0.1 与网络协议 2 的双方同时升级要求已说明。
 
 - [ ] Modrinth：客户端 Required、服务端 Required、正确游戏版本/Loader、Waystones/Balm Required；26.x 另有 Shogi Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它。
 - [ ] CurseForge：英文描述、正确 Game Version/Mod Loader、Waystones/Balm Required；26.x 另有 Shogi Required；Fabric 文件另有 Fabric API Required，NeoForge 文件不添加它，Release 类型。
 - [ ] Modrinth 与 CurseForge 均选择 MIT；平台链接/文本与根 LICENSE 一致，第三方图标条款继续单独披露。
 - [ ] beta NeoForge 文件在 changelog 明确披露。
-- [ ] 1.21.2/1.21.3 共用文件同时勾选两版；其他文件只勾选一版。
 - [ ] 页面包含非官方声明、既有图标署名和“玩家目的地不提供安全落点保证”说明。
 - [ ] 上传清单同时保存文件名、大小、SHA-256、分支提交、目标和依赖。
 
@@ -142,3 +139,9 @@ python3 scripts/release-manifest.py --output build/release-manifest.json
 - [ ] 五条分支 GitHub Actions 全绿，main/统一分支共享漂移门禁通过；两条 26.x 的 common 与非加载器适配源一致。
 - [ ] 仅在新统一分支远端可验证且 CI 全绿后，删除本地/远端 `fabric/1.21.1` 与 `neoforge/1.21.11`。
 - [ ] 最终切回 clean `main`，刷新仓库外的交付 JAR、SHA-256、changelog 和检查结果。
+
+## 维护范围与 26.x 布局回归
+
+- [ ] 自 2026-09-07 起仅继续维护 NeoForge／Fabric 的 1.21.1、1.21.11、26.1.2、26.2，共 8 个目标／8 个游戏组合。1.21.2–1.21.10、26.1 和 26.1.1 停止后续更新，退出构建、CI 和本地产物同步；历史提交与验收记录保留。NeoForge 1.21.1 继续作为 `main` 基线。
+- [ ] 26.x 在 320、416、426、480、854px 逻辑宽度检查玩家行、搜索、接收开关与原生管理／维度按钮无重叠，主容器右边界不越屏。
+- [ ] 反复缩放及原生搜索、排序、管理、筛选、翻页、滚动之后仍保持对齐；第三方控件不参与移动。

@@ -9,12 +9,12 @@
 | 分支 | 固定职责 | 正式目标 |
 |---|---|---:|
 | `main` | NeoForge 1.21.1 原设计、默认分支、共享行为语义源 | 1 |
-| `neoforge/1.21.x` | NeoForge 1.21.2–1.21.11 统一维护线 | 9 |
-| `fabric/1.21.x` | Fabric 1.21.1–1.21.11 统一维护线 | 10 |
-| `neoforge/26.x` | NeoForge 26.1–26.2、Java 25、Shogi 事务维护线 | 4 |
-| `fabric/26.x` | Fabric 26.1–26.2、Java 25、Shogi 事务维护线 | 4 |
+| `neoforge/1.21.x` | NeoForge 1.21.11 统一维护线 | 1 |
+| `fabric/1.21.x` | Fabric 1.21.1、1.21.11 统一维护线 | 2 |
+| `neoforge/26.x` | NeoForge 26.1.2、26.2、Java 25、Shogi 事务维护线 | 2 |
+| `fabric/26.x` | Fabric 26.1.2、26.2、Java 25、Shogi 事务维护线 | 2 |
 
-每个加载器的 Minecraft 1.21.2/1.21.3 共用一个经两版运行验收的产物，其余目标各自精确限制一个 Minecraft 小版本。Forge 不在范围内。所有产物继续使用 `1.0.1`，只有用户明确批准后才能变更。
+自 2026-09-07 起仅继续维护 NeoForge／Fabric 的 1.21.1、1.21.11、26.1.2、26.2，共 8 个目标／8 个游戏组合。1.21.2–1.21.10、26.1 和 26.1.1 停止后续更新，退出构建、CI 和本地产物同步；历史提交与验收记录保留。NeoForge 1.21.1 继续作为 `main` 基线。每份元数据精确限制一个 Minecraft 版本。Forge 不在范围内。所有产物继续使用 `1.0.1`，只有用户明确批准后才能变更。
 
 统一分支不是把多套不兼容源码塞进一个 source set。它们使用显式目标工程，每个工程有独立 Minecraft、映射、Loader、Waystones、Balm、元数据、运行目录和发行 JAR；共享只发生在已经证明签名一致的源码族。
 
@@ -25,7 +25,7 @@ waystonesptpt
 ├── core                 纯 Java 规则、值对象、布局/差分算法和单元测试
 ├── common               Minecraft-bound 业务、协议、兼容、Mixin、客户端控件和资源
 ├── loader target        入口、配置、加载器网络桥接、元数据与发行打包
-└── gradle/targets.json  28 个正式产物的机器可读依赖/适配矩阵
+└── gradle/targets.json  8 个正式产物的机器可读依赖/适配矩阵
 ```
 
 ### core
@@ -124,7 +124,7 @@ flowchart LR
 
 1.21.11 适配族使用 `imageWidth` 调整视觉中心并移动实际 Waystones 控件；动态重建的排序、删除和目的地按钮在渲染前从原始坐标重新应用偏移。搜索框识别必须同时满足已知几何和宽度，不能抓取任意第三方 `EditBox`。
 
-26.x 分别适配旧分页与新滚动列表；原生按钮背景、悬停、焦点和禁用状态均由对应绘制 API 提供。重建分页按钮后立即对齐；只识别明确属于 Waystones 的控件及命名字段，不移动任意第三方输入框。目录顶部使用共享接收开关逻辑，1.21.11 和 26.x 仅替换原生绘制桥接。
+26.x 分别适配旧分页与新滚动列表；从明确属于 Waystones 的实际控件读取最左边界，并把容器右边界纳入布局。新滚动列表在 270px 容器内缩 25px，管理／维度按钮因此位于列表左侧 33px，不能套用旧版 8px 余量。玩家面板、搜索和开关整体避让，保留既有居中、紧凑与头像模式。原生按钮背景、悬停、焦点和禁用状态均由对应绘制 API 提供。重建分页按钮后立即对齐；只识别明确属于 Waystones 的控件及命名字段，不移动任意第三方输入框。目录顶部使用共享接收开关逻辑，1.21.11 和 26.x 仅替换原生绘制桥接。
 
 ## 版本适配族
 
@@ -133,12 +133,8 @@ flowchart LR
 | 范围 | Balm 初始化 | 屏幕输入/几何 | Waystones 传送上下文 |
 |---|---|---|---|
 | 1.21.1 | 旧 module API | legacy input + `leftPos` | 1.21.1 同步入口 |
-| 1.21.2/1.21.3 | Runnable API | legacy input | optional-hand context（运行时无 hand） |
-| 1.21.4 | Runnable API | legacy input | optional-hand context（运行时无 hand） |
-| 1.21.5–1.21.8 | 旧 module API | legacy input | optional-hand context（运行时无/可选 modifier） |
-| 1.21.9 | 旧 module API | event input | optional-hand context（运行时无 hand） |
-| 1.21.10 | 旧 module API | event input | optional-hand context（21.10.2 起有 hand） |
 | 1.21.11 | 新 platform module API | Identifier/skin/分页几何 | Identifier family |
+| 26.1.2、26.2 | load-context API | event input/graphics extractor/分页或滚动 | Shogi family |
 
 适配族只能隔离真实签名断点。新增抽象必须至少消除已确认重复或隔离不稳定依赖；不为猜测的未来版本添加占位层。
 
