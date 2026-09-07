@@ -12,13 +12,13 @@ Use the player description and attribution in [MODRINTH.md](MODRINTH.md), adapti
 | Version | 1.0.1; protocol 2 requires both sides to update |
 | Relations | Required: Waystones, Balm; Fabric also Fabric API; 26.x also Shogi |
 
-Only upload a target after the evidence requirements in [VALIDATION.md](VALIDATION.md) pass. Do not describe the complete maintenance matrix as gameplay-verified support. The 26.1.1 targets remain outside the upload-ready list until normal public dependency installation is possible.
+Only upload a target after the evidence requirements in [VALIDATION.md](VALIDATION.md) pass. Do not describe the complete maintenance matrix as gameplay-verified support. Ongoing maintenance covers only NeoForge and Fabric for 1.21.1, 1.21.11, 26.1.2, and 26.2. Retired targets receive no further updates.
 
 For each accepted target:
 
 - Display name: `Waystones Player-to-player TP 1.0.1 – <Loader> <Minecraft target>`.
 - Release type: Release.
-- Game versions: exactly the target's `minecraft` array; accept 1.21.2 and 1.21.3 separately before uploading their shared file.
+- Game versions: exactly the target's single `minecraft` version.
 - Loader: exactly NeoForge or Fabric; disclose official beta NeoForge requirements where applicable.
 - Required relations: select every dependency listed above for this loader/version.
 - Changelog: [CHANGELOG-1.0.1.md](CHANGELOG-1.0.1.md), plus exact dependency information from [targets.json](../gradle/targets.json).
