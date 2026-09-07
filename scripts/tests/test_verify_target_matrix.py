@@ -100,11 +100,11 @@ class TargetPropertiesTest(unittest.TestCase):
 
 
 class MatrixShapeTest(unittest.TestCase):
-    def test_repository_matrix_covers_all_28_targets(self):
+    def test_repository_matrix_covers_all_8_targets(self):
         matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
         verify.validate_matrix_shape(matrix)
         self.assertEqual("waystonesptpt", matrix["modId"])
-        self.assertEqual(28, len(matrix["targets"]))
+        self.assertEqual(8, len(matrix["targets"]))
 
         targets = {item["id"]: item for item in matrix["targets"]}
         self.assertEqual(
@@ -122,10 +122,11 @@ class MatrixShapeTest(unittest.TestCase):
         )
         self.assertEqual("0.19.5", targets["fabric-1.21.11"]["current"]["fabricLoader"])
 
-    def test_rejects_wrong_26_source_commit(self):
+    def test_rejects_reintroduced_retired_target(self):
         matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
-        target = next(item for item in matrix["targets"] if item["id"] == "fabric-26.1.1")
-        target["waystonesSource"]["commit"] = "0" * 40
+        retired = dict(next(item for item in matrix["targets"] if item["id"] == "fabric-26.1.2"))
+        retired.update(id="fabric-26.1.1", minecraft=["26.1.1"])
+        matrix["targets"].append(retired)
         with self.assertRaises(ValueError):
             verify.validate_matrix_shape(matrix)
 
@@ -146,22 +147,15 @@ class MatrixShapeTest(unittest.TestCase):
         matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
         targets = {item["id"]: item for item in matrix["targets"]}
 
-        self.assertEqual("26.1.0.19-beta", targets["neoforge-26.1"]["minimum"]["neoforge"])
-        self.assertEqual("26.1.0.4", targets["neoforge-26.1"]["minimum"]["waystones"])
-        self.assertEqual("26.1.0.6", targets["neoforge-26.1"]["minimum"]["balm"])
-        self.assertEqual("26.1.0.1", targets["neoforge-26.1"]["current"]["shogi"])
-        self.assertEqual("26.1.1.8-beta", targets["neoforge-26.1.1"]["minimum"]["neoforge"])
         self.assertEqual("26.1.2.0-beta", targets["neoforge-26.1.2"]["minimum"]["neoforge"])
-        self.assertEqual("26.1.0.1", targets["fabric-26.1"]["current"]["shogi"])
-        self.assertEqual("0.145.4+26.1.1", targets["fabric-26.1.1"]["minimum"]["fabricApi"])
 
 
 class TargetProperties26Test(unittest.TestCase):
     TARGET = {
-        "id": "fabric-26.1",
+        "id": "fabric-26.1.2",
         "branch": "fabric/26.x",
         "loader": "fabric",
-        "minecraft": ["26.1"],
+        "minecraft": ["26.1.2"],
         "families": {
             "balm": "load-context-26",
             "screen": "graphics-extractor-26",

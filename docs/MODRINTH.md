@@ -56,9 +56,9 @@ Not endorsed by Twelve Iterations. NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROV
 
 - 只选择完成 [VALIDATION.md](VALIDATION.md) 所列门禁的 minimum JAR；Release 类型。未验收目标继续维护，不上传。
 - Required dependencies：Waystones、Balm；Fabric 另有 Fabric API；26.x 另有 Shogi。
-- 1.21.2／1.21.3 共用文件同时勾选两版，且两版必须分别有证据；其他文件只选对应版本。
+- 当前只维护两加载器的 1.21.1、1.21.11、26.1.2、26.2；每个文件只选择矩阵对应的一个游戏版本。
 - 使用官方 beta NeoForge 的组合如实在 changelog 披露。
-- 26.1.1 在公开前置安装条件闭合前排除。
+- 停止维护的版本不进入后续更新或上传清单，历史文件不在本轮删除。
 - 记录目标、分支、源码提交、SHA-256、大小、前置组合、游戏版本、加载器和逐项验收证据；current 重编译、dev、sources、前置和缓存均不上传。
 
-实际平台修改和上传另行执行。本轮上传就绪清单只收录证据完整的目标，不能从“28 个构建目标”直接生成 28 个上传任务。
+实际平台修改和上传另行执行。本轮上传就绪清单只收录证据完整的目标，不能从“8 个构建目标”直接生成 8 个上传任务。

@@ -129,14 +129,6 @@ jobs:
       max-parallel: 2
       matrix:
         target:
-          - neoforge-1.21.2-1.21.3
-          - neoforge-1.21.4
-          - neoforge-1.21.5
-          - neoforge-1.21.6
-          - neoforge-1.21.7
-          - neoforge-1.21.8
-          - neoforge-1.21.9
-          - neoforge-1.21.10
           - neoforge-1.21.11
 
     steps:
@@ -217,14 +209,6 @@ jobs:
       matrix:
         target:
           - fabric-1.21.1
-          - fabric-1.21.2-1.21.3
-          - fabric-1.21.4
-          - fabric-1.21.5
-          - fabric-1.21.6
-          - fabric-1.21.7
-          - fabric-1.21.8
-          - fabric-1.21.9
-          - fabric-1.21.10
           - fabric-1.21.11
 
     steps:
@@ -304,8 +288,6 @@ jobs:
       max-parallel: 2
       matrix:
         target:
-          - neoforge-26.1
-          - neoforge-26.1.1
           - neoforge-26.1.2
           - neoforge-26.2
 
@@ -339,13 +321,6 @@ jobs:
           waystonesptpt-${{ matrix.target }}
           waystonesptpt-${{ matrix.target }}-1.0.1.jar
           build/runtime-artifacts/${{ matrix.target }}
-
-      - name: Rebuild fixed Waystones 26.1.1 source artifact
-        if: matrix.target == 'neoforge-26.1.1'
-        run: >-
-          python3 scripts/prepare-waystones-source.py
-          --loader neoforge
-          --expected-sha256 "${{ steps.artifact.outputs.upstream_waystones_sha256 }}"
 
       - name: Verify Xvfb, matrix and canonical parity
         run: |
@@ -393,8 +368,6 @@ jobs:
       max-parallel: 2
       matrix:
         target:
-          - fabric-26.1
-          - fabric-26.1.1
           - fabric-26.1.2
           - fabric-26.2
 
@@ -428,13 +401,6 @@ jobs:
           waystonesptpt-${{ matrix.target }}
           waystonesptpt-${{ matrix.target }}-1.0.1.jar
           build/runtime-artifacts/${{ matrix.target }}
-
-      - name: Rebuild fixed Waystones 26.1.1 source artifact
-        if: matrix.target == 'fabric-26.1.1'
-        run: >-
-          python3 scripts/prepare-waystones-source.py
-          --loader fabric
-          --expected-sha256 "${{ steps.artifact.outputs.upstream_waystones_sha256 }}"
 
       - name: Verify Xvfb, matrix and canonical parity
         run: |
