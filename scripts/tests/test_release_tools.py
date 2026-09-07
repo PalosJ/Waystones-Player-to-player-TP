@@ -64,6 +64,19 @@ class ReleaseManifestPathTest(unittest.TestCase):
 
 
 class FixedWaystonesSourceTest(unittest.TestCase):
+    # Historical provenance stays readable after 26.1.1 leaves the active matrix.
+    TARGET = {
+        "id": "neoforge-26.1.1",
+        "artifactFile": "waystonesptpt-neoforge-26.1.1-1.0.1.jar",
+        "waystonesSource": {
+            "repository": "https://github.com/TwelveIterations/Waystones.git",
+            "commit": "795bb9ac93e73a0df8e5678ba6746dfbf8b055a3",
+            "version": "26.1.1.0",
+            "patch": "scripts/upstream/waystones-26.1.1.patch",
+            "patchSha256": "77707c33069f6f1def1b4262b6961b1851ab97915019138039f9c2ce587a42bd",
+        },
+    }
+
     def test_generated_paths_stay_under_build(self):
         self.assertEqual(
             (ROOT / "build" / "upstream-maven").resolve(),
@@ -78,15 +91,13 @@ class FixedWaystonesSourceTest(unittest.TestCase):
         self.assertNotIn("SNAPSHOT", " ".join(expected.values()))
         self.assertEqual("26.1.0.1-20260324.181500-45", expected["shogiApi"])
 
-    def test_fixed_source_patch_matches_matrix_sha(self):
-        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
-        target = prepare_waystones_source.target_for(matrix, "neoforge")
+    def test_historical_source_patch_matches_recorded_sha(self):
+        target = self.TARGET
         source = prepare_waystones_source.verify_source_identity(target)
         self.assertEqual("795bb9ac93e73a0df8e5678ba6746dfbf8b055a3", source["commit"])
 
     def test_source_built_release_jar_requires_upstream_manifest_provenance(self):
-        matrix = json.loads((ROOT / "gradle" / "targets.json").read_text(encoding="utf-8"))
-        target = prepare_waystones_source.target_for(matrix, "neoforge")
+        target = self.TARGET
         commit = "a" * 40
         icon = b"approved-icon"
         upstream_sha = "b" * 64
@@ -123,7 +134,7 @@ class RuntimeMatrixBranchTest(unittest.TestCase):
     def test_26_x_targets_use_supported_unified_branches(self):
         self.assertEqual(
             "neoforge/26.x",
-            runtime_matrix.load_target("neoforge-26.1")["branch"],
+            runtime_matrix.load_target("neoforge-26.1.2")["branch"],
         )
         self.assertEqual(
             "fabric/26.x",
