@@ -202,6 +202,7 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
 
     targets = matrix.get("targets")
     require(isinstance(targets, list) and targets, "targets.json must contain a non-empty targets list")
+    require(len(targets) == 8, "maintenance matrix must contain exactly eight targets")
     target_ids = [target.get("id") for target in targets if isinstance(target, dict)]
     require(len(target_ids) == len(targets), "every target must be an object")
     require(len(set(target_ids)) == len(target_ids), "targets.json contains duplicate target IDs")
@@ -294,39 +295,10 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
                 require("shogiApi" not in stack,
                         f"{target_id}: {stack_name} must not resolve a separate or floating Shogi API")
 
-            source = target.get("waystonesSource")
-            if minecraft == ["26.1.1"]:
-                require(source == {
-                    "repository": "https://github.com/TwelveIterations/Waystones.git",
-                    "commit": "795bb9ac93e73a0df8e5678ba6746dfbf8b055a3",
-                    "version": "26.1.1.0",
-                    "patch": "scripts/upstream/waystones-26.1.1.patch",
-                    "patchSha256": "77707c33069f6f1def1b4262b6961b1851ab97915019138039f9c2ce587a42bd",
-                }, f"{target_id}: invalid fixed Waystones source")
-                patch_path = ROOT / source["patch"]
-                require(patch_path.is_file(), f"{target_id}: fixed Waystones patch is missing")
-                require(hashlib.sha256(patch_path.read_bytes()).hexdigest() == source["patchSha256"],
-                        f"{target_id}: fixed Waystones patch SHA-256 mismatch")
-            else:
-                require(source is None, f"{target_id}: only 26.1.1 may use a source-built Waystones")
-
-        runtime_stacks = target.get("runtimeStacks")
-        if len(minecraft) == 2:
-            require(minecraft == ["1.21.2", "1.21.3"],
-                    f"{target_id}: only the 1.21.2/1.21.3 pair may share one artifact")
-            require(isinstance(runtime_stacks, list),
-                    f"{target_id}: shared target must declare runtimeStacks")
-            require(all(isinstance(stack, dict) for stack in runtime_stacks),
-                    f"{target_id}: every runtime stack must be an object")
-            runtime_versions = [stack.get("minecraft") for stack in runtime_stacks]
-            require(runtime_versions == minecraft,
-                    f"{target_id}: runtimeStacks must cover each supported Minecraft version once")
-            for stack in runtime_stacks:
-                require(isinstance(stack.get("minimum"), dict) and isinstance(stack.get("current"), dict),
-                        f"{target_id}/{stack.get('minecraft')}: runtime stack needs minimum and current")
-        else:
-            require(not runtime_stacks,
-                    f"{target_id}: single-version target must not declare runtimeStacks")
+        require("waystonesSource" not in target,
+                f"{target_id}: maintained targets must use public upstream artifacts")
+        require(len(minecraft) == 1 and not target.get("runtimeStacks"),
+                f"{target_id}: maintained targets must name one Minecraft version")
 
     main_targets = [target for target in targets if target.get("branch") == "main"]
     require(len(main_targets) == 1 and main_targets[0].get("id") == "neoforge-1.21.1",
@@ -340,20 +312,20 @@ def validate_matrix_shape(matrix: Dict[str, object]) -> None:
     minecraft_sort_key = lambda version: tuple(int(part) for part in version.split("."))
     require(
         sorted(versions_by_branch["neoforge/1.21.x"], key=minecraft_sort_key) ==
-        sorted([f"1.21.{minor}" for minor in range(2, 12)], key=minecraft_sort_key),
-        "NeoForge unified matrix must cover Minecraft 1.21.2 through 1.21.11 exactly",
+        ["1.21.11"],
+        "NeoForge unified matrix must cover Minecraft 1.21.11 exactly",
     )
     require(
         sorted(versions_by_branch["fabric/1.21.x"], key=minecraft_sort_key) ==
-        sorted([f"1.21.{minor}" for minor in range(1, 12)], key=minecraft_sort_key),
-        "Fabric unified matrix must cover Minecraft 1.21.1 through 1.21.11 exactly",
+        ["1.21.1", "1.21.11"],
+        "Fabric unified matrix must cover Minecraft 1.21.1 and 1.21.11 exactly",
     )
-    expected_26 = ["26.1", "26.1.1", "26.1.2", "26.2"]
+    expected_26 = ["26.1.2", "26.2"]
     for branch in ("neoforge/26.x", "fabric/26.x"):
         actual = [version for target in targets if target.get("branch") == branch
                   for version in target.get("minecraft", [])]
         require(actual == expected_26,
-                f"{branch} matrix must cover 26.1, 26.1.1, 26.1.2 and 26.2 exactly")
+                f"{branch} matrix must cover 26.1.2 and 26.2 exactly")
 
 
 def main() -> int:

@@ -44,12 +44,12 @@ NeoForge 使用 SERVER 配置，保留全局默认、世界 `serverconfig` 覆�
 | 维护分支 | Minecraft | JAR 数 | 1.0.1 玩法状态 |
 |---|---|---:|---|
 | `main` | NeoForge 1.21.1 | 1 | 新改动待完整验收；原版本有用户基本实测 |
-| `fabric/1.21.x` | Fabric 1.21.1–1.21.11 | 10 | 待完整验收；1.21.1 原版本有用户基本实测 |
-| `neoforge/1.21.x` | NeoForge 1.21.2–1.21.11 | 9 | 待完整验收 |
-| `fabric/26.x` | Fabric 26.1、26.1.1、26.1.2、26.2 | 4 | 待完整验收 |
-| `neoforge/26.x` | NeoForge 26.1、26.1.1、26.1.2、26.2 | 4 | 待完整验收 |
+| `fabric/1.21.x` | Fabric 1.21.1、1.21.11 | 2 | 待完整验收；1.21.1 原版本有用户基本实测 |
+| `neoforge/1.21.x` | NeoForge 1.21.11 | 1 | 待完整验收 |
+| `fabric/26.x` | Fabric 26.1.2、26.2 | 2 | 待完整验收 |
+| `neoforge/26.x` | NeoForge 26.1.2、26.2 | 2 | 待完整验收 |
 
-28 份 JAR 对应 30 个游戏版本／加载器组合；1.21.2／1.21.3 的共用文件仍需分别验收。26.1.1 依赖固定源码构建的上游 JAR，在公开安装条件闭合前不进入上传清单。精确依赖见 [目标矩阵](gradle/targets.json)，证据与门禁见 [验收状态](docs/VALIDATION.md)。
+自 2026-09-07 起仅继续维护 NeoForge／Fabric 的 1.21.1、1.21.11、26.1.2、26.2，共 8 个目标／8 个游戏组合。1.21.2–1.21.10、26.1 和 26.1.1 停止后续更新，退出构建、CI 和本地产物同步；历史提交与验收记录保留。NeoForge 1.21.1 继续作为 `main` 基线。精确依赖见 [目标矩阵](gradle/targets.json)，证据与门禁见 [验收状态](docs/VALIDATION.md)。
 
 ### 许可与开发
 
@@ -81,7 +81,7 @@ NeoForge keeps SERVER configuration, world overrides, and reloads. Fabric uses a
 
 ### Release status
 
-The [public Modrinth page](https://modrinth.com/mod/waystonesplayerptpt) currently offers the older 1.0.0 files for NeoForge and Fabric 1.21.1. The 1.0.1 maintenance matrix has 28 artifacts for 30 combinations across 1.21.1–1.21.11 and 26.1/26.1.1/26.1.2/26.2. Build or startup success does not mean gameplay acceptance. See [validation status](docs/VALIDATION.md) before treating a target as ready to upload. The shared 1.21.2/1.21.3 file needs separate acceptance on both versions; 26.1.1 remains excluded from upload readiness while public dependency installation is unresolved.
+The [public Modrinth page](https://modrinth.com/mod/waystonesplayerptpt) currently offers the older 1.0.0 files for NeoForge and Fabric 1.21.1. The 1.0.1 maintenance matrix has eight artifacts: NeoForge and Fabric for Minecraft 1.21.1, 1.21.11, 26.1.2, and 26.2. Other versions no longer receive updates or new candidate builds. NeoForge 1.21.1 remains the canonical main branch. Build or startup success does not mean gameplay acceptance; see [validation status](docs/VALIDATION.md).
 
 This update remains **1.0.1**, but both sides must update together, including installations already labeled 1.0.1, because receiving preferences require network protocol 2.
 

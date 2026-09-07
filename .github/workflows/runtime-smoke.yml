@@ -38,8 +38,6 @@ jobs:
       max-parallel: 2
       matrix:
         target:
-          - neoforge-26.1
-          - neoforge-26.1.1
           - neoforge-26.1.2
           - neoforge-26.2
 

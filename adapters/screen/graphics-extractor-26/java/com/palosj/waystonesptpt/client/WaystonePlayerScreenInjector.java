@@ -95,7 +95,8 @@ public final class WaystonePlayerScreenInjector {
                 return;
             }
 
-            PlayerPanelLayout layout = PlayerPanelLayout.resolve(screen.width, anchor.x(), anchor.width());
+            PlayerPanelLayout layout = PlayerPanelLayout.resolve(
+                    screen.width, anchor.x(), anchor.width(), anchor.nativeLeftOffset());
             int deltaX = layout.waystonesX() - anchor.x();
             moveWaystonesLayout(screen, anchor, deltaX);
 
@@ -204,11 +205,18 @@ public final class WaystonePlayerScreenInjector {
     private static LayoutAnchor findLayoutAnchor(AbstractContainerScreen<?> screen) {
         AbstractWidget waystoneList = null;
         EditBox searchBox = WaystoneScreenControls.searchBox(screen);
+        AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
+        // A scrolling list is inset inside the container. Reserve the actual native
+        // controls on its left and the container's right edge, not just the list bounds.
+        int minimumLeft = accessor.waystonesptpt$getLeftPos();
+        int maximumRight = minimumLeft + accessor.waystonesptpt$getImageWidth();
         int maximumBottom = 0;
         List<AbstractWidget> ownedControls = WaystoneScreenControls.ownedControls(screen);
         for (GuiEventListener listener : screen.children()) {
             if (listener instanceof AbstractWidget widget) {
                 if (isWaystonesWidget(widget) || ownedControls.contains(widget)) {
+                    minimumLeft = Math.min(minimumLeft, widget.getX());
+                    maximumRight = Math.max(maximumRight, widget.getRight());
                     maximumBottom = Math.max(maximumBottom, widget.getBottom());
                 }
                 if (isClassOrSuperclassNamed(widget, "net.blay09.mods.waystones.client.gui.widget.AbstractWaystoneList")) {
@@ -221,21 +229,22 @@ public final class WaystonePlayerScreenInjector {
             return new LayoutAnchor(
                     waystoneList.getX(),
                     waystoneList.getY() - HEADER_HEIGHT,
-                    waystoneList.getWidth(),
-                    waystoneList.getHeight() + HEADER_HEIGHT + FOOTER_HEIGHT);
+                    maximumRight - waystoneList.getX(),
+                    waystoneList.getHeight() + HEADER_HEIGHT + FOOTER_HEIGHT,
+                    waystoneList.getX() - minimumLeft);
         }
         if (searchBox == null) {
             return null;
         }
 
-        AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
         int guiTop = searchBox.getY() - SEARCH_BOX_HEADER_OFFSET;
         int guiHeight = Math.max(EARLY_LAYOUT_HEIGHT, maximumBottom - guiTop + SCREEN_MARGIN);
         return new LayoutAnchor(
                 accessor.waystonesptpt$getLeftPos(),
                 guiTop,
-                accessor.waystonesptpt$getImageWidth(),
-                guiHeight);
+                maximumRight - accessor.waystonesptpt$getLeftPos(),
+                guiHeight,
+                accessor.waystonesptpt$getLeftPos() - minimumLeft);
     }
 
     private static boolean isClassOrSuperclassNamed(Object value, String className) {
@@ -300,7 +309,7 @@ public final class WaystonePlayerScreenInjector {
         }
     }
 
-    private record LayoutAnchor(int x, int y, int width, int height) {
+    private record LayoutAnchor(int x, int y, int width, int height, int nativeLeftOffset) {
     }
 
     private static final class PlayerPanel {

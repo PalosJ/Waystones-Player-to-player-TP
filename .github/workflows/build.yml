@@ -45,8 +45,6 @@ jobs:
       max-parallel: 4
       matrix:
         target:
-          - neoforge-26.1
-          - neoforge-26.1.1
           - neoforge-26.1.2
           - neoforge-26.2
         stack:
@@ -75,10 +73,6 @@ jobs:
 
       - name: Test release tooling
         run: python3 -m unittest discover -s scripts/tests -v
-
-      - name: Build fixed Waystones 26.1.1 dependency
-        if: matrix.target == 'neoforge-26.1.1'
-        run: python3 scripts/prepare-waystones-source.py --loader neoforge
 
       - name: Test core and build target
         run: >-

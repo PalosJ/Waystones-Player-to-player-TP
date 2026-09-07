@@ -15,10 +15,16 @@ public record PlayerPanelLayout(
     public static final int PANEL_GAP = 2;
 
     public static PlayerPanelLayout resolve(int screenWidth, int preferredWaystonesX, int waystonesWidth) {
+        return resolve(screenWidth, preferredWaystonesX, waystonesWidth, WAYSTONES_SIDE_BUTTON_LEFT_OFFSET);
+    }
+
+    public static PlayerPanelLayout resolve(
+            int screenWidth, int preferredWaystonesX, int waystonesWidth, int nativeLeftOffset) {
+        int sideButtonOffset = Math.max(WAYSTONES_SIDE_BUTTON_LEFT_OFFSET, nativeLeftOffset);
         int availableNamedWidth = screenWidth
                 - NAMED_SCREEN_MARGIN * 2
                 - waystonesWidth
-                - WAYSTONES_SIDE_BUTTON_LEFT_OFFSET
+                - sideButtonOffset
                 - PANEL_GAP;
 
         Mode mode;
@@ -40,14 +46,14 @@ public record PlayerPanelLayout(
 
         int minimumWaystonesX = screenMargin
                 + panelWidth
-                + WAYSTONES_SIDE_BUTTON_LEFT_OFFSET
+                + sideButtonOffset
                 + PANEL_GAP;
         int maximumWaystonesX = Math.max(0, screenWidth - screenMargin - waystonesWidth);
         int waystonesX = minimumWaystonesX <= maximumWaystonesX
                 ? clamp(preferredWaystonesX, minimumWaystonesX, maximumWaystonesX)
                 : maximumWaystonesX;
         int panelX = Math.max(0, waystonesX
-                - WAYSTONES_SIDE_BUTTON_LEFT_OFFSET
+                - sideButtonOffset
                 - PANEL_GAP
                 - panelWidth);
 
