@@ -1,4 +1,5 @@
 import pathlib
+import json
 import unittest
 
 
@@ -127,30 +128,15 @@ class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
         self.assertIn('findMethod("appliesModifiers")', context)
         self.assertIn('"setAppliesModifiers", boolean.class', context)
 
-    def test_legacy_targets_replace_the_common_context_implementation(self) -> None:
+    def test_12111_target_replaces_the_common_context_with_identifier_family(self) -> None:
         settings = source("settings.gradle")
         loader = "fabric" if "fabricTargets" in settings else "neoforge"
-        target_suffixes = [
-            "1.21.2-1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10"
-        ]
         if not list(REPO.glob(f"targets/{loader}-1.21*/target.properties")):
             return
-        found = 0
-        for suffix in target_suffixes:
-            path = f"targets/{loader}-{suffix}/target.properties"
-            if not REPO.joinpath(path).is_file():
-                continue
-            found += 1
-            with self.subTest(path=path):
-                properties = source(path)
-                self.assertIn(
-                    "com/palosj/waystonesptpt/compat/LockedWaystoneTeleportContext.java",
-                    properties,
-                )
-                self.assertIn("teleport/legacy-21.3", properties)
-                self.assertIn("teleport/context-optional-hand-21.3-21.10", properties)
-        if not list(REPO.glob(f"targets/{loader}-26*/target.properties")):
-            self.assertGreater(found, 0)
+        properties = source(f"targets/{loader}-1.21.11/target.properties")
+        self.assertIn("com/palosj/waystonesptpt/compat/LockedWaystoneTeleportContext.java", properties)
+        self.assertIn("teleport/identifier-1.21.11", properties)
+        self.assertNotIn("teleport/context-optional-hand-21.3-21.10", properties)
 
     def test_26_targets_select_locked_shogi_and_graphics_extractor_families(self) -> None:
         settings = source("settings.gradle")
@@ -158,7 +144,9 @@ class UnifiedTeleportContextFamilySourceContractTest(unittest.TestCase):
         target_files = sorted(REPO.glob(f"targets/{loader}-26*/target.properties"))
         if not target_files:
             return
-        self.assertEqual(4, len(target_files))
+        matrix = json.loads(source("gradle/targets.json"))
+        expected = {target["id"] for target in matrix["targets"] if target["branch"] == f"{loader}/26.x"}
+        self.assertEqual(expected, {path.parent.name for path in target_files})
         for target_file in target_files:
             properties = target_file.read_text(encoding="utf-8")
             with self.subTest(path=str(target_file.relative_to(REPO))):
